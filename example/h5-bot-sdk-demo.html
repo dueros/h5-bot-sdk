@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh_CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>H5 BOT SDK DEMO</title>
+    <script src="http://duer.bdstatic.com/saiya/sdk/botapp-sdk.1.0.0.js"></script>
+</head>
+<body>
+
+<button id="applicate-account">账号绑定</button>
+<button id="applicate-pay">我要购买</button>
+<button id="applicate-listen">激活聆听</button>
+<button id="applicate-speak">播报"我要早点下班"</button>
+<button id="applicate-register">获取register结果</button>
+<button id="applicate-uicontext">updateUIContext</button>
+<div id="log"></div>
+
+<script>
+    var $btnAccount = document.getElementById('applicate-account');
+    var $btnPay = document.getElementById('applicate-pay');
+    var $btnListen = document.getElementById('applicate-listen');
+    var $btnSpeak = document.getElementById('applicate-speak');
+    var $btnGetRegisterResult = document.getElementById('applicate-register');
+    var $btnUpdateUIContext = document.getElementById('applicate-uicontext');
+
+    var $log = document.getElementById('log');
+
+    function log(data) {
+        if (typeof data === 'object') {
+            try {
+                data = JSON.stringify(data);
+            } catch (e) {
+                data = JSON.stringify(e);
+            }
+        }
+        var now = new Date();
+        var hour = now.getHours();
+        var minu = now.getMinutes();
+        var sec = now.getSeconds();
+        let dateStr = '[' + hour + ':' + minu + ':' + sec + ']';
+        $log.innerHTML += '<br>' + dateStr + '<br>' + data;
+    }
+
+    window.addEventListener('load', function () {
+        // appKey: 123
+        var botApp = new BotApp({
+            random1: '3a939b0cee832fb0e634e1f6f28ee44e',
+            signature1: '88ae6f1d2a7fe291645b785f86871ee8',
+            random2: '4a983fd442144eaec73c3ca35ae78aa0',
+            signature2: '61e4bfa17bfe27c4f36138a6ce80f43d'
+        });
+
+        botApp.onLinkAccountSuccess(function (data) {
+            log('收到 onLinkAccountSuccess 调用');
+            console.log(data);
+            log(data);
+        });
+
+        botApp.onChargeStatusChange(function (data) {
+            log('收到 onChargeStatusChange 调用');
+            log(data);
+        });
+
+        botApp.onHandleIntent(function (data) {
+            log('收到 onHandleIntent 调用');
+            console.log(data);
+            log(data);
+        });
+
+        botApp.onClickLink(function (data) {
+            log('收到 onClickLink 调用');
+            console.log(data);
+            log(data);
+        });
+
+        botApp.onHandleScreenNavigatorEvent(function (data) {
+            log('收到 onHandleScreenNavigatorEvent 调用');
+            console.log(data);
+            log(data);
+        });
+
+        $btnAccount.onclick = function () {
+            botApp.requireLinkAccount();
+        };
+
+        $btnPay.onclick = function () {
+            const data = {
+                token: 'fjaksvmakfjiefj23fdsnfs',
+                chargeBaiduPay: {
+                    authorizeAttributes: {
+                        authorizationAmount: {
+                            amount: '1.09',
+                            currencyCode: 'CNY'
+                        },
+                        sellerAuthorizationNote: '双11大促'
+                    },
+                    sellerOrderAttributes: {
+                        sellerOrderId: 'hfuawffu2jkjk12e23',
+                        productName: 'Mac Book Pro 2019',
+                        productId: 'fjaksdfkvjsznvj',
+                        description: '笔记本电脑',
+                        sellerNote: '大促销'
+                    }
+                }
+            };
+            botApp.requireCharge(data);
+        }
+
+        $btnListen.onclick = function () {
+            botApp.listen();
+        }
+
+        $btnSpeak.onclick = function () {
+            botApp.speak('我要早点下班', function () {
+                log('TTS播报完毕');
+            });
+        }
+
+        $btnUpdateUIContext.onclick = function () {
+            botApp.updateUiContext({
+                enableGeneralUtterances: true,
+                hyperUtterances: [
+                    {
+                        url: 'https://www.baidu.com',
+                        utterances: ['选择百度'],
+                        type: 'link',
+                        parameters: {}
+                }]
+            });
+        }
+
+        $btnGetRegisterResult.onclick = function () {
+            log('开始获取register结果');
+            botApp.getRegisterResult(function (data) {
+                log('收到register结果');
+                log(data);
+            });
+        }
+    });
+
+</script>
+</body>
+</html>

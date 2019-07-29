@@ -1,0 +1,13 @@
+node_moduels/
+example/node_modules
+.idea/
+.vscode/
+.git/
+.editorconfig
+.npmrc
+build_ci.sh
+ci.yml
+fis-conf.js
+push.sh
+.DS_Store
+Thumbs.db

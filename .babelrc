@@ -1,0 +1,21 @@
+{
+    "presets": [
+        [
+            "env",
+            {
+                "targets": {
+                    "browsers": [
+                        "Android >= 8.0"
+                    ]
+                },
+                "exclude": [
+                    "transform-es2015-typeof-symbol"
+                ]
+            }
+        ],
+        "stage-2"
+    ],
+    "plugins": [
+        "transform-runtime"
+    ]
+}
