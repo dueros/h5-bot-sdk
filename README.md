@@ -401,24 +401,34 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 
 * 参数
 
-    callback(*Function*)：当收到SDK收到DuerOS下发的屏幕导航事件时，本函数会被调用，参数是一个枚举型的值，可能是以下几种：
+    callback(*Function*)：当收到SDK收到DuerOS下发的屏幕导航事件时，本函数会被调用，参数schema如下：
 
-    NAV_SCROLL_LEFT(列表向左滚动)<br>
-    NAV_SCROLL_RIGHT(列表向右滚动)<br>
-    NAV_SCROLL_UP(列表向上滚动)<br>
-    NAV_SCROLL_DOWN(列表向下滚动)<br>
-    NAV_NEXT_PAGE(下一页)<br>
-    NAV_PREVIOUS_PAGE(上一页)<br>
-    NAV_GO_BACK(返回上一页)<br>
-    NAV_GO_HOMEPAGE(返回主页)<br>
+    ```javascript
+    {
+        "data": "{{INT}}"
+    }
+    ```
+
+    1: 向左滚动<br>
+    2: 向右滚动<br>
+    3: 向上滚动<br>
+    4: 向下滚动<br>
+    5: 下一页<br>
+    6: 上一页<br>
+    7: history go back<br>
+    8: 回到Home页<br>
 
 * 示例
+
+    对小度音箱说：『向左滚动』
 
     ```javascript
     botApp.onHandleScreenNavigatorEvent(function (payload) {
         console.log(payload);
         //打印：
-        // 'NAV_NEXT_PAGE'
+        {
+            data: 1
+        }
     })
     ```
 

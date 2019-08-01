@@ -6,7 +6,13 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="http://duer.bdstatic.com/saiya/sdk/botapp-sdk.1.0.0.js"></script>
+    <script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.0.0.js"></script>
+    <style>
+        button {
+            min-width: 120px;
+            height: 40px;
+        }
+    </style>
 </head>
 <body>
 
@@ -16,6 +22,7 @@
 <button id="applicate-speak">播报"我要早点下班"</button>
 <button id="applicate-register">获取register结果</button>
 <button id="applicate-uicontext">updateUIContext</button>
+<button id="clear-log">清除页面日志</button>
 <div id="log"></div>
 
 <script>
@@ -25,6 +32,7 @@
     var $btnSpeak = document.getElementById('applicate-speak');
     var $btnGetRegisterResult = document.getElementById('applicate-register');
     var $btnUpdateUIContext = document.getElementById('applicate-uicontext');
+    var $btnClearLog = document.getElementById('clear-log');
 
     var $log = document.getElementById('log');
 
@@ -40,17 +48,16 @@
         var hour = now.getHours();
         var minu = now.getMinutes();
         var sec = now.getSeconds();
-        let dateStr = '[' + hour + ':' + minu + ':' + sec + ']';
-        $log.innerHTML += '<br>' + dateStr + '<br>' + data;
+        var dateStr = '<br>[' + hour + ':' + minu + ':' + sec + ']';
+        $log.innerHTML += dateStr + data;
     }
 
     window.addEventListener('load', function () {
-        // appKey: 123
         var botApp = new BotApp({
             random1: '3a939b0cee832fb0e634e1f6f28ee44e',
-            signature1: '88ae6f1d2a7fe291645b785f86871ee8',
+            signature1: '67273b24f9bedfde30cb87e09edab133',
             random2: '4a983fd442144eaec73c3ca35ae78aa0',
-            signature2: '61e4bfa17bfe27c4f36138a6ce80f43d'
+            signature2: '8aa7b574ffad29bdf1f1a925cfc0794d'
         });
 
         botApp.onLinkAccountSuccess(function (data) {
@@ -83,16 +90,17 @@
         });
 
         $btnAccount.onclick = function () {
+            log('发起账号授权');
             botApp.requireLinkAccount();
         };
 
         $btnPay.onclick = function () {
-            const data = {
+            var data = {
                 token: 'fjaksvmakfjiefj23fdsnfs',
                 chargeBaiduPay: {
                     authorizeAttributes: {
                         authorizationAmount: {
-                            amount: '1.09',
+                            amount: '0.01',
                             currencyCode: 'CNY'
                         },
                         sellerAuthorizationNote: '双11大促'
@@ -106,39 +114,66 @@
                     }
                 }
             };
+            log('发起收款，参数如下');
+            log(data);
             botApp.requireCharge(data);
         }
 
         $btnListen.onclick = function () {
+            log('开始激活聆听');
             botApp.listen();
         }
 
         $btnSpeak.onclick = function () {
+            log('开始播报TTS');
             botApp.speak('我要早点下班', function () {
                 log('TTS播报完毕');
             });
         }
 
         $btnUpdateUIContext.onclick = function () {
-            botApp.updateUiContext({
+            log('开始定义UIContext，参数如下');
+            var data = {
                 enableGeneralUtterances: true,
                 hyperUtterances: [
                     {
-                        url: 'https://www.baidu.com',
-                        utterances: ['选择百度'],
+                        url: 'https://www.apple.com',
+                        utterances: ['苹果'],
                         type: 'link',
                         parameters: {}
-                }]
+                    },
+                    {
+                        url: 'https://www.banana.com',
+                        utterances: ['香蕉'],
+                        type: 'link',
+                        parameters: {}
+                    },
+                    {
+                        url: 'https://www.strawberry.com',
+                        utterances: ['草莓'],
+                        type: 'link',
+                        parameters: {}
+                    },
+                ]
+            };
+            log(data);
+            botApp.updateUiContext(data, function () {
+                log('发送updateUiContext完毕');
             });
         }
 
         $btnGetRegisterResult.onclick = function () {
-            log('开始获取register结果');
+            log('开始获取注册结果');
             botApp.getRegisterResult(function (data) {
                 log('收到register结果');
                 log(data);
             });
         }
+
+        $btnClearLog.onclick = function () {
+            $log.innerHTML = '';
+        }
+
     });
 
 </script>
