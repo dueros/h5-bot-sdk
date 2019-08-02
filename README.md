@@ -15,7 +15,7 @@
 * 方法一：通过script标签引入(支持https)
 
 ```html
-<script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.0.0.js"></script>
+<script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.1.0.js"></script>
 ```
 然后可以在全局环境下获取到`BotApp`对象
 > 在webpack下使用模块化开发的形式如何引入？
