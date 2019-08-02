@@ -305,6 +305,7 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
     callback(*Function*)：TTS播放完毕后回调此函数，本函数没有参数。
 
 * 示例
+
     ```javascript
     /**
     data: 要播报的TTS的文字内容
@@ -316,12 +317,12 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
     }))
     ```
 
-## BotApp.requestClose()
-1.1+
+## BotApp.requestClose() *1.1+*
 
 请求关闭浏览器。调用此方法后，小度有屏音箱上正在运行的H5会退出。
 
 * 示例
+
     ```javascript
     botApp.requestClose();
     ```
