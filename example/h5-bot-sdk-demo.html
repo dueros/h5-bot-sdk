@@ -6,7 +6,7 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.0.0.js"></script>
+    <script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.1.0.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -22,6 +22,7 @@
 <button id="applicate-speak">播报"我要早点下班"</button>
 <button id="applicate-register">获取register结果</button>
 <button id="applicate-uicontext">updateUIContext</button>
+<button id="request-close">退出页面</button>
 <button id="clear-log">清除页面日志</button>
 <div id="log"></div>
 
@@ -33,6 +34,7 @@
     var $btnGetRegisterResult = document.getElementById('applicate-register');
     var $btnUpdateUIContext = document.getElementById('applicate-uicontext');
     var $btnClearLog = document.getElementById('clear-log');
+    var $btnClose = document.getElementById('request-close');
 
     var $log = document.getElementById('log');
 
@@ -172,6 +174,11 @@
 
         $btnClearLog.onclick = function () {
             $log.innerHTML = '';
+        }
+
+        $btnClose.onclick = function () {
+            log('请求退出');
+            botApp.requestClose();
         }
 
     });

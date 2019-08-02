@@ -196,6 +196,15 @@ class BotApp {
     }
 
     /**
+     * 请求关闭app
+     */
+    requestClose() {
+        this._getJSBridge(bridge => {
+            bridge.callHandler('requestClose');
+        });
+    }
+
+    /**
      * 接收ClickLink。ClickLink是一种Directive，用户新增自定义交互之后，云端会解析用户定义的交互，
      * 下发对应的指令。例如APP通过updateUiContext(UiContextPayload)新增自定义交互之后DuerOS会通
      * 过此接口下发上面定义的url。

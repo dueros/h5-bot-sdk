@@ -316,6 +316,16 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
     }))
     ```
 
+## BotApp.requestClose()
+1.1+
+
+请求关闭浏览器。调用此方法后，小度有屏音箱上正在运行的H5会退出。
+
+* 示例
+    ```javascript
+    botApp.requestClose();
+    ```
+
 ## BotApp.updateUiContext(data, [,callback])
 本接口定义通用的自定义用户交互能力，设备端可以自主实现所希望的交互过程。
 
