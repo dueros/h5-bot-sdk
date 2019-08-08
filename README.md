@@ -15,7 +15,7 @@
 * 方法一：通过script标签引入(支持https)
 
 ```html
-<script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.1.0.js"></script>
+<script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.2.0.js"></script>
 ```
 然后可以在全局环境下获取到`BotApp`对象
 > 在webpack下使用模块化开发的形式如何引入？
@@ -263,19 +263,17 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
         console.log(payload);
         // 结果如下：
         {
-            token: 'cmkadjfqewjfidkvnksdnvkasjdf',
-            app:{
-                accessToken: '21.15a2c2cd345816f2e51f9eae6e3d1f03.2592000.1566035530.2050908969-9943593'
+            "app": {
+                "packageName": "com.baidu.duershow.h5container"
             },
-           intent: {
-               name: 'buy_ticket',
-               slots: [
-                    {
-                       destination: '广州'
-                    }
-               ]
-           },
-           customData: {}
+            "customData": "",
+            "intent": {
+                "name": "test_city",
+                "slots": [{
+                    "name": "sys.city",
+                    "value": "{\"city\":\"南京\",\"origin\":\"南京\"}"
+                }]
+            }
         }
     });
     ```
@@ -357,7 +355,7 @@ H5：调用updateUiContext([(utterances="第一个", url="{url1}"), (utterances=
     }
     ```
 
-    callback(*Function*)：当本事件上报发起后本函数会被回调，接收一个参数，表示是否成功发起请求
+    callback(*Function*)：可选参数，当本事件上报发起后本函数会被回调，接收一个参数，表示是否成功发起请求
 
 * 示例
     ```javascript
@@ -365,8 +363,20 @@ H5：调用updateUiContext([(utterances="第一个", url="{url1}"), (utterances=
         enableGeneralUtterances: true,
         hyperUtterances: [
             {
-                url: 'https://www.baidu.com', // 与下方的utterance绑定的URL，当用户的Query与下方的utterances匹配时，则表示选中了本URL
-                utterances: ['选择百度'],
+                url: 'https://www.apple.com', // 与下方的utterances绑定的URL，当用户的Query与下方的utterances匹配时，则表示选中了本URL
+                utterances: ['苹果'],
+                type: 'link',
+                parameters: {}
+            },
+            {
+                url: 'https://www.banana.com',
+                utterances: ['香蕉'],
+                type: 'link',
+                parameters: {}
+            },
+            {
+                url: 'https://www.strawberry.com',
+                utterances: ['草莓'],
                 type: 'link',
                 parameters: {}
             }
@@ -400,11 +410,34 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 
 * 示例
 
+    如果使用上方updateUiContext的示例数据来自定义交互能力，则表现如下<br>
+    用户：小度小度，草莓<br>
+    SDK：本方法中注册的回调函数获得的数据结果如下
+
     ```javascript
     botApp.onClickLink(function (payload) {
         console.log(payload);
-        // 待补充打印结果
-    })
+        // 打印如下
+        {
+            url: 'https://www.straberry.com',
+            params: {}
+        }
+    });
+    ```
+
+## BotApp.uploadLinkClicked(data) *1.2+*
+当用户点击了屏幕上的某个链接时可通过本方法进行上报。DuerOS根据其携带的参数下发不同的指令，也可能什么指令也不下发。
+
+* 参数
+
+    data(*Object*): data.url 要上报的Link地址
+
+* 示例
+
+    ```javascript
+    botApp.uploadLinkClicked({
+        url: 'dueros://d7a12baa-47d5-437f-7af6-05bc9c4e5c28/?openbot=true&oss_channel=ls_m'
+    });
     ```
 
 ## BotApp.onHandleScreenNavigatorEvent(callback)

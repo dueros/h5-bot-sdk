@@ -45,9 +45,7 @@ class BotApp {
                 console.log('Receive bridge init message from native: ' + message);
                 responseCallback(data);
             });
-        });
 
-        this._getJSBridge(bridge => {
             // Native依赖这几个参数进行身份校验
             bridge.callHandler('register', registerConfig, payload => {
                 payload = JSON.parse(payload);
@@ -55,6 +53,7 @@ class BotApp {
                 this.registerCallback && this.registerCallback(payload);
                 this.registerCallback = null;
             });
+
         });
     }
 
@@ -115,6 +114,18 @@ class BotApp {
         data = JSON.stringify(data);
         this._getJSBridge(bridge => {
             bridge.callHandler('requireCharge', data);
+        });
+    }
+
+    /**
+     * 上报屏幕上的链接点击事件
+     * @param {Object} data 要上报的数据
+     * @param {string} data.url 点击了的链接
+     */
+    uploadLinkClicked(data) {
+        data = JSON.stringify(data);
+        this._getJSBridge(bridge => {
+            bridge.callHandler('uploadLinkClicked', data);
         });
     }
 

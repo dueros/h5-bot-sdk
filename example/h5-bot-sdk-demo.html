@@ -6,7 +6,7 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.1.0.js"></script>
+    <script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.2.0.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -15,7 +15,6 @@
     </style>
 </head>
 <body>
-
 <button id="applicate-account">账号绑定</button>
 <button id="applicate-pay">我要购买</button>
 <button id="applicate-listen">激活聆听</button>
@@ -24,6 +23,7 @@
 <button id="applicate-uicontext">updateUIContext</button>
 <button id="request-close">退出页面</button>
 <button id="clear-log">清除页面日志</button>
+<button id="applicate-link">LinkClicked</button>
 <div id="log"></div>
 
 <script>
@@ -35,6 +35,7 @@
     var $btnUpdateUIContext = document.getElementById('applicate-uicontext');
     var $btnClearLog = document.getElementById('clear-log');
     var $btnClose = document.getElementById('request-close');
+    var $btnLink = document.getElementById('applicate-link');
 
     var $log = document.getElementById('log');
 
@@ -179,6 +180,15 @@
         $btnClose.onclick = function () {
             log('请求退出');
             botApp.requestClose();
+        }
+
+        $btnLink.onclick = function () {
+            log('上报LinkClicked，参数如下');
+            var data = {
+                url: 'dueros://d7a12baa-47d5-437f-7af6-05bc9c4e5c28/?openbot=true&oss_channel=ls_m'
+            };
+            log(data);
+            botApp.uploadLinkClicked(data);
         }
 
     });
