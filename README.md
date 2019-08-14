@@ -349,7 +349,7 @@ H5：调用updateUiContext([(utterances="第一个", url="{url1}"), (utterances=
                 "url": "{{string}}", // 用于确定用户query的url
                 "utterances": "{[{{string}}]}", // 支持的用户话术集合
                 "type": "{{ENM}}", // 枚举类型，自定义类型为link,系统还提供内建类型 input,select等等，具体见下方附表
-                "parameters: {} // 携带的参数
+                "params: {} // 携带的参数
             }
         ]
     }
@@ -366,19 +366,19 @@ H5：调用updateUiContext([(utterances="第一个", url="{url1}"), (utterances=
                 url: 'https://www.apple.com', // 与下方的utterances绑定的URL，当用户的Query与下方的utterances匹配时，则表示选中了本URL
                 utterances: ['苹果'],
                 type: 'link',
-                parameters: {}
+                params: {}
             },
             {
                 url: 'https://www.banana.com',
                 utterances: ['香蕉'],
                 type: 'link',
-                parameters: {}
+                params: {}
             },
             {
                 url: 'https://www.strawberry.com',
                 utterances: ['草莓'],
                 type: 'link',
-                parameters: {}
+                params: {}
             }
         ]
     };
