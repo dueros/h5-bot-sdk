@@ -6,7 +6,7 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.2.0.js"></script>
+    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.3.0.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -24,6 +24,7 @@
 <button id="request-close">退出页面</button>
 <button id="clear-log">清除页面日志</button>
 <button id="applicate-link">LinkClicked</button>
+<button id="applicate-ship">requireShipping</button>
 <div id="log"></div>
 
 <script>
@@ -36,6 +37,7 @@
     var $btnClearLog = document.getElementById('clear-log');
     var $btnClose = document.getElementById('request-close');
     var $btnLink = document.getElementById('applicate-link');
+    var $btnShip = document.getElementById('applicate-ship');
 
     var $log = document.getElementById('log');
 
@@ -58,9 +60,10 @@
     window.addEventListener('load', function () {
         var botApp = new BotApp({
             random1: '3a939b0cee832fb0e634e1f6f28ee44e',
-            signature1: '67273b24f9bedfde30cb87e09edab133',
+            signature1: 'e6f8041f11824ec2fed7b11e27f6588a',
             random2: '4a983fd442144eaec73c3ca35ae78aa0',
-            signature2: '8aa7b574ffad29bdf1f1a925cfc0794d'
+            signature2: '1ea04b2c23877a9a221aace7384dc2d0',
+            skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
         });
 
         botApp.onLinkAccountSuccess(function (data) {
@@ -191,6 +194,10 @@
             botApp.uploadLinkClicked(data);
         }
 
+        $btnShip.onclick = function () {
+            log('上报requireShipping');
+            botApp.requireShipping();
+        }
     });
 
 </script>

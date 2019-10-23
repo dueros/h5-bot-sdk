@@ -21,6 +21,7 @@ class BotApp {
      * @param {string} config.signature1 // 将(random1 + appkey)的字符串拼接后做MD5运算得出
      * @param {string} config.random2 //  随机字符串，长度不限，由开发者自己生成
      * @param {string} config.signature2 // 将(random2 + appkey)的字符串拼接后做MD5运算得出
+     * @param {string} config.skillID // 可选字段
      */
     constructor (config = {}) {
         this.config = config;
@@ -52,8 +53,11 @@ class BotApp {
                 this.registerResult = payload;
                 this.registerCallback && this.registerCallback(payload);
                 this.registerCallback = null;
-            });
 
+                if (this.config.skillID) {
+                    this.requireShipping();
+                }
+            });
         });
     }
 
@@ -70,6 +74,17 @@ class BotApp {
     _validateCallback(fnName, arg) {
         if (typeof arg !== 'function') {
             throw new TypeError(`[${fnName}]'s arguments[0] must be a function, but get a ${typeof arg}`);
+        }
+    }
+
+    requireShipping() {
+        if (this.config.skillID) {
+            let link = `http://${this.config.skillID}/path?openbot=true&request={\"query\":{\"type\":\"TEXT\",\"original\":\"ReadyForShipping\",\"rewritten\":\"ReadyForShipping\"},\"dialogState\":\"COMPLETED\",\"intents\":[{\"name\":\"ReadyForShipping\",\"score\":100,\"confirmationStatus\":\"NONE\",\"slots\":[]}]}`;
+            this.uploadLinkClicked({
+                url: link
+            });
+        } else {
+            throw new Error('Missing `skillID`, please configure `skillID` when initializes the `BotApp`');
         }
     }
 

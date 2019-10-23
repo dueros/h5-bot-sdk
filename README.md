@@ -29,6 +29,7 @@ const botApp = new BotApp({
     signature1: 'd85f5cfffe5450fe7855fec1fcfe0b16', // 将(random1 + appkey)的字符串拼接后做MD5运算得出
     random2: 'dc468c70fb574ebd07287b38d0d0676d', // 随机字符串，长度不限，由开发者自己生成
     signature2: '61dc2b99967e0b326e82e80b05571d22', // 将(random2 + appkey)的字符串拼接后做MD5运算得出
+    skillID: '699e74f5-b879-1926-1e11-51998f05ea68' // 可选字段，技能ID。填写本字段后SDK会在初始化阶段调用BotApp.requireShipping方法。
 });
 ```
 
@@ -474,6 +475,15 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
             data: 1
         }
     })
+    ```
+
+## BotApp.requireShipping *1.3+*
+请求发货信息。开发者可在`BotApp.onHandleIntent`注册的回调函数中获取商品信息。要调用本方法则必须在BotApp初始化时填写`skillID`。本方法会在初始化阶段自动调用一次，开发者也可手动调用本方法。
+
+* 示例
+
+    ```javascript
+    botApp.requireShipping();
     ```
 
 ## 附表
