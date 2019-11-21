@@ -3,7 +3,7 @@
  * @author dengxuening<dengxuening@baidu.com>
  */
 
-const webpack =require('webpack');
+const webpack = require('webpack');
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const PACKAGE = require('./package');
@@ -34,7 +34,7 @@ module.exports = {
             template: './iframe/template.html'
         }),
         new CleanWebpackPlugin({
-            cleanOnceBeforeBuildPatterns: [path.resolve(__dirname,'dist/iframe'), path.resolve(__dirname,'output')]
+            cleanOnceBeforeBuildPatterns: [path.resolve(__dirname, 'dist/iframe'), path.resolve(__dirname, 'output')]
         })
     ],
     module: {

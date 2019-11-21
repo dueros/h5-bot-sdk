@@ -89,7 +89,7 @@ class BotApp {
                         }
                     }, this._postMessageTarget);
                 }
-            })
+            });
         }
     }
 
@@ -152,8 +152,8 @@ class BotApp {
             let iframe = this.oAuthIframeDOM = document.createElement('iframe');
             iframe.id = 'dueros_oauth_iframe';
             iframe.src = `https://xiaodu.baidu.com/saiya/sdk/iframe/oauth.html?${this._encodeQueryData(iframeQuery)}`;
-            iframe.frameborder='no';
-            iframe.scrolling='no';
+            iframe.frameborder ='no';
+            iframe.scrolling ='no';
             // iframe.allowtransparency='yes';
             let styleTxt = 'width: 100%;'
                 + 'display: none;'
@@ -178,9 +178,9 @@ class BotApp {
             let iframe = this.orderIframeDOM = document.createElement('iframe');
             iframe.id = 'dueros_order_iframe';
             iframe.src = src;
-            iframe.frameborder='no';
-            // iframe.scrolling='no';
-            iframe.allowtransparency='yes';
+            iframe.frameborder ='no';
+            // iframe.scrolling ='no';
+            iframe.allowtransparency ='yes';
             iframe.style.cssText = 'width: 100%;'
                 + 'background-color: #fff;'
                 + 'height: 100vh;'
@@ -202,8 +202,7 @@ class BotApp {
 
     _routeOrderIframe() {
         let stateObj = {
-            showOrder: true,
-            _t: Date.now()
+            showOrder: true
         };
         window.history.pushState(stateObj, '', 'dueros_order');
     }
@@ -292,7 +291,7 @@ class BotApp {
             if (!data || !data.productId || !data.sellerOrderId) {
                 let e = new Error();
                 e.name = 'params error';
-                e.message = 'requireBuy: arguments[0] must be an `Object` with `productId` and `sellerOrderId`'
+                e.message = 'requireBuy: arguments[0] must be an `Object` with `productId` and `sellerOrderId`';
                 throw e;
             }
 
