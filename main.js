@@ -152,8 +152,8 @@ class BotApp {
             let iframe = this.oAuthIframeDOM = document.createElement('iframe');
             iframe.id = 'dueros_oauth_iframe';
             iframe.src = `https://xiaodu.baidu.com/saiya/sdk/iframe/oauth.html?${this._encodeQueryData(iframeQuery)}`;
-            iframe.frameborder ='no';
-            iframe.scrolling ='no';
+            iframe.frameborder = 'no';
+            iframe.scrolling = 'no';
             // iframe.allowtransparency='yes';
             let styleTxt = 'width: 100%;'
                 + 'display: none;'

@@ -187,7 +187,6 @@ export default {
                     // 由于后端发货相关通知是异步的，所以这里
                     // 设定一个重试机制
                     } else {
-                        // 500毫秒后重试一次
                         if (this.retryTimes > 0) {
                             this.retryTimes = this.retryTimes - 1;
                             clearTimeout(this.timer);
