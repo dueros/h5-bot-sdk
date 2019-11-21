@@ -17,7 +17,7 @@ echo '**** CI begin ****'
 mkdir output
 mkdir output/sdk
 mkdir output/html
-cp dist/* output/sdk
+cp -rf dist/* output/sdk
 cp example/*.html output/html/
 cd output
 tar -zcf sdk.tar.gz sdk
