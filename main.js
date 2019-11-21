@@ -36,7 +36,7 @@ class BotApp {
             signature2: this.config.signature2,
         });
 
-        this._postMessageTarget = 'https://www.xiaodu.baidu.com';
+        this._postMessageTarget = 'https://xiaodu.baidu.com';
 
 
         this._getJSBridge(bridge => {
