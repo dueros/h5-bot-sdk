@@ -6,17 +6,22 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.3.0.js"></script>
+    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.0.js"></script>
     <style>
         button {
             min-width: 120px;
             height: 40px;
         }
+        #log{
+            word-wrap: break-word;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
 <button id="applicate-account">账号绑定</button>
-<button id="applicate-pay">我要购买</button>
+<button id="applicate-pay">SHOW我要购买</button>
+<button id="applicate-buy">App我要购买</button>
 <button id="applicate-listen">激活聆听</button>
 <button id="applicate-speak">播报"我要早点下班"</button>
 <button id="applicate-register">获取register结果</button>
@@ -38,6 +43,7 @@
     var $btnClose = document.getElementById('request-close');
     var $btnLink = document.getElementById('applicate-link');
     var $btnShip = document.getElementById('applicate-ship');
+    var $btnBuy = document.getElementById('applicate-buy');
 
     var $log = document.getElementById('log');
 
@@ -97,7 +103,10 @@
 
         $btnAccount.onclick = function () {
             log('发起账号授权');
-            botApp.requireLinkAccount();
+            botApp.requireLinkAccount(function (data) {
+                log('收到授权结果');
+                log(data);
+            });
         };
 
         $btnPay.onclick = function () {
@@ -197,6 +206,19 @@
         $btnShip.onclick = function () {
             log('上报requireShipping');
             botApp.requireShipping();
+        }
+
+        $btnBuy.onclick = function () {
+            log('requireBuy，参数如下');
+            var data = {
+                productId: '191022141334493984',
+                sellerOrderId: '23r230203fsfd1l3nr32390'
+            };
+            log(data);
+            botApp.requireBuy(data, function (err, data) {
+                log('收到requireBuy回调');
+                log(data);
+            });
         }
     });
 
