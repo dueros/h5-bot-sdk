@@ -1,13 +1,15 @@
 {
   "name": "@baidu/h5-bot-sdk",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "DuerOS H5 BOT JS SDK",
   "main": "lib/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "buildSingleFile": "webpack --config webpack.config.js",
+    "buildSingleFile": "webpack --config webpack.sdk.js",
     "buildModule": "babel main.js --out-dir lib",
-    "build": "npm run buildSingleFile && npm run buildModule"
+    "build": "npm run buildSingleFile && npm run buildModule && npm run buildIframe",
+    "dev": "webpack-dev-server --progress --colors --config webpack.iframe.dev.js",
+    "buildIframe": "webpack --colors --config webpack.iframe.pro.js"
   },
   "author": "dengxuening",
   "license": "Apache-2.0",
@@ -18,7 +20,21 @@
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.7.0",
     "babel-preset-stage-2": "^6.24.1",
+    "clean-webpack-plugin": "^3.0.0",
+    "css-loader": "^3.2.0",
+    "html-webpack-plugin": "^4.0.0-beta.3",
+    "less": "^3.10.3",
+    "less-loader": "^5.0.0",
+    "style-loader": "^1.0.0",
+    "vue-loader": "^15.7.2",
+    "vue-template-compiler": "^2.6.10",
     "webpack": "^4.37.0",
-    "webpack-cli": "^3.3.6"
+    "webpack-cli": "^3.3.6",
+    "webpack-dev-server": "^3.9.0",
+    "webpack-merge": "^4.2.2"
+  },
+  "dependencies": {
+    "axios": "^0.19.0",
+    "vue": "^2.6.10"
   }
 }
