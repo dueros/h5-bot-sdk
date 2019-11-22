@@ -9,29 +9,24 @@
     <meta http-equiv="Pragma" content="no-cache">
     <title>H5-SDK</title>
     <script>
-        // 由于本页面会被嵌入iframe中，因此需要在load之后
-        // 再执行下方的宽度计算
-        window.addEventListener('load', f);
-        function f() {
-            (function (doc, win) {
-                var docEl = doc.documentElement,
-                    resizeEvt = 'orientationchange' in window ? 'orientationchange' : 'resize',
-                    recalc = function () {
-                        var clientWidth = docEl.clientWidth || docEl.body.clientWidth;
-                        if (!clientWidth) return;
+        (function (doc, win) {
+            var docEl = doc.documentElement,
+                resizeEvt = 'orientationchange' in window ? 'orientationchange' : 'resize',
+                recalc = function () {
+                    var clientWidth = docEl.clientWidth || (docEl.body && docEl.body.clientWidth || 0);
+                    if (!clientWidth) return;
+                    docEl.style.fontSize = 50 * (clientWidth / 375) + 'px';
+                    if (clientWidth >= 640) {
+                        docEl.style.fontSize = '50px';
+                    } else {
                         docEl.style.fontSize = 50 * (clientWidth / 375) + 'px';
-                        if (clientWidth >= 640) {
-                            docEl.style.fontSize = '50px';
-                        } else {
-                            docEl.style.fontSize = 50 * (clientWidth / 375) + 'px';
-                        }
-                    };
+                    }
+                };
 
-                if (!doc.addEventListener) return;
-                win.addEventListener(resizeEvt, recalc, false);
-                doc.addEventListener('DOMContentLoaded', recalc, false);
-            })(document, window);
-        }
+            if (!doc.addEventListener) return;
+            win.addEventListener(resizeEvt, recalc, false);
+            doc.addEventListener('DOMContentLoaded', recalc, false);
+        })(document, window);
     </script>
 </head>
 <body>
