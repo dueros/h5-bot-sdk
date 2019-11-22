@@ -1,6 +1,6 @@
 {
   "name": "@baidu/h5-bot-sdk",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "DuerOS H5 BOT JS SDK",
   "main": "lib/main.js",
   "scripts": {
