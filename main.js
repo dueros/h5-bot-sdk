@@ -163,7 +163,7 @@ class BotApp {
                 + 'position: fixed;'
                 + 'left: 0;'
                 + 'bottom: 0;'
-                + 'z-index: '+ this.config.zIndex +';'
+                + 'z-index: ' + this.config.zIndex + ';'
                 + 'border: none;'
                 + 'margin: 0;'
                 + 'padding: none;';
@@ -189,7 +189,7 @@ class BotApp {
                 + 'position: fixed;'
                 + 'left: 0;'
                 + 'bottom: 0;'
-                + 'z-index: '+ this.config.zIndex +';'
+                + 'z-index: ' + this.config.zIndex + ';'
                 + 'border: none;'
                 + 'margin: 0;'
                 + 'padding: none;';
