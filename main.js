@@ -24,7 +24,10 @@ class BotApp {
      * @param {string} config.skillID // 可选字段
      */
     constructor (config = {}) {
-        this.config = config;
+        this.config = {
+            zIndex: 100,
+            ...config
+        };
         this._init();
     }
 
@@ -33,9 +36,8 @@ class BotApp {
             random1: this.config.random1,
             signature1: this.config.signature1,
             random2: this.config.random2,
-            signature2: this.config.signature2,
+            signature2: this.config.signature2
         });
-
         this._postMessageTarget = 'https://xiaodu.baidu.com';
 
 
@@ -161,7 +163,7 @@ class BotApp {
                 + 'position: fixed;'
                 + 'left: 0;'
                 + 'bottom: 0;'
-                + 'z-index: 100;'
+                + 'z-index: '+ this.config.zIndex +';'
                 + 'border: none;'
                 + 'margin: 0;'
                 + 'padding: none;';
@@ -187,7 +189,7 @@ class BotApp {
                 + 'position: fixed;'
                 + 'left: 0;'
                 + 'bottom: 0;'
-                + 'z-index: 100;'
+                + 'z-index: '+ this.config.zIndex +';'
                 + 'border: none;'
                 + 'margin: 0;'
                 + 'padding: none;';
