@@ -20,14 +20,6 @@ module.exports = webpackMerge(baseConfig, {
         },
         hot: true,
         host: '0.0.0.0',
-        port: 8081,
-        proxy: {
-            '/saiya/v1/': {
-                target: 'http://bjyz-nuomiplus.epc.baidu.com:8080'
-            },
-            '/appvoicecontrol': {
-                target: 'http://bjyz-nuomiplus.epc.baidu.com:8080'
-            }
-        }
+        port: 8080
     }
 });
