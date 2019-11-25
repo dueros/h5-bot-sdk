@@ -23,7 +23,6 @@
 
 <script>
 import * as utils from '../utils';
-import { setTimeout, clearTimeout } from 'timers';
 
 const pageQuery = utils.getQuery();
 const AUTHORIZED_SUCCESS = 'authorized_success';
@@ -41,104 +40,22 @@ export default {
         }
     },
     methods: {
-        register(cb) {
-            this.axios.get('/voiceapp/botverification', {
-                params: {
-                    botId: pageQuery.botId,
-                    random1: pageQuery.random1,
-                    signature1: pageQuery.signature1,
-                    random2: pageQuery.random2,
-                    signature2: pageQuery.signature2
-                }
-            }).then(({data}) => {
-                if (data.status === 0) {
-                    cb(null, 'verifi success');
-                } else {
-                    cb(data.msg);
-                }
-            }).catch(e => {
-                cb(e);
-            });
-        },
-        getBotInfo() {
-            this.axios.get('/voiceapp/h5getbotinfo', {
-                params: {
-                    botId: pageQuery.botId
-                }
-            })
-            .then(({data}) => {
-                let msg = {
-                    type: BOT_INFO,
-                };
-                if (data.status === 0) {
-                    this.iconUrl = data.data.iconUrl;
-                    this.botName = data.data.botName;
-                    this.callbackUrl = data.data.callbackUrl;
-                    this.postMessageTargetOrigin = this.parseH5Url(this.callbackUrl);
-                    msg.data = {
-                        accessToken: data.data.access_token || null
-                    };
-                } else {
-                    this.errMsg = data.msg;
-                    msg.data = {
-                        accessToken: null
-                    };
-                }
-                window.parent.postMessage(msg, this.postMessageTargetOrigin);
-            }).catch(e => {
-                console.error(e);
-                this.errMsg = '技能信息获取失败';
-            });
+        postMessage(data) {
+            window.parent.postMessage(data, '*');
         },
         requireOAuth() {
             if (this.isGranting) {
                 return;
             }
-            if (this.postMessageTargetOrigin) {
-                this.isGranting = true;
-                this.axios.get('/saiya/v1/h5authorize/appauth', {
-                    params: {
-                        botId: pageQuery.botId
-                    }
-                }).then(({data}) => {
-                    this.isGranting = false;
-                    let msg = null;
-                    if (data.status === 0) {
-                        msg = {
-                            type: AUTHORIZED_SUCCESS,
-                            data: {
-                                accessToken: data.data.access_token
-                            }
-                        };
-                    } else {
-                        msg = {
-                            type: AUTHORIZED_FAIL,
-                            data: data.msg
-                        };
-                    }
-                    window.parent.postMessage(msg, this.postMessageTargetOrigin);
-                }).catch(e => {
-                    this.isGranting = false;
-                    let msg = {
-                        type: AUTHORIZED_FAIL,
-                        data: e
-                    };
-                    window.parent.postMessage(msg, this.postMessageTargetOrigin);
-                });
-            } else {
-                console.error('Illegal H5 URL: ', this.postMessageTargetOrigin);
-            }
+            this.isGranting = true;
+            this.postMessage({
+                type: 'allow_authorize'
+            });
         },
         denyOAuth() {
-            if (this.postMessageTargetOrigin) {
-                let data = {
-                    type: AUTHORIZED_FAIL,
-                    data: null
-                };
-                window.parent.postMessage(data, this.postMessageTargetOrigin);
-            } else {
-                console.error('illegal H5 URL :', this.postMessageTargetOrigin);
-            }
+            this.postMessage({
+                type: 'deny_authorize'
+            });
         },
         parseH5Url(url) {
             if (url) {
@@ -148,101 +65,27 @@ export default {
             } else {
                 return ''
             }
-        },
-        shipping(shipData) {
-            this.axios.get('/voiceapp/shippingorder', {
-                params: {
-                    botId: pageQuery.botId,
-                    ...shipData,
-                    source: 'skillstoreapp' // 目前写死
-                }
-            }).then(({data}) => {
-                if (data.status === 0) {
-                    let postData = {};
-                    let receiveData = data.data && data.data.length && data.data[0];
-                    // 如果已经返回数据
-                    if (receiveData) {
-                        postData = {
-                            authorizationDetails: {
-                                authorizationAmount: { //
-                                    amount: receiveData.sellerAmount, // 扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元
-                                    currencyCode: 'CNY' // 枚举类型。目前只能为CNY
-                                },
-                                capturedAmount: {
-                                    amount: receiveData.payAmount, // 实际百度扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元
-                                    currencyCode: 'CNY' // 枚举类型。目前只能为CNY
-                                },
-                                creationTimestamp: receiveData.createTime // 订单创建时间。时间戳，单位毫秒
-                            },
-                            baiduOrderReferenceId: receiveData.baiduOrderReferenceId, // 此次交易百度生成的订单ID
-                            purchaseResult: 'SUCCESS', // 此次支付结果。 -枚举值，选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误
-                            message: '支付成功' // 支付状态对应的消息
-                        };
-                        window.parent.postMessage({
-                            type: 'ship',
-                            err: null,
-                            data: postData
-                        }, this.postMessageTargetOrigin);
-
-                    // 由于后端发货相关通知是异步的，所以这里
-                    // 设定一个重试机制
-                    } else {
-                        if (this.retryTimes > 0) {
-                            this.retryTimes = this.retryTimes - 1;
-                            clearTimeout(this.timer);
-                            this.timer = setTimeout(() => {
-                                this.shipping(shipData);
-                            }, 1000);
-                        } else {
-                            postData = {
-                                authorizationDetails: null,
-                                baiduOrderReferenceId: receiveData.baiduOrderReferenceId,
-                                purchaseResult: 'ERROR', // 此次支付结果。 -枚举值，选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误
-                                message: '支付失败'
-                            };
-                            window.parent.postMessage({
-                                type: 'ship',
-                                err: null,
-                                data: postData
-                            }, this.postMessageTargetOrigin);
-                        }
-                    }
-                } else {
-                    window.parent.postMessage({
-                        type: 'ship',
-                        err: data.msg,
-                        data: data.data
-                    }, this.postMessageTargetOrigin);
-                }
-            }).catch(e => {
-                window.parent.postMessage({
-                    type: 'ship',
-                    err: e,
-                    data: data.data
-                }, this.postMessageTargetOrigin);
-            });
-        },
+        }
     },
     mounted() {
-        this.register((err, data) => {
-            if (!err) {
-                this.getBotInfo();
-            } else {
-                this.errMsg = '身份校验失败，请检查签名';
-                console.error(data);
-            }
-        });
-        this.postMessageTargetOrigin = '';
-
+        this.msgTarget = '';
         window.addEventListener('message', (event) => {
-            if (event.origin === this.postMessageTargetOrigin) {
+            // if (event.origin === this.msgTarget) {
                 let data = event.data;
                 console.log('message from parent page', data);
-                if (data.type === 'ship') {
-                    this.shipping(data.data);
-                    this.retryTimes = 2; // 定义发货请求到空之后重试次数
+                if (data.type === 'bot_info') {
+                    if (data.err) {
+                        this.errMsg = '技能信息获取失败';
+                    } else {
+                        this.iconUrl = data.data.iconUrl;
+                        this.botName = data.data.botName;
+                        this.callbackUrl = data.data.callbackUrl;
+                    }
+                    // this.msgTarget = this.parseH5Url(this.callbackUrl);
+                } else if (data.type === 'authorized_finish') {
+                    this.isGranting = false;
                 }
-            }
+            // }
         });
     }
 }
