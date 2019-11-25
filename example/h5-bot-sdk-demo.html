@@ -6,7 +6,8 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.2.js"></script>
+    <!-- <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.2.js"></script> -->
+    <script src="//cp01-dengxuening.epc.baidu.com:8080/static/sdk/h5-bot-sdk.1.4.3.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -31,7 +32,6 @@
 <button id="applicate-link">LinkClicked</button>
 <button id="applicate-ship">requireShipping</button>
 <div id="log"></div>
-
 <script>
     var $btnAccount = document.getElementById('applicate-account');
     var $btnPay = document.getElementById('applicate-pay');
@@ -64,6 +64,8 @@
     }
 
     window.addEventListener('load', function () {
+        document.cookie = 's1=aa';
+        document.cookie = 's2=bb';
         var botApp = new BotApp({
             random1: '3a939b0cee832fb0e634e1f6f28ee44e',
             signature1: 'e6f8041f11824ec2fed7b11e27f6588a',

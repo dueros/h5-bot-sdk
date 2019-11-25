@@ -24,10 +24,7 @@ class BotApp {
      * @param {string} config.skillID // 可选字段
      */
     constructor (config = {}) {
-        this.config = {
-            zIndex: 100,
-            ...config
-        };
+        this.config = config;
         this._init();
     }
 
@@ -38,7 +35,9 @@ class BotApp {
             random2: this.config.random2,
             signature2: this.config.signature2
         });
-        this._postMessageTarget = 'https://xiaodu.baidu.com';
+
+        // this._msgTarget = 'https://xiaodu.baidu.com';
+        this._msgTarget = 'http://cp01-dengxuening.epc.baidu.com';
 
 
         this._getJSBridge(bridge => {
@@ -64,14 +63,12 @@ class BotApp {
         });
 
         if (this.isInApp()) {
-            this._createOAuthIframe();
             window.addEventListener('message', event => {
-                if (event.origin === this._postMessageTarget) {
+                if (event.origin === this._msgTarget) {
                     let data = event.data;
-                    console.log('receive message from iframe', data);
+                    console.log('receive h5game-wrapper\'s message ', data);
                     if (data.type === 'authorized_success' || data.type === 'authorized_fail') {
                         this._linkAccountResultCb(data);
-                        this._hideOAuthIframe();
                     } else if (data.type === 'bot_info') {
                         this.registerResult = data.data;
                         this.registerCallback && this.registerCallback(this.registerResult);
@@ -81,17 +78,10 @@ class BotApp {
                     }
                 }
             });
-            window.addEventListener('popstate', event => {
-                if (!event.state) {
-                    this._deleteOrderIframe();
-                    this.oAuthIframeDOM.contentWindow.postMessage({
-                        type: 'ship',
-                        data: {
-                            ...this._buyData
-                        }
-                    }, this._postMessageTarget);
-                }
-            });
+            window.parent.postMessage({
+                type: 'register',
+                data: this.config
+            }, this._msgTarget);
         }
     }
 
@@ -130,98 +120,6 @@ class BotApp {
         }
     }
 
-    _encodeQueryData(data) {
-        if (data) {
-            return Object.keys(data).map(k => {
-                return `${k}=${encodeURIComponent(data[k])}`;
-            }).join('&');
-        } else {
-            return '';
-        }
-    }
-
-    _createOAuthIframe() {
-        if (this.oAuthIframeDOM) {
-            this.oAuthIframeDOM.style.display = 'block';
-        } else {
-            let iframeQuery = {
-                botId: this.config.skillID,
-                random1: this.config.random1,
-                signature1: this.config.signature1,
-                random2: this.config.random2,
-                signature2: this.config.signature2
-            };
-            let iframe = this.oAuthIframeDOM = document.createElement('iframe');
-            iframe.id = 'dueros_oauth_iframe';
-            iframe.src = `https://xiaodu.baidu.com/saiya/sdk/iframe/oauth.html?${this._encodeQueryData(iframeQuery)}`;
-            iframe.frameborder = 'no';
-            iframe.scrolling = 'no';
-            // iframe.allowtransparency='yes';
-            let styleTxt = 'width: 100%;'
-                + 'display: none;'
-                + 'height: 100vh;'
-                + 'position: fixed;'
-                + 'left: 0;'
-                + 'bottom: 0;'
-                + 'z-index: ' + this.config.zIndex + ';'
-                + 'border: none;'
-                + 'margin: 0;'
-                + 'padding: none;';
-            iframe.style.cssText = styleTxt;
-            document.body.appendChild(iframe);
-        }
-    }
-
-    _createOrderIframe(src) {
-        if (this.orderIframeDOM) {
-            this.orderIframeDOM.src = src;
-            document.body.appendChild(this.orderIframeDOM);
-        } else {
-            let iframe = this.orderIframeDOM = document.createElement('iframe');
-            iframe.id = 'dueros_order_iframe';
-            iframe.src = src;
-            iframe.frameborder ='no';
-            // iframe.scrolling ='no';
-            iframe.allowtransparency ='yes';
-            iframe.style.cssText = 'width: 100%;'
-                + 'background-color: #fff;'
-                + 'height: 100vh;'
-                + 'position: fixed;'
-                + 'left: 0;'
-                + 'bottom: 0;'
-                + 'z-index: ' + this.config.zIndex + ';'
-                + 'border: none;'
-                + 'margin: 0;'
-                + 'padding: none;';
-            document.body.appendChild(iframe);
-        }
-    }
-
-    _showOAuthIframe() {
-        this.oAuthIframeDOM.style.display = 'block';
-        this._deleteOrderIframe();
-    }
-
-    _routeOrderIframe() {
-        let stateObj = {
-            showOrder: true
-        };
-        window.history.pushState(stateObj, '', 'dueros_order');
-    }
-
-    _hideOAuthIframe() {
-        this.oAuthIframeDOM.style.display = 'none';
-    }
-
-    // 删除订单iframe，注意此时必须删除，
-    // 因为iframe的浏览历史记录也会同步到浏览器里
-    // 将导致iframe的显示、隐藏难以管理
-    _deleteOrderIframe() {
-        if (this.orderIframeDOM && document.getElementById('dueros_order_iframe')) {
-            document.body.removeChild(this.orderIframeDOM);
-        }
-    }
-
     requireShipping() {
         if (this.config.skillID) {
             let link = `http://${this.config.skillID}/path?openbot=true&request={\"query\":{\"type\":\"TEXT\",\"original\":\"ReadyForShipping\",\"rewritten\":\"ReadyForShipping\"},\"dialogState\":\"COMPLETED\",\"intents\":[{\"name\":\"ReadyForShipping\",\"score\":100,\"confirmationStatus\":\"NONE\",\"slots\":[]}]}`;
@@ -249,11 +147,13 @@ class BotApp {
     requireLinkAccount(cb) {
         if (this.isInApp()) {
             this._validateCallback('requireLinkAccount', cb);
-            this._showOAuthIframe();
             this._linkAccountResultCb = cb;
+            window.parent.postMessage({
+                type: 'request_authorization'
+            }, this._msgTarget);
         } else {
             if (cb) {
-                console.warn('requireLinkAccount: Your H5 app is running on the `SHOW` device, and the callback function will not be called');
+                console.warn('requireLinkAccount: Your H5 app is not running on the App, and the callback function will not be called');
             }
             this._getJSBridge(bridge => {
                 bridge.callHandler('requireLinkAccount');
@@ -296,17 +196,19 @@ class BotApp {
                 e.message = 'requireBuy: arguments[0] must be an `Object` with `productId` and `sellerOrderId`';
                 throw e;
             }
-
+            if (typeof cb !== 'function') {
+                throw new Error ('requireBuy: arguments[1] must be a function, but get a ' + typeof cb);
+            }
             this._getShipPayResult = cb;
             let postData = {
                 ...data,
                 product2: `${data.productId}|${data.sellerOrderId}|skillstoreapp`
             };
-            let baseUrl = 'https://xiaodu.baidu.com/dbppay/skill-pay/product/buy?';
-            let iframeUrl = baseUrl += this._encodeQueryData(postData);
-            this._createOrderIframe(iframeUrl);
-            this._routeOrderIframe();
-            this._buyData = data;
+
+            window.parent.postMessage({
+                type: 'buy',
+                data: postData
+            }, this._msgTarget);
         } else {
             console.error('Method `requireBuy` can only be called in App');
         }
