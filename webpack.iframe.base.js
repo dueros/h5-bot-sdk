@@ -11,7 +11,10 @@ const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 
 module.exports = {
-    entry: './iframe/mobile-oauth.js',
+    entry: {
+        oauth: './iframe/mobile-oauth.js',
+        'h5game-wrapper': './iframe/h5game-wrapper.js'
+    },
     output: {
         path: path.resolve(__dirname, 'dist'),
     },
@@ -30,7 +33,16 @@ module.exports = {
         new HtmlWebpackPlugin({
             filename: path.join(__dirname, 'dist/iframe/oauth.html'),
             inject: 'body',
+            chunks: ['oauth'],
             minify: false,
+            template: './iframe/template.html'
+        }),
+
+        new HtmlWebpackPlugin({
+            filename: path.join(__dirname, 'dist/iframe/h5game-wrapper.html'),
+            inject: 'body',
+            minify: false,
+            chunks: ['h5game-wrapper'],
             template: './iframe/template.html'
         }),
         new CleanWebpackPlugin({

@@ -31,7 +31,7 @@
 * 通过script标签引入(支持https)
 
 ```html
-<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.0.js"></script>
+<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.2.js"></script>
 ```
 然后可以在全局环境下获取到`BotApp`对象
 > 使用webpack进行打包的模块化的开发形式参考webpack配置文件中的 [externals配置](https://webpack.js.org/configuration/externals/#externals)
