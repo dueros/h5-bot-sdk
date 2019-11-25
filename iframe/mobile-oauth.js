@@ -4,10 +4,8 @@
  */
 
 import Vue from 'vue';
-import axios from 'axios';
 import OAuth from './pages/OAuth.vue';
 
-Vue.prototype.axios = axios;
 Vue.config.productionTip = false;
 
 new Vue({

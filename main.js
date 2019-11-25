@@ -3,6 +3,8 @@
  * @author dengxuening<dengxuening@baidu.com>
  */
 
+import jsonp from 'jsonp';
+
 /**
  * @callback requestCallback 一种回调函数(随便定义的名字。。。)
  */
@@ -36,10 +38,11 @@ class BotApp {
             random1: this.config.random1,
             signature1: this.config.signature1,
             random2: this.config.random2,
-            signature2: this.config.signature2
+            signature2: this.config.signature2,
+            botId: this.config.skillID
         });
-        this._postMessageTarget = 'https://xiaodu.baidu.com';
 
+        this._msgTarget = 'https://xiaodu.baidu.com';
 
         this._getJSBridge(bridge => {
             bridge.init(function(message, responseCallback) {
@@ -65,34 +68,273 @@ class BotApp {
 
         if (this.isInApp()) {
             this._createOAuthIframe();
-            window.addEventListener('message', event => {
-                if (event.origin === this._postMessageTarget) {
-                    let data = event.data;
-                    console.log('receive message from iframe', data);
-                    if (data.type === 'authorized_success' || data.type === 'authorized_fail') {
-                        this._linkAccountResultCb(data);
-                        this._hideOAuthIframe();
-                    } else if (data.type === 'bot_info') {
-                        this.registerResult = data.data;
-                        this.registerCallback && this.registerCallback(this.registerResult);
-                        this.registerCallback = null;
-                    } else if (data.type === 'ship') {
-                        this._getShipPayResult && this._getShipPayResult(data.err, data.data);
-                    }
-                }
-            });
-            window.addEventListener('popstate', event => {
-                if (!event.state) {
-                    this._deleteOrderIframe();
-                    this.oAuthIframeDOM.contentWindow.postMessage({
-                        type: 'ship',
-                        data: {
-                            ...this._buyData
+            this._checkOrderInfo();
+            this._requestRegister(registerConfig, (err, data) => {
+                if (!err) {
+                    this._getBotInfo();
+                    window.addEventListener('message', event => {
+                        if (event.origin === this._msgTarget) {
+                            let data = event.data;
+                            console.log('receive iframe\'s message', data);
+                            if (data.type === 'allow_authorize') {
+                                this._requireOAuth(msg => {
+                                    this._linkAccountResultCb && this._linkAccountResultCb(msg);
+                                    this._postMessage({
+                                        type: 'authorized_finish'
+                                    });
+                                    this._hideOAuthIframe();
+                                });
+                            } else if (data.type === 'deny_authorize') {
+                                this._linkAccountResultCb && this._linkAccountResultCb({
+                                    type: 'authorized_fail',
+                                    data: 'Not allow'
+                                });
+                                this._hideOAuthIframe();
+                            }
                         }
-                    }, this._postMessageTarget);
+                    });
+                } else {
+                    console.error(err);
                 }
             });
         }
+    }
+
+    _postMessage(data) {
+        if (this.oAuthIframeDOM && this.oAuthIframeDOM.contentWindow) {
+            console.log('post message', data, this._msgTarget);
+            this.oAuthIframeDOM.contentWindow.postMessage(data, this._msgTarget)
+        } else {
+            this.oAuthIframeDOM.addEventListener('load', () => {
+                this.oAuthIframeDOM.contentWindow.postMessage(data, this._msgTarget)
+            });
+        }
+    }
+
+
+
+    // 运行在小度App里的H5调用本方法注册
+    _requestRegister(config, cb) {
+        cb(null);
+        // this.axios.get('/voiceapp/botverification', {
+        //     params: {
+        //         botId: config.skillID,
+        //         random1: config.random1,
+        //         signature1: config.signature1,
+        //         random2: config.random2,
+        //         signature2: config.signature2
+        //     }
+        // }).then(({data}) => {
+        //     if (data.status === 0) {
+        //         cb(null, 'verifi success');
+        //     } else {
+        //         cb(data.msg);
+        //     }
+        // }).catch(e => {
+        //     cb(e);
+        // });
+    }
+
+    _jsonp({url, params, jsonpCallback, callback}) {
+        let requestUrl = url + '?' + this._encodeQueryData(params);
+        jsonp(requestUrl, {
+            param: 'callback',
+            name: jsonpCallback,
+            prefix: 'dueros_'
+        }, callback);
+    }
+
+    _getBotInfo() {
+        this._jsonp({
+            url: '/voiceapp/h5getbotinfo',
+            params: {
+                botId: this.config.skillID
+            },
+            jsonpcallback: 'botInfo',
+            callback: (err, data) => {
+                console.log('get bot info', data);
+                let msg = {};
+                if (err) {
+                    this._postMessage({
+                        type: 'bot_info',
+                        data: null,
+                        err: err
+                    });
+                    msg = {
+                        accessToken: null
+                    };
+                } else {
+                    if (data.status === 0) {
+                        msg = {
+                            accessToken: data.data.access_token || null
+                        };
+                        this._postMessage({
+                            type: 'bot_info',
+                            data: data.data,
+                            err: null
+                        });
+                    } else {
+                        this.errMsg = data.msg;
+                        msg = {
+                            accessToken: null
+                        };
+                        this._postMessage({
+                            type: 'bot_info',
+                            data: null,
+                            err: data.msg
+                        });
+                    }
+                }
+                this.registerResult = msg;
+                this.registerCallback && this.registerCallback(this.registerResult);
+                this.registerCallback = null;
+            }
+        })
+    }
+
+    getCookie(name) {
+        let search = name + '='; // 查询检索的值
+        let returnvalue = ''; // 返回值
+        if (document.cookie.length > 0) {
+            let sd = document.cookie.indexOf(search);
+            if (sd !== -1) {
+                sd += search.length;
+                let end = document.cookie.indexOf(';', sd);
+                if (end === -1) {
+                    end = document.cookie.length;
+                }
+                returnvalue = document.cookie.substring(sd, end);
+            }
+        }
+        return returnvalue;
+    }
+
+    setCookie(cname, cvalue, exdays = 1) {
+        let d = new Date();
+        d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+        let expires = 'expires=' + d.toGMTString();
+        document.cookie = cname + '=' + cvalue + '; ' + expires;
+    }
+
+    // 将订单ID存入cookie，用于轮询订单完成情况
+    _cacheBuyData(data) {
+        this.setCookie('dueros_order', data.sellerOrderId, 365);
+    }
+
+    _checkOrderInfo() {
+        clearInterval(this._itTimer);
+        this._itTimer = setInterval(() => {
+            let sellerOrderId = this.getCookie('dueros_order');
+            if (sellerOrderId) {
+                clearInterval(this._itTimer);
+                this._retryTimes = 2;
+                this._xiaoduAppShipping(sellerOrderId);
+            }
+        }, 2000);
+    }
+
+    _destroyCacheOrder() {
+        this.setCookie('dueros_order', '', 0);
+    }
+
+    _xiaoduAppShipping(sellerOrderId) {
+        this._jsonp({
+            url: '/voiceapp/shippingorder',
+            params: {
+                botId: this.config.skillID,
+                sellerOrderId,
+                source: 'skillstoreapp' // 目前写死
+            },
+            jsonpCallback: 'ship',
+            callback: (err, data) => {
+                if (err) {
+                    this._getShipPayResult && this._getShipPayResult(err, null);
+                    this._destroyCacheOrder();
+                } else {
+                    let postData = {};
+                    if (data.status === 0) {
+                        let receiveData = data.data && data.data.length && data.data[0];
+                        // 如果已经返回数据
+                        if (receiveData) {
+                            postData = {
+                                authorizationDetails: {
+                                    authorizationAmount: { //
+                                        amount: receiveData.sellerAmount, // 扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元
+                                        currencyCode: 'CNY' // 枚举类型。目前只能为CNY
+                                    },
+                                    capturedAmount: {
+                                        amount: receiveData.payAmount, // 实际百度扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元
+                                        currencyCode: 'CNY' // 枚举类型。目前只能为CNY
+                                    },
+                                    creationTimestamp: receiveData.createTime // 订单创建时间。时间戳，单位毫秒
+                                },
+                                baiduOrderReferenceId: receiveData.baiduOrderReferenceId, // 此次交易百度生成的订单ID
+                                purchaseResult: 'SUCCESS', // 此次支付结果。 -枚举值，选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误
+                                message: '支付成功' // 支付状态对应的消息
+                            };
+                            this._getShipPayResult && this._getShipPayResult(null, postData);
+                            this._destroyCacheOrder();
+                            // 由于后端发货相关通知是异步的，所以这里
+                        // 设定一个重试机制
+                        } else {
+                            if (this._retryTimes > 0) {
+                                this._retryTimes = this._retryTimes - 1;
+                                clearTimeout(this.timer);
+                                this.timer = setTimeout(() => {
+                                    this._xiaoduAppShipping(sellerOrderId);
+                                }, 1000);
+                            } else {
+                                postData = {
+                                    authorizationDetails: null,
+                                    baiduOrderReferenceId: receiveData.baiduOrderReferenceId,
+                                    purchaseResult: 'ERROR', // 此次支付结果。 -枚举值，选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误
+                                    message: '支付失败'
+                                };
+                                this._getShipPayResult && this._getShipPayResult(null, postData);
+                                this._destroyCacheOrder();
+                            }
+                        }
+                    } else {
+                        this._getShipPayResult && this._getShipPayResult(data.msg, data.data);
+                        this._destroyCacheOrder();
+                    }
+                }
+            }
+        });
+    }
+
+    _requireOAuth(cb) {
+        this._jsonp({
+            url: '/saiya/v1/h5authorize/appauth',
+            params: {
+                botId: this.config.skillID
+            },
+            jsonpCallback: 'appauth',
+            callback: (err, data) => {
+                let msg = null;
+                if (err) {
+                    msg = {
+                        type: 'authorized_fail',
+                        data:err
+                    };
+                } else {
+                    if (data.status === 0) {
+                        msg = {
+                            type: 'authorized_success',
+                            data: {
+                                accessToken: data.data.access_token
+                            }
+                        };
+                    } else {
+                        msg = {
+                            type: 'authorized_fail',
+                            data: data.msg
+                        };
+                    }
+                }
+                cb(msg);
+            }
+        });
     }
 
     _getJSBridge(cb) {
@@ -144,16 +386,9 @@ class BotApp {
         if (this.oAuthIframeDOM) {
             this.oAuthIframeDOM.style.display = 'block';
         } else {
-            let iframeQuery = {
-                botId: this.config.skillID,
-                random1: this.config.random1,
-                signature1: this.config.signature1,
-                random2: this.config.random2,
-                signature2: this.config.signature2
-            };
             let iframe = this.oAuthIframeDOM = document.createElement('iframe');
             iframe.id = 'dueros_oauth_iframe';
-            iframe.src = `https://xiaodu.baidu.com/saiya/sdk/iframe/oauth.html?${this._encodeQueryData(iframeQuery)}`;
+            iframe.src = `https://xiaodu.baidu.com/saiya/sdk/iframe/oauth.html`;
             iframe.frameborder = 'no';
             iframe.scrolling = 'no';
             // iframe.allowtransparency='yes';
@@ -172,54 +407,12 @@ class BotApp {
         }
     }
 
-    _createOrderIframe(src) {
-        if (this.orderIframeDOM) {
-            this.orderIframeDOM.src = src;
-            document.body.appendChild(this.orderIframeDOM);
-        } else {
-            let iframe = this.orderIframeDOM = document.createElement('iframe');
-            iframe.id = 'dueros_order_iframe';
-            iframe.src = src;
-            iframe.frameborder ='no';
-            // iframe.scrolling ='no';
-            iframe.allowtransparency ='yes';
-            iframe.style.cssText = 'width: 100%;'
-                + 'background-color: #fff;'
-                + 'height: 100vh;'
-                + 'position: fixed;'
-                + 'left: 0;'
-                + 'bottom: 0;'
-                + 'z-index: ' + this.config.zIndex + ';'
-                + 'border: none;'
-                + 'margin: 0;'
-                + 'padding: none;';
-            document.body.appendChild(iframe);
-        }
-    }
-
     _showOAuthIframe() {
         this.oAuthIframeDOM.style.display = 'block';
-        this._deleteOrderIframe();
-    }
-
-    _routeOrderIframe() {
-        let stateObj = {
-            showOrder: true
-        };
-        window.history.pushState(stateObj, '', 'dueros_order');
     }
 
     _hideOAuthIframe() {
         this.oAuthIframeDOM.style.display = 'none';
-    }
-
-    // 删除订单iframe，注意此时必须删除，
-    // 因为iframe的浏览历史记录也会同步到浏览器里
-    // 将导致iframe的显示、隐藏难以管理
-    _deleteOrderIframe() {
-        if (this.orderIframeDOM && document.getElementById('dueros_order_iframe')) {
-            document.body.removeChild(this.orderIframeDOM);
-        }
     }
 
     requireShipping() {
@@ -296,19 +489,26 @@ class BotApp {
                 e.message = 'requireBuy: arguments[0] must be an `Object` with `productId` and `sellerOrderId`';
                 throw e;
             }
-
-            this._getShipPayResult = cb;
             let postData = {
                 ...data,
                 product2: `${data.productId}|${data.sellerOrderId}|skillstoreapp`
             };
             let baseUrl = 'https://xiaodu.baidu.com/dbppay/skill-pay/product/buy?';
-            let iframeUrl = baseUrl += this._encodeQueryData(postData);
-            this._createOrderIframe(iframeUrl);
-            this._routeOrderIframe();
-            this._buyData = data;
+            let buyUrl = baseUrl += this._encodeQueryData(postData);
+            this._cacheBuyData(data);
+            this._checkOrderInfo();
+            location.href = buyUrl;
         } else {
             console.error('Method `requireBuy` can only be called in App');
+        }
+    }
+
+    onBuyStatusChange(cb) {
+        if (this.isInApp()) {
+            this._validateCallback('onBuyStatusChange', cb);
+            this._getShipPayResult = cb;
+        } else {
+            console.error('Method `onBuyStatusChange` can only be called in App');
         }
     }
 

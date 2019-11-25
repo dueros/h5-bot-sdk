@@ -6,8 +6,11 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.2.js"></script>
+    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.3.js"></script>
     <style>
+        body {
+            padding-top: 50px;
+        }
         button {
             min-width: 120px;
             height: 40px;
@@ -100,6 +103,15 @@
             log('收到 onHandleScreenNavigatorEvent 调用');
             console.log(data);
             log(data);
+        });
+
+        botApp.onBuyStatusChange(function (err, data) {
+                log('收到onBuyStatusChange回调');
+                if (err) {
+                    log(err);
+                } else {
+                    log(data);
+                }
         });
 
         $btnAccount.onclick = function () {
@@ -216,10 +228,7 @@
                 sellerOrderId: '23r230203fsfd1l3nr32390'
             };
             log(data);
-            botApp.requireBuy(data, function (err, data) {
-                log('收到requireBuy回调');
-                log(data);
-            });
+            botApp.requireBuy(data);
         }
     });
 
