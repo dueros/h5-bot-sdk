@@ -136,7 +136,7 @@ class BotApp {
     }
 
     _jsonp({url, params, jsonpCallback, callback}) {
-        let requestUrl = url + '?' + this._encodeQueryData(params);
+        let requestUrl = this._msgTarget + url + '?' + this._encodeQueryData(params);
         jsonp(requestUrl, {
             param: 'callback',
             name: jsonpCallback,
