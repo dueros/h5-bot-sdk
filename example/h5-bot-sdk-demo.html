@@ -63,15 +63,12 @@
     }
 
     window.addEventListener('load', function () {
-        document.cookie = 's1=aa';
-        document.cookie = 's2=bb';
         var botApp = new BotApp({
             random1: '3a939b0cee832fb0e634e1f6f28ee44e',
             signature1: 'e6f8041f11824ec2fed7b11e27f6588a',
             random2: '4a983fd442144eaec73c3ca35ae78aa0',
             signature2: '1ea04b2c23877a9a221aace7384dc2d0',
-            skillID: '699e74f5-b879-1926-1e11-51998f05ea68',
-            zIndex: 1000
+            skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
         });
 
         botApp.onLinkAccountSuccess(function (data) {
