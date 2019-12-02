@@ -292,10 +292,10 @@ export default {
         });
 
         this.$refs.gameIframe.addEventListener('load', () => {
-            this.postMessage({
+            this.$refs.gameIframe.contentWindow.postMessage({
                 type: 'wrapper_location_protocal',
                 data: location.protocol
-            });
+            }, this.loadIframeUrlOrigin);
         });
     }
 }

@@ -43,7 +43,7 @@ class BotApp {
                 let data = event.data;
                 if (data.type === 'wrapper_location_protocal') {
                     // 如果检测到父页面是https协议的，则升级为https
-                    if (data.data.indexOf('https' > -1)) {
+                    if (data.data.indexOf('https') > -1) {
                         this._msgTarget = 'https://xiaodu.baidu.com';
                     }
                     // 确认链接是否是https之后开始注册
