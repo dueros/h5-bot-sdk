@@ -25,6 +25,7 @@
 </template>
 
 <script>
+/* global BridgeHandler */
 import * as utils from '../utils';
 import * as BridgeHandler from '@baidu/duer.bridge-sdk/lib/bridgeHandler';
 
