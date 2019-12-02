@@ -36,12 +36,24 @@ class BotApp {
             signature2: this.config.signature2
         });
 
-        this._msgTarget = 'https://xiaodu.baidu.com';
+        this._msgTarget = 'http://xiaodu.baidu.com';
 
         if (this.isInApp()) {
             window.addEventListener('message', event => {
+                let data = event.data;
+                if (data.type === 'wrapper_location_protocal') {
+                    // 如果检测到父页面是https协议的，则升级为https
+                    if (data.data.indexOf('https' > -1)) {
+                        this._msgTarget = 'https://xiaodu.baidu.com';
+                    }
+                    // 确认链接是否是https之后开始注册
+                    window.parent.postMessage({
+                        type: 'register',
+                        data: this.config
+                    }, this._msgTarget);
+                }
+
                 if (event.origin === this._msgTarget) {
-                    let data = event.data;
                     console.log('receive h5game-wrapper\'s message ', data);
                     if (data.type === 'authorized_success' || data.type === 'authorized_fail') {
                         this._linkAccountResultCb(data);
@@ -54,10 +66,6 @@ class BotApp {
                     }
                 }
             });
-            window.parent.postMessage({
-                type: 'register',
-                data: this.config
-            }, this._msgTarget);
         } else {
             this._getJSBridge(bridge => {
                 bridge.init(function(message, responseCallback) {
