@@ -23,7 +23,6 @@
 
 <script>
 import * as utils from '../utils';
-import { setTimeout, clearTimeout } from 'timers';
 
 const pageQuery = utils.getQuery();
 const AUTHORIZED_SUCCESS = 'authorized_success';
