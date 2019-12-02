@@ -23,3 +23,13 @@ export function getQuery(query) {
     }
     return params;
 }
+
+export function encodeQueryData(data) {
+    if (data) {
+        return Object.keys(data).map(k => {
+            return `${k}=${encodeURIComponent(data[k])}`;
+        }).join('&');
+    } else {
+        return '';
+    }
+}

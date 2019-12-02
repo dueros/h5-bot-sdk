@@ -1,28 +1,33 @@
 <template>
-    <div class="oc-mask" @click="denyOAuth">
-        <div class="o-container" @click.stop>
-            <template v-if="errMsg">
-                <div class="o-err">{{errMsg}}</div>
-            </template>
-            <template v-else>
-                <div class="o-title-bar">
-                    <div class="o-title-bar-logo" :style="{backgroundImage: `url(${iconUrl})`}"><img src="https://oss-media.cdn.bcebos.com/common/4708368c-b169-eb8d-fdc8-1b1109368bcb.png"></div>
-                    <div class="o-title-bar-name">{{botName}}</div>
-                    <div class="o-title-bar-desc">申请</div>
-                </div>
-                <div class="o-h1">授权登录设备账号</div>
-                <div class="o-desc">允许授权后，技能将获取你的头像、昵称信息，用于提供相关服务</div>
-                <div class="o-footer">
-                    <div class="o-button o-button-deny" @click="denyOAuth">拒绝</div>
-                    <div :class="{'o-button o-button-allow': true, 'o-button-disable': isGranting}" @click="requireOAuth">{{isGranting ? '授权中' : '允许'}}</div>
-                </div>
-            </template>
+    <div class="wrapper">
+        <iframe class="game-iframe" ref="gameIframe" :src="gameUrl" frameborder="0"></iframe>
+        <div v-show="showOAuth" class="oc-mask" @click="denyOAuth">
+            <div class="o-container" @click.stop>
+                <template v-if="errMsg">
+                    <div class="o-err">{{errMsg}}</div>
+                </template>
+                <template v-else>
+                    <div class="o-title-bar">
+                        <div class="o-title-bar-logo" :style="{backgroundImage: `url(${iconUrl})`}"><img src="https://oss-media.cdn.bcebos.com/common/4708368c-b169-eb8d-fdc8-1b1109368bcb.png"></div>
+                        <div class="o-title-bar-name">{{botName}}</div>
+                        <div class="o-title-bar-desc">申请</div>
+                    </div>
+                    <div class="o-h1">授权登录设备账号</div>
+                    <div class="o-desc">允许授权后，技能将获取你的头像、昵称信息，用于提供相关服务</div>
+                    <div class="o-footer">
+                        <div class="o-button o-button-deny" @click="denyOAuth">拒绝</div>
+                        <div :class="{'o-button o-button-allow': true, 'o-button-disable': isGranting}" @click="requireOAuth">{{isGranting ? '授权中' : '允许'}}</div>
+                    </div>
+                </template>
+            </div>
         </div>
     </div>
 </template>
 
 <script>
+/* global BridgeHandler */
 import * as utils from '../utils';
+import * as BridgeHandler from '@baidu/duer.bridge-sdk/lib/bridgeHandler';
 
 const pageQuery = utils.getQuery();
 const AUTHORIZED_SUCCESS = 'authorized_success';
@@ -36,24 +41,28 @@ export default {
             botName: '',
             callbackUrl: '',
             errMsg: '',
-            isGranting: false
+            isGranting: false,
+            showOAuth: false,
+            gameUrl: ''
         }
     },
     methods: {
-        register(cb) {
+        register(config, cb) {
+            this.botId = config.skillID;
             this.axios.get('/voiceapp/botverification', {
                 params: {
-                    botId: pageQuery.botId,
-                    random1: pageQuery.random1,
-                    signature1: pageQuery.signature1,
-                    random2: pageQuery.random2,
-                    signature2: pageQuery.signature2
+                    botId: config.skillID,
+                    random1: config.random1,
+                    signature1: config.signature1,
+                    random2: config.random2,
+                    signature2: config.signature2
                 }
             }).then(({data}) => {
                 if (data.status === 0) {
                     cb(null, 'verifi success');
                 } else {
                     cb(data.msg);
+                    console.error('Register fail: ', data.msg);
                 }
             }).catch(e => {
                 cb(e);
@@ -62,7 +71,7 @@ export default {
         getBotInfo() {
             this.axios.get('/voiceapp/h5getbotinfo', {
                 params: {
-                    botId: pageQuery.botId
+                    botId: this.botId
                 }
             })
             .then(({data}) => {
@@ -73,17 +82,18 @@ export default {
                     this.iconUrl = data.data.iconUrl;
                     this.botName = data.data.botName;
                     this.callbackUrl = data.data.callbackUrl;
-                    this.postMessageTargetOrigin = this.parseH5Url(this.callbackUrl);
+                    this.msgTarget = this.parseH5Url(this.callbackUrl);
                     msg.data = {
                         accessToken: data.data.access_token || null
                     };
+                    document.title = this.botName
                 } else {
                     this.errMsg = data.msg;
                     msg.data = {
                         accessToken: null
                     };
                 }
-                window.parent.postMessage(msg, this.postMessageTargetOrigin);
+                this.postMessage(msg);
             }).catch(e => {
                 console.error(e);
                 this.errMsg = '技能信息获取失败';
@@ -93,13 +103,14 @@ export default {
             if (this.isGranting) {
                 return;
             }
-            if (this.postMessageTargetOrigin) {
+            if (this.msgTarget) {
                 this.isGranting = true;
                 this.axios.get('/saiya/v1/h5authorize/appauth', {
                     params: {
-                        botId: pageQuery.botId
+                        botId: this.botId
                     }
                 }).then(({data}) => {
+                    this.showOAuth = false;
                     this.isGranting = false;
                     let msg = null;
                     if (data.status === 0) {
@@ -115,28 +126,30 @@ export default {
                             data: data.msg
                         };
                     }
-                    window.parent.postMessage(msg, this.postMessageTargetOrigin);
+                    this.postMessage(msg);
                 }).catch(e => {
+                    this.showOAuth = false;
                     this.isGranting = false;
                     let msg = {
                         type: AUTHORIZED_FAIL,
                         data: e
                     };
-                    window.parent.postMessage(msg, this.postMessageTargetOrigin);
+                    this.postMessage(msg);
                 });
             } else {
-                console.error('Illegal H5 URL: ', this.postMessageTargetOrigin);
+                throw new Error('Illegal H5 URL: ', this.msgTarget);
             }
         },
         denyOAuth() {
-            if (this.postMessageTargetOrigin) {
+            this.showOAuth = false;
+            if (this.msgTarget) {
                 let data = {
                     type: AUTHORIZED_FAIL,
                     data: null
                 };
-                window.parent.postMessage(data, this.postMessageTargetOrigin);
+                this.postMessage(data);
             } else {
-                console.error('illegal H5 URL :', this.postMessageTargetOrigin);
+                console.error('illegal H5 URL :', this.msgTarget);
             }
         },
         parseH5Url(url) {
@@ -151,7 +164,7 @@ export default {
         shipping(shipData) {
             this.axios.get('/voiceapp/shippingorder', {
                 params: {
-                    botId: pageQuery.botId,
+                    botId: this.botId,
                     ...shipData,
                     source: 'skillstoreapp' // 目前写死
                 }
@@ -177,11 +190,12 @@ export default {
                             purchaseResult: 'SUCCESS', // 此次支付结果。 -枚举值，选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误
                             message: '支付成功' // 支付状态对应的消息
                         };
-                        window.parent.postMessage({
+                        this.postMessage({
                             type: 'ship',
                             err: null,
                             data: postData
-                        }, this.postMessageTargetOrigin);
+                        });
+                        this.buyData = null;
 
                     // 由于后端发货相关通知是异步的，所以这里
                     // 设定一个重试机制
@@ -199,48 +213,80 @@ export default {
                                 purchaseResult: 'ERROR', // 此次支付结果。 -枚举值，选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误
                                 message: '支付失败'
                             };
-                            window.parent.postMessage({
+                            this.postMessage({
                                 type: 'ship',
                                 err: null,
                                 data: postData
-                            }, this.postMessageTargetOrigin);
+                            });
+                            this.buyData = null;
                         }
                     }
                 } else {
-                    window.parent.postMessage({
+                    this.postMessage({
                         type: 'ship',
                         err: data.msg,
                         data: data.data
-                    }, this.postMessageTargetOrigin);
+                    });
+                    this.buyData = null;
                 }
             }).catch(e => {
-                window.parent.postMessage({
+                this.postMessage({
                     type: 'ship',
                     err: e,
                     data: data.data
-                }, this.postMessageTargetOrigin);
+                });
+                this.buyData = null;
             });
         },
+        postMessage(data) {
+            this.$refs.gameIframe.contentWindow.postMessage(data, this.msgTarget);
+        }
     },
     mounted() {
-        this.register((err, data) => {
-            if (!err) {
-                this.getBotInfo();
-            } else {
-                this.errMsg = '身份校验失败，请检查签名';
-                console.error(data);
+        this.gameUrl = pageQuery.gameUrl;
+        if (!this.gameUrl) {
+            this.errMsg = 'Missing param: `gameUrl`'
+            this.showOAuth = true;
+        }
+        this.msgTarget = '';
+        this.loadIframeUrlOrigin = this.parseH5Url(this.gameUrl);
+
+        // 只有注册信息无条件侦听来自iframeURL的消息
+        window.addEventListener('message', (event) => {
+            let data = event.data;
+            if (data.type === 'register' && event.origin === this.loadIframeUrlOrigin) {
+                console.log('register data', data.data);
+                this.register(data.data, (err, data) => {
+                    if (!err) {
+                        this.getBotInfo();
+                    } else {
+                        this.errMsg = '身份校验失败，请检查签名';
+                        console.error(data);
+                    }
+                });
+            } else if (event.origin === this.msgTarget) {
+                console.log('h5game-wrapper: receive message ', data);
+                if (data.type === 'request_authorization') {
+                    this.showOAuth = true;
+                } else if (data.type === 'buy') {
+                    this.buyData = data.data;
+                    let baseUrl = 'https://xiaodu.baidu.com/dbppay/skill-pay/product/buy?';
+                    let orderUrl = baseUrl += utils.encodeQueryData(data.data);
+                    BridgeHandler.openWebView(orderUrl);
+                } else if (data.type === 'closeWebView') {
+                    BridgeHandler.closeWebView();
+                }
             }
         });
-        this.postMessageTargetOrigin = '';
 
-        window.addEventListener('message', (event) => {
-            if (event.origin === this.postMessageTargetOrigin) {
-                let data = event.data;
-                console.log('message from parent page', data);
-                if (data.type === 'ship') {
-                    this.shipping(data.data);
-                    this.retryTimes = 2; // 定义发货请求到空之后重试次数
-                }
+        BridgeHandler.refreshUI(() => {
+            if (this.buyData) {
+                this.shipping({
+                    botId: this.botId,
+                    sellerOrderId: this.buyData.sellerOrderId,
+                    source: this.buyData.source
+                });
+                this.retryTimes = 2; // 发货请求到空之后重试次数
             }
         });
     }
@@ -450,5 +496,21 @@ html,body {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 100;
+}
+.game-iframe {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 99;
+}
+.wrapper {
+    width: 100%;
+    height: 100%;
 }
 </style>

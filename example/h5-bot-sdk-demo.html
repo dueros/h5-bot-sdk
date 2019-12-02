@@ -6,11 +6,8 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.4.js"></script>
+    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.5.js"></script>
     <style>
-        body {
-            padding-top: 50px;
-        }
         button {
             min-width: 120px;
             height: 40px;
@@ -34,7 +31,6 @@
 <button id="applicate-link">LinkClicked</button>
 <button id="applicate-ship">requireShipping</button>
 <div id="log"></div>
-
 <script>
     var $btnAccount = document.getElementById('applicate-account');
     var $btnPay = document.getElementById('applicate-pay');
@@ -72,8 +68,7 @@
             signature1: 'e6f8041f11824ec2fed7b11e27f6588a',
             random2: '4a983fd442144eaec73c3ca35ae78aa0',
             signature2: '1ea04b2c23877a9a221aace7384dc2d0',
-            skillID: '699e74f5-b879-1926-1e11-51998f05ea68',
-            zIndex: 1000
+            skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
         });
 
         botApp.onLinkAccountSuccess(function (data) {
@@ -103,15 +98,6 @@
             log('收到 onHandleScreenNavigatorEvent 调用');
             console.log(data);
             log(data);
-        });
-
-        botApp.onBuyStatusChange(function (err, data) {
-                log('收到onBuyStatusChange回调');
-                if (err) {
-                    log(err);
-                } else {
-                    log(data);
-                }
         });
 
         $btnAccount.onclick = function () {
@@ -228,7 +214,10 @@
                 sellerOrderId: '23r230203fsfd1l3nr32390'
             };
             log(data);
-            botApp.requireBuy(data);
+            botApp.requireBuy(data, function (err, data) {
+                log('收到requireBuy回调');
+                log(data);
+            });
         }
     });
 
