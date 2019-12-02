@@ -36,31 +36,7 @@ class BotApp {
             signature2: this.config.signature2
         });
 
-        // this._msgTarget = 'https://xiaodu.baidu.com';
-        this._msgTarget = 'http://cp01-dengxuening.epc.baidu.com';
-
-
-        this._getJSBridge(bridge => {
-            bridge.init(function(message, responseCallback) {
-                var data = {
-                    'Javascript Responds': 'Ready!'
-                };
-                console.log('Receive bridge init message from native: ' + message);
-                responseCallback(data);
-            });
-
-            // Native依赖这几个参数进行身份校验
-            bridge.callHandler('register', registerConfig, payload => {
-                payload = JSON.parse(payload);
-                this.registerResult = payload;
-                this.registerCallback && this.registerCallback(payload);
-                this.registerCallback = null;
-
-                if (this.config.skillID) {
-                    this.requireShipping();
-                }
-            });
-        });
+        this._msgTarget = 'https://xiaodu.baidu.com';
 
         if (this.isInApp()) {
             window.addEventListener('message', event => {
@@ -82,6 +58,28 @@ class BotApp {
                 type: 'register',
                 data: this.config
             }, this._msgTarget);
+        } else {
+            this._getJSBridge(bridge => {
+                bridge.init(function(message, responseCallback) {
+                    var data = {
+                        'Javascript Responds': 'Ready!'
+                    };
+                    console.log('Receive bridge init message from native: ' + message);
+                    responseCallback(data);
+                });
+
+                // Native依赖这几个参数进行身份校验
+                bridge.callHandler('register', registerConfig, payload => {
+                    payload = JSON.parse(payload);
+                    this.registerResult = payload;
+                    this.registerCallback && this.registerCallback(payload);
+                    this.registerCallback = null;
+
+                    if (this.config.skillID) {
+                        this.requireShipping();
+                    }
+                });
+            });
         }
     }
 
@@ -307,9 +305,15 @@ class BotApp {
      * 请求关闭app
      */
     requestClose() {
-        this._getJSBridge(bridge => {
-            bridge.callHandler('requestClose');
-        });
+        if (this.isInApp()) {
+            window.parent.postMessage({
+                type: 'closeWebView'
+            }, this._msgTarget);
+        } else {
+            this._getJSBridge(bridge => {
+                bridge.callHandler('requestClose');
+            });
+        }
     }
 
     /**

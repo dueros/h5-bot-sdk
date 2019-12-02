@@ -85,7 +85,7 @@ export default {
                     msg.data = {
                         accessToken: data.data.access_token || null
                     };
-
+                    document.title = this.botName
                 } else {
                     this.errMsg = data.msg;
                     msg.data = {
@@ -194,6 +194,7 @@ export default {
                             err: null,
                             data: postData
                         });
+                        this.buyData = null;
 
                     // 由于后端发货相关通知是异步的，所以这里
                     // 设定一个重试机制
@@ -216,6 +217,7 @@ export default {
                                 err: null,
                                 data: postData
                             });
+                            this.buyData = null;
                         }
                     }
                 } else {
@@ -224,6 +226,7 @@ export default {
                         err: data.msg,
                         data: data.data
                     });
+                    this.buyData = null;
                 }
             }).catch(e => {
                 this.postMessage({
@@ -231,6 +234,7 @@ export default {
                     err: e,
                     data: data.data
                 });
+                this.buyData = null;
             });
         },
         postMessage(data) {
@@ -268,17 +272,21 @@ export default {
                     let baseUrl = 'https://xiaodu.baidu.com/dbppay/skill-pay/product/buy?';
                     let orderUrl = baseUrl += utils.encodeQueryData(data.data);
                     BridgeHandler.openWebView(orderUrl);
+                } else if (data.type === 'closeWebView') {
+                    BridgeHandler.closeWebView();
                 }
             }
         });
 
         BridgeHandler.refreshUI(() => {
-            this.shipping({
-                botId: this.botId,
-                sellerOrderId: this.buyData.sellerOrderId,
-                source: this.buyData.source
-            });
-            this.retryTimes = 2; // 发货请求到空之后重试次数
+            if (this.buyData) {
+                this.shipping({
+                    botId: this.botId,
+                    sellerOrderId: this.buyData.sellerOrderId,
+                    source: this.buyData.source
+                });
+                this.retryTimes = 2; // 发货请求到空之后重试次数
+            }
         });
     }
 }
