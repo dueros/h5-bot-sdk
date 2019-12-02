@@ -3,8 +3,7 @@
  * @author dengxuening<dengxuening@baidu.com>
  */
 
-
- const webpackMerge = require('webpack-merge');
+const webpackMerge = require('webpack-merge');
 const baseConfig = require('./webpack.iframe.base');
 
 module.exports = webpackMerge(baseConfig, {
