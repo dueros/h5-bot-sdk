@@ -23,11 +23,9 @@ module.exports = webpackMerge(baseConfig, {
         port: 8080,
         proxy: {
             '/saiya/v1/': {
-                // target: 'http://bjyz-nuomiplus.epc.baidu.com:8080'
                 target: 'http://xiaodu.baidu.com'
             },
             '/voiceapp': {
-                // target: 'http://bjyz-nuomiplus.epc.baidu.com:8080'
                 target: 'http://xiaodu.baidu.com'
             }
         }
