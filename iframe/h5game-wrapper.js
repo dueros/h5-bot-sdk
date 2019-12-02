@@ -5,11 +5,11 @@
 
 import Vue from 'vue';
 import axios from 'axios';
-import OAuth from './pages/OAuth.vue';
+import Wrapper from './pages/H5gameWrapper.vue';
 
 Vue.prototype.axios = axios;
 Vue.config.productionTip = false;
 
 new Vue({
-    render: h => h(OAuth)
+    render: h => h(Wrapper)
 }).$mount('#app');

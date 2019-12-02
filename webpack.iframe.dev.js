@@ -20,6 +20,14 @@ module.exports = webpackMerge(baseConfig, {
         },
         hot: true,
         host: '0.0.0.0',
-        port: 8080
+        port: 8080,
+        proxy: {
+            '/saiya/v1/': {
+                target: 'http://xiaodu.baidu.com'
+            },
+            '/voiceapp': {
+                target: 'http://xiaodu.baidu.com'
+            }
+        }
     }
 });
