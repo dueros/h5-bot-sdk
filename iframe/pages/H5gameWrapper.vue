@@ -247,6 +247,7 @@ export default {
         if (!this.gameUrl) {
             this.errMsg = 'Missing param: `gameUrl`'
             this.showOAuth = true;
+            return;
         }
         this.msgTarget = '';
         this.loadIframeUrlOrigin = this.parseH5Url(this.gameUrl);
@@ -288,6 +289,13 @@ export default {
                 });
                 this.retryTimes = 2; // 发货请求到空之后重试次数
             }
+        });
+
+        this.$refs.gameIframe.addEventListener('load', () => {
+            this.postMessage({
+                type: 'wrapper_location_protocal',
+                data: location.protocol
+            });
         });
     }
 }
