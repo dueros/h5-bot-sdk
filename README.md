@@ -1,10 +1,10 @@
-# BOT APP JS SDK
+# BOT APP JS SDK *(v1.4.7)*
 
 ## 本文档规范
 
 ### 名词解释
 
-* `SHOW`：度有屏音箱，
+* `SHOW`：小度有屏音箱，
 * `App`：手机端的小度App和小度音箱App
 * `SHOW ONLY`：说明本方法仅适用SHOW设备，也就是小度有屏音箱设备
 * `App ONLY`：说明本方法仅适用小度音箱APP和小度App
@@ -17,23 +17,25 @@
 * 创建一个技能，<https://dueros.baidu.com/dbp/bot/index#/addbot/0>，选择“自定义”，输入后“确定”，将技能ID发给度秘对接技术
 * 集成本SDK，详见下方**BotApp的引入**
 * 如果开发者有登录的需求，账号关联流程详见**BotApp.requireLinkAccount**
-* 如果开发者有支付的需求，详见**BotApp.requireCharge**(小度有屏音箱)和**BotApp.buy**(小度APP/小度音箱APP)
+* 如果开发者有支付的需求，详见**BotApp.requireCharge**(*小度有屏音箱*)和**BotApp.requireBuy**(*小度APP/小度音箱APP*)
 
-### 已经接入小度有屏音箱的应用上到小度App/小度音箱App需要哪些额外更改？
+### H5游戏想要运行在小度App/小度音箱App上？需要如下工作：
 
-* 小度App/小度音箱App上需要额外调用以下几个方法才能实现与小度有屏音箱端同样的功能：
-	* 需要额外调用`onLinkAccountResult()`来获取App上的百度账号的授权结果
-	* 需要额外调用`buy`方法来发起商品购买
-	*
+小度App/小度音箱App上运行的H5游戏需要额外调用以下几个方法才能实现小度有屏音箱上同样的功能：
+
+* 使用`isInApp()`来判断当前H5应用的运行环境是否是小度App/小度音箱App；
+* 需要在`requireLinkAccount(callback)`中传入一个回调函数来获取App上的百度账号的授权结果；
+* 需要额外调用`requireBuy(data, callback)`方法发起商品购买；
+* 通过小度App debug包调试阶段，需要手动输入如下地址调试：http(s)://xiaodu.baidu.com/saiya/sdk/iframe/h5game-wrapper.html?gameUrl=${gameUrl} (gameUrl为encodeURIComponent编码后的地址)。
 
 ## BotApp的引入
 
 * 通过script标签引入(支持https)
 
 ```html
-<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.2.js"></script>
+<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.7.js"></script>
 ```
-然后可以在全局环境下获取到`BotApp`对象
+然后即可在全局环境下获取到`BotApp`对象
 > 使用webpack进行打包的模块化的开发形式参考webpack配置文件中的 [externals配置](https://webpack.js.org/configuration/externals/#externals)
 
 ## 开始使用
@@ -56,8 +58,8 @@ const botApp = new BotApp({
 ## BotApp.isInApp() *1.4+*
 判断当前H5运行环境是否是在小度APP或者小度音箱APP中，以此区分有屏音箱端和手机App端。开发者需以此来判断并使用相应的SDK方法。
 
-## BotApp.requireLinkAccount()
-接入度秘上的H5应用，如有登录需要，必须和百度的账号体系进行绑定，此接口用来在度秘上发起账号绑定流程。
+## BotApp.requireLinkAccount([,callback])
+接入度秘上的H5应用，如有登录需要，必须和百度的账号体系进行绑定，此接口用来在度秘上发起账号绑定流程。**1.4+**版本以后在**小度App/小度音箱App运行环境**中支持传入一个回调函数接收授权结果。小度有屏音箱端需要调用`getRegisterResult()`来获取授权结果。
 
 目前支持2种方案：
 
@@ -65,15 +67,44 @@ const botApp = new BotApp({
 
 2. 开发者自己实现标准的oauth协议，并将oauth协议相关接口信息在度秘dbp平台上进行配置。授权成功后可在`onLinkAccountSucceeded(fn)`的回调函数中获取到accessToken。
 
-    > 建议第三方开发者使用方案1，产品交互相对简单，用户只需要在设备上确认授权，即可自动登录
+> 建议第三方开发者使用方案1，产品交互相对简单，用户只需要在设备上确认授权，即可自动登录
 
-由于本方法在小度APP/小度音箱App和小度有屏音箱上都能进行相应的调起授权，授权结果需要额外监听。比如在小度APP/小度音箱App上，开发者需要使用`onLinkAccountResult()`来获取授权结果。小度有屏音箱上，开发者需要使用`getRegisterResult()`来获取结果
+本方法在小度APP/小度音箱App和小度有屏音箱上都能调起授权。在小度APP/小度音箱App上，开发者需要传入一个回调函数来获取授权结果。小度有屏音箱上，开发者需要使用`getRegisterResult()`来获取结果
 
-* 示例
+* 参数
+
+    callback(*Function*)：本回调函数**只会**在小度App/小度音箱App上被触发，且当运行在小度App/小度音箱App时，本参数是必填参数，本回调函数会携带一个授权结果数据，其Scheme如下：
 
     ```javascript
-    botApp.requireLinkAccount();
+    {
+        "type":"{{string}}",
+        "data":{
+            "accessToken":"{{string}}"
+        }
+    }
     ```
+
+* 示例1
+
+  ```javascript
+  botApp.requireLinkAccount(function (data) {
+        console.log(data);
+        // 注意，本函数仅会在App环境下触发。小度有屏音箱上运行的应用请使用`getRegisterResult()`获取注册结果
+        // 打印如下：
+       {
+           "type":"authorized_success", // 授权被拒绝时的值：authorized_fail
+           "data":{
+               "accessToken":"28.10b09eb18b9dcc3806vda3920199a6fd.2592000.1575546362.4114435386-16962311"
+           }
+       }
+   });
+   ```
+
+* 示例2
+
+  ```javascript
+   botApp.requireLinkAccount();
+   ```
 
 ## BotApp.onLinkAccountSuccess(callback) `SHOW ONLY`
 获取oauth授权结果。此方法会监听oauth授权成功后的结果。
@@ -108,38 +139,6 @@ const botApp = new BotApp({
     })
     ```
 
-## BotApp.onLinkAccountResult(callback) *1.4+* `App ONLY`
-在小度APP和小度音箱APP上运行的H5如果调用了`requireLinkAccount()`需要使用本方法来获取用户授权操作后的回调结果。
-
-* 参数
-
-    callback(*Function*)：用户点击屏幕下方弹出的授权界面按钮，本回调函数会被触发
-
-    ```javascript
-    {
-        "type":"{{string}}",
-        "data":{
-            "accessToken":"{{string}}"
-        }
-    }
-    ```
-
-* 示例
-
-    ```javascript
-    botApp.getRegisterResult(function (data) {
-         console.log(data);
-         // 打印如下：
-        {
-            "type":"authorized_success", // 授权被拒绝时的值：authorized_fail
-            "data":{
-                "accessToken":"28.10b09eb18b9dcc3806vda3920199a6fd.2592000.1575546362.4114435386-16962311"
-            }
-        }
-    });
-    ```
-
-
 ## BotApp.getRegisterResult(callback)
 BotApp SDK初始化之后，SDK内部会进行身份校验、注册等操作，开发者可使用本方法来获取注册结果，如果已经绑定过百度账号，则能获取到oauth授权后的accessToken。
 
@@ -170,7 +169,6 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
 
 对于用户支付成功的订单，会有服务端的订单通知接口，开发者应以该接口的订单支付成功通知为最终数据。
 
-> 本方法仅支持在小度有屏音箱上调用
 
 * 参数
 
@@ -222,43 +220,25 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
     botApp.requireCharge(data);
     ```
 
-## BotApp.buy(data) *1.4+* `App ONLY`
-目前只支持小度App、小度音箱App。调用本方法发起购买流程
+## BotApp.requireBuy(data, callback) *1.4+* `App ONLY`
+小度App/小度音箱App上运行的H5游戏调用本方法发起购买操作。`callback`函数会在返回游戏页面后调用，调用可能会有明显延迟(当获取购买结果失败后SDK内部会重新请求2次，每次间隔1秒)。
 
 * 参数
 
     data(*Object*)：其schema如下：
     ```javascript
-    var data = {
+    {
         productId: '{{string}}', // 商品ID，
         sellerOrderId: '{{string}}' // 接入方自己的订单ID
     }
-    botApp.requireBuy(data);
     ```
-
-* 示例
+    callback(Function)：本回调会传入错误信息和购买结果，其数据Scheme如下
 
     ```javascript
+    参数一，错误信息：
+    {{Any}}
+    二，购买结果
     {
-        productId: '191022111415582172',
-        sellerOrderId: 'xxxxxx112121xxxx'
-    }
-    ```
-
-## BotApp.onChargeStatusChange(callback)
-通知支付结果。该指令只是一个前端的通知，第三方开发者可以用此回调做页面的刷新。
-
-> 仅当使用`requireCharge()发起支付动作时本方法才会被回调`
-
-* 参数
-
-    callback(*Function*)：当DuerOS支付结果返回时，SDK会调用此函数。此函数有一个参数，其schema如下：
-    ```javascript
-    {
-        "token": "{{STRING}}", // 标识本次返回
-        "app":{
-            "accessToken":"{{STRING}}" // oauth授权结果的accessToken
-        },
         "authorizationDetails": {
             "authorizationAmount": { //
                 "amount": "{{STRING}}", // 扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元
@@ -277,8 +257,65 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
     }
     ```
 
-## BotApp.onOrderFinished(callback) *1.4+* `App ONLY`
+* 示例
 
+    ```javascript
+    botApp.requireBuy({
+        productId: '191022111415582172',
+        sellerOrderId: 'xxxxxx112121xxxx'
+    }, function (err, data) {
+        if (!err) {
+            console.log(data);
+            // 打印结果如下
+            {
+                authorizationDetails: {
+                    authorizationAmount: {
+                        amount: "1.99",
+                        currencyCode: 'CNY'
+                    },
+                    capturedAmount: {
+                        amount: '1.09',
+                        currencyCode: 'CNY'
+                    },
+                    creationTimestamp: '1546272000000'
+                },
+                baiduOrderReferenceId: 'fjkasdfekfjsnvks',
+                sellerOrderId: 'fskdfjmvckadfl',
+                purchaseResult: 'SUCCESS',
+                message: '支付成功'
+            }
+        }
+    });
+    ```
+
+## BotApp.onChargeStatusChange(callback) `SHOW ONLY`
+通知支付结果。该指令只是一个前端的通知，第三方开发者可以用此回调做页面的刷新。
+
+> 仅当使用`requireCharge()`发起支付动作时本方法中的回调函数才会被回调
+
+* 参数
+
+    callback(*Function*)：当DuerOS支付结果返回时，SDK会调用此函数。此函数有一个参数，其schema如下：
+    ```javascript
+    {
+        "token": "{{STRING}}", // 标识本次返回，可能没有
+        "authorizationDetails": {
+            "authorizationAmount": { //
+                "amount": "{{STRING}}", // 扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元
+                "currencyCode": "CNY" // 枚举类型。目前只能为CNY
+            },
+            "capturedAmount": {
+                "amount": "{{STRING}}", // 实际百度扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元
+                "currencyCode": "CNY" // 枚举类型。目前只能为CNY
+            },
+            "creationTimestamp": "{{INT32}}" // 订单创建时间。时间戳，单位毫秒
+        },
+        "baiduOrderReferenceId": "{{STRING}}", // 此次交易百度生成的订单ID
+        "sellerOrderId":"{{STRING}}", // 对应支付的订单ID
+        "purchaseResult":"{{ENUM}}", // 此次支付结果。 -枚举值，选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误
+        "message":"{{STRING}}" // 支付状态对应的消息
+    }
+    ```
 
 * 示例
     ```javascript
@@ -287,9 +324,6 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
         // 打印结果如下：
         {
             token: 'faskdfkasdfsnvcknawjkenfjkwa', // 标识本次返回
-            app:{
-                accessToken: '21.15a2c2cd345816f2e51f9eae6e3d1f03.2592000.1566035530.2050908969-9943593'
-            },
             authorizationDetails: {
                 authorizationAmount: {
                     amount: "1.99",
@@ -301,7 +335,6 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
                 },
                 creationTimestamp: '1546272000000'
             },
-            accessToken: '21.15a2c2cd345816f2e51f9eae6e3d1f03.2592000.1566035530.2050908969-9943593',
             baiduOrderReferenceId: 'fjkasdfekfjsnvks',
             sellerOrderId: 'fskdfjmvckadfl',
             purchaseResult: 'SUCCESS',
@@ -310,8 +343,7 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
     })
     ```
 
-
-## BotApp.onHandleIntent(callback)
+## BotApp.onHandleIntent(callback) `SHOW ONLY`
 意图下发。开发者在DBP平台上面开发的意图，在匹配到对应用户query之后,会封装对应意图成为Intent下发下来。
 可通过回调函数参数中的`intent.name`来确定意图名称，之后开发对应的逻辑。同时还可以通过`intent.slots`解析参数。
 > DBP开放平台：<https://dueros.baidu.com/dbp>
@@ -362,7 +394,7 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
     });
     ```
 
-## BotApp.listen([,callback]);
+## BotApp.listen([,callback]) `SHOW ONLY`
 开启聆听。设备会进入语音交互状态。
 > 本方法仅支持在小度有屏音箱上调用
 
@@ -379,7 +411,7 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
     });
     ```
 
-## BotApp.speak(data, [,callback])
+## BotApp.speak(data, [,callback]) `SHOW ONLY`
 播报一段文本，播报完毕之后回调callback
 > 本方法仅支持在小度有屏音箱上调用
 
@@ -402,7 +434,7 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
     }))
     ```
 
-## BotApp.requestClose() *1.1+*
+## BotApp.requestClose() *1.1+* `SHOW ONLY`
 > 本方法仅支持在小度有屏音箱上调用
 请求关闭浏览器。调用此方法后，小度有屏音箱上正在运行的H5会退出。
 
@@ -412,7 +444,7 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
     botApp.requestClose();
     ```
 
-## BotApp.updateUiContext(data, [,callback])
+## BotApp.updateUiContext(data, [,callback]) `SHOW ONLY`
 本接口定义通用的自定义用户交互能力，设备端可以自主实现所希望的交互过程。
 
 正常情况下交互都是由服务端决定的，比如问“西藏天气怎么样”则小度反问“西藏哪个城市的？不同城市的天气差别还是挺大的。”，但存在一些场景服务端因为信息缺乏，不能完全确定交互过程，需要由设备端配合来驱动用户交互过程。例如，在抽奖游戏中，H5页面上展示了2个宝箱，用户说“选择第一个”，服务端无法可能无法确定“第一个”或者“第二个”分别对应哪个宝箱，因此需要调用本方法来定义。
@@ -477,7 +509,7 @@ H5：调用updateUiContext([(utterances="第一个", url="{url1}"), (utterances=
     });
     ```
 
-## BotApp.onClickLink(callback)
+## BotApp.onClickLink(callback) `SHOW ONLY`
 ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交互(`updateUiContext()`之后，云端会解析用户定义的交互，下发对应的指令。例如通过`botApp.updateUiContext(data)`新增自定义交互之后DuerOS会通过此接口下发上面定义的url。
 
 如果用户引用*系统内建自定义类型*，用户query中可以包含参数，例如"*输入北京*"，这个query中*北京*可以被解析成参数，放到后面`params`中下发。
@@ -514,7 +546,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     });
     ```
 
-## BotApp.uploadLinkClicked(data) *1.2+*
+## BotApp.uploadLinkClicked(data) *1.2+* `SHOW ONLY`
 当用户点击了屏幕上的某个链接时可通过本方法进行上报。DuerOS根据其携带的参数下发不同的指令，也可能什么指令也不下发。
 > 本方法仅支持在小度有屏音箱上调用
 
@@ -530,7 +562,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     });
     ```
 
-## BotApp.onHandleScreenNavigatorEvent(callback)
+## BotApp.onHandleScreenNavigatorEvent(callback) `SHOW ONLY`
 屏幕导航事件。当用户发起语音请求，要求滚动屏幕时，本事件会被调用。
 > 本方法仅支持在小度有屏音箱上调用
 
@@ -567,7 +599,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     })
     ```
 
-## BotApp.requireShipping *1.3+*
+## BotApp.requireShipping *1.3+* `SHOW ONLY`
 请求发货信息。开发者可在`BotApp.onHandleIntent`注册的回调函数中获取商品信息。要调用本方法则必须在BotApp初始化时填写`skillID`。本方法会在初始化阶段自动调用一次，开发者也可手动调用本方法。
 > 本方法仅支持在小度有屏音箱上调用
 
@@ -576,15 +608,6 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     ```javascript
     botApp.requireShipping();
     ```
-
-## BotApp.requireShipOrders(data, callback) *1.4+*
-
-获取发货信息，作用类似`requireShipping()`
->目前仅能支持在小度App、小度音箱App中使用
-
-* 参数
-
-    data(*Object*):
 
 ## 附表
 
