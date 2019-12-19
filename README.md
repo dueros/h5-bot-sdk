@@ -1,4 +1,4 @@
-# BOT APP JS SDK *(v1.4.7)*
+# BOT APP JS SDK *(v1.4.8)*
 
 ## 本文档规范
 
@@ -17,15 +17,15 @@
 * 创建一个技能，<https://dueros.baidu.com/dbp/bot/index#/addbot/0>，选择“自定义”，输入后“确定”，将技能ID发给度秘对接技术
 * 集成本SDK，详见下方**BotApp的引入**
 * 如果开发者有登录的需求，账号关联流程详见**BotApp.requireLinkAccount**
-* 如果开发者有支付的需求，详见**BotApp.requireCharge**(*小度有屏音箱*)和**BotApp.requireBuy**(*小度APP/小度音箱APP*)
+* 如果开发者有支付的需求，详见**BotApp.requireCharge**
 
 ### H5游戏想要运行在小度App/小度音箱App上？需要如下工作：
 
 小度App/小度音箱App上运行的H5游戏需要额外调用以下几个方法才能实现小度有屏音箱上同样的功能：
 
 * 使用`isInApp()`来判断当前H5应用的运行环境是否是小度App/小度音箱App；
-* 需要在`requireLinkAccount(callback)`中传入一个回调函数来获取App上的百度账号的授权结果；
-* 需要额外调用`requireBuy(data, callback)`方法发起商品购买；
+* 需要在`requireLinkAccount`中传入一个回调函数来获取App上的百度账号的授权结果；
+* 需要在`requireCharge`方法中再传入一个回调函数接收购买结果；
 * 通过小度App debug包调试阶段，需要手动输入如下地址调试：http(s)://xiaodu.baidu.com/saiya/sdk/iframe/h5game-wrapper.html?gameUrl=${gameUrl} (gameUrl为encodeURIComponent编码后的地址)。
 
 ## BotApp的引入
@@ -165,8 +165,8 @@ BotApp SDK初始化之后，SDK内部会进行身份校验、注册等操作，�
     })
     ```
 
-## BotApp.requireCharge(data) `SHOW ONLY`
-H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK中`onChargeStatusChange(callback)`中的`callback`函数，开发者可在回调函数中添加自己的业务逻辑。
+## BotApp.requireCharge(data, [,callback]) 
+H5应用可通过本方法发起收款，当用户支付成功后会：如果是在有屏音箱端，回调本SDK中`onChargeStatusChange(callback)`中的`callback`函数，如果是在小度App/小度音箱App中，会回调传入的`callback`函数
 
 对于用户支付成功的订单，会有服务端的订单通知接口，开发者应以该接口的订单支付成功通知为最终数据。
 
@@ -195,6 +195,8 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
         }
     }
     ```
+	
+	callback(*Function*)：本函数**只会**在小度App/小度音箱App中被回调，小度有屏音箱设备请使用`onChargeStatusChange`接收购买结果。调用可能会有明显延迟(当获取购买结果失败后SDK内部会重新请求2次，每次间隔1秒)。
 
 * 示例
 
@@ -218,11 +220,34 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
             }
         }
     }
-    botApp.requireCharge(data);
+    botApp.requireCharge(data, function (err, data) {
+		if (!err) {
+			console.log(data);
+			// 结果如下
+			{
+                authorizationDetails: {
+                    authorizationAmount: {
+                        amount: "1.99",
+                        currencyCode: 'CNY'
+                    },
+                    capturedAmount: {
+                        amount: '1.09',
+                        currencyCode: 'CNY'
+                    },
+                    creationTimestamp: '1546272000000'
+                },
+                baiduOrderReferenceId: 'fjkasdfekfjsnvks',
+                sellerOrderId: 'fskdfjmvckadfl',
+                purchaseResult: 'SUCCESS',
+                message: '支付成功'
+            }
+		}
+	});
     ```
 
-## BotApp.requireBuy(data, callback) *1.4+* `App ONLY`
-小度App/小度音箱App上运行的H5游戏调用本方法发起购买操作。`callback`函数会在返回游戏页面后调用，调用可能会有明显延迟(当获取购买结果失败后SDK内部会重新请求2次，每次间隔1秒)。
+## <del>BotApp.requireBuy(data, callback) *1.4+* `App ONLY`<del>
+
+本方法不同于`requireCharge`，需要事先在度秘的商品库里注册`productId`，然后将其传入被方法的参数中。`callback`函数会在返回游戏页面后调用，调用可能会有明显延迟(当获取购买结果失败后SDK内部会重新请求2次，每次间隔1秒)。
 
 * 参数
 
@@ -292,7 +317,7 @@ H5应用可通过本方法发起收款，当用户支付成功后会回调本SDK
 ## BotApp.onChargeStatusChange(callback) `SHOW ONLY`
 通知支付结果。该指令只是一个前端的通知，第三方开发者可以用此回调做页面的刷新。
 
-> 仅当使用`requireCharge()`发起支付动作时本方法中的回调函数才会被回调
+> 仅当在小度有屏音箱上使用`requireCharge()`发起支付动作时本方法中的回调函数才会被回调
 
 * 参数
 

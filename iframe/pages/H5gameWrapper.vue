@@ -274,6 +274,20 @@ export default {
                     let baseUrl = 'https://xiaodu.baidu.com/dbppay/skill-pay/product/buy?';
                     let orderUrl = baseUrl += utils.encodeQueryData(data.data);
                     BridgeHandler.openWebView(orderUrl);
+                } else if (data.type === 'charge') {
+                    let baseUrl = 'https://xiaodu.baidu.com/dbppay/skill-pay/product/buy?';
+                    let buyData = {
+                        botId: this.botId,
+                        ...data.data.chargeBaiduPay.sellerOrderAttributes,
+                        ...data.data.chargeBaiduPay.authorizeAttributes.authorizationAmount,
+                        sellerAuthorizationNote: data.data.chargeBaiduPay.authorizeAttributes.sellerAuthorizationNote,
+                        isCharge: 1,
+                        source: 'skillstoreapp',
+                        from: 'skillstoreapp'
+                    };
+                    this.buyData = buyData;
+                    let orderUrl = baseUrl += utils.encodeQueryData(buyData);
+                    BridgeHandler.openWebView(orderUrl);
                 } else if (data.type === 'closeWebView') {
                     BridgeHandler.closeWebView();
                 }

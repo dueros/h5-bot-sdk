@@ -186,12 +186,25 @@ class BotApp {
      * 发起收款操作，调用此函数小度有屏音箱
      * 会展示付款二维码
      * @param {Object} data 携带订单号，商品名称等参数
+     * @param {Function} cb 购买结果回调，当在App中运行时本参数必填
      */
-    requireCharge(data) {
-        data = JSON.stringify(data);
-        this._getJSBridge(bridge => {
-            bridge.callHandler('requireCharge', data);
-        });
+    requireCharge(data, cb) {
+        if (this.isInApp()) {
+            if (typeof cb !== 'function') {
+                throw new Error('requireCharge: Your web runs in App and and you must pass a function'
+                    + ' in the position of the second to handle the purchase result.');
+            }
+            this._getShipPayResult = cb;
+            window.parent.postMessage({
+                type: 'charge',
+                data
+            }, this._msgTarget);
+        } else {
+            data = JSON.stringify(data);
+            this._getJSBridge(bridge => {
+                bridge.callHandler('requireCharge', data);
+            });
+        }
     }
 
     requireBuy(data, cb) {
@@ -203,12 +216,14 @@ class BotApp {
                 throw e;
             }
             if (typeof cb !== 'function') {
-                throw new Error ('requireBuy: arguments[1] must be a function, but get a ' + typeof cb);
+                throw new Error('requireBuy: arguments[1] must be a function, but get a ' + typeof cb);
             }
             this._getShipPayResult = cb;
             let postData = {
                 ...data,
-                product2: `${data.productId}|${data.sellerOrderId}|skillstoreapp`
+                product2: `${data.productId}|${data.sellerOrderId}|skillstoreapp`,
+                source: 'skillstoreapp',
+                from: 'skillstoreapp'
             };
 
             window.parent.postMessage({
