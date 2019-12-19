@@ -1,4 +1,4 @@
-# BOT APP JS SDK *(v1.4.8)*
+# BOT APP JS SDK *(v1.4.9)*
 
 ## 本文档规范
 
@@ -24,18 +24,18 @@
 小度App/小度音箱App上运行的H5游戏需要额外调用以下几个方法才能实现小度有屏音箱上同样的功能：
 
 * 使用`isInApp()`来判断当前H5应用的运行环境是否是小度App/小度音箱App；
-* 需要在`requireLinkAccount`中传入一个回调函数来获取App上的百度账号的授权结果；
-* 需要在`requireCharge`方法中再传入一个回调函数接收购买结果；
-* 通过小度App debug包调试阶段，需要手动输入如下地址调试：http(s)://xiaodu.baidu.com/saiya/sdk/iframe/h5game-wrapper.html?gameUrl=${gameUrl} (gameUrl为encodeURIComponent编码后的地址)。
+* 需要在`requireLinkAccount()`中传入一个回调函数来获取App上的百度账号的授权结果；
+* 需要在`requireCharge()`方法中再传入一个回调函数接收购买结果；
+* 通过小度App debug包调试，需要手动输入如下地址调试：http(s)://xiaodu.baidu.com/saiya/sdk/iframe/h5game-wrapper.html?gameUrl=${gameUrl} (gameUrl为encodeURIComponent编码后的地址)。
 
 ## BotApp的引入
 
 * 通过script标签引入(支持https)
 
 ```html
-<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.7.js"></script>
+<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.9.js"></script>
 ```
-然后即可在全局环境下获取到`BotApp`对象
+即可在全局环境下获取到`BotApp`对象
 > 使用webpack进行打包的模块化的开发形式参考webpack配置文件中的 [externals配置](https://webpack.js.org/configuration/externals/#externals)
 
 ## 开始使用
@@ -55,6 +55,7 @@ const botApp = new BotApp({
 > md5 -s "string"
 > ```
 > * AppKey不能明文暴露，以免造成不必要的风险。
+> AppKey在DBP平台(<https:/ros.baidu.com/dbp>)技能的基础信息页面
 
 ## BotApp.isInApp() *1.4+*
 判断当前H5运行环境是否是在小度APP或者小度音箱APP中，以此区分有屏音箱端和手机App端。开发者需以此来判断并使用相应的SDK方法。
