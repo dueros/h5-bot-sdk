@@ -6,7 +6,7 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.7.js"></script>
+    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.8.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -20,8 +20,8 @@
 </head>
 <body>
 <button id="applicate-account">账号绑定</button>
-<button id="applicate-pay">SHOW我要购买</button>
-<button id="applicate-buy">App我要购买</button>
+<button id="applicate-pay">使用requireCharge购买</button>
+<!--<button id="applicate-buy">使用Buy购买</button>-->
 <button id="applicate-listen">激活聆听</button>
 <button id="applicate-speak">播报"我要早点下班"</button>
 <button id="applicate-register">获取register结果</button>
@@ -122,7 +122,7 @@
                     sellerOrderAttributes: {
                         sellerOrderId: 'hfuawffu2jkjk12e23',
                         productName: 'Mac Book Pro 2019',
-                        productId: 'fjaksdfkvjsznvj',
+                        productId: '191025095313376709',
                         description: '笔记本电脑',
                         sellerNote: '大促销'
                     }
@@ -130,7 +130,11 @@
             };
             log('发起收款，参数如下');
             log(data);
-            botApp.requireCharge(data);
+            botApp.requireCharge(data, function (err, data) {
+                console.error(err);
+                console.log(data);
+                log(data);
+            });
         }
 
         $btnListen.onclick = function () {
