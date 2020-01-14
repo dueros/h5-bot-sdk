@@ -128,7 +128,7 @@ class BotApp {
 
     requireShipping() {
         if (this.config.skillID) {
-            let link = `http://${this.config.skillID}/path?openbot=true&request={\"query\":{\"type\":\"TEXT\",\"original\":\"ReadyForShipping\",\"rewritten\":\"ReadyForShipping\"},\"dialogState\":\"COMPLETED\",\"intents\":[{\"name\":\"ReadyForShipping\",\"score\":100,\"confirmationStatus\":\"NONE\",\"slots\":[]}]}`;
+            let link = `dueros://${this.config.skillID}/readyForShipping`;
             this.uploadLinkClicked({
                 url: link
             });
