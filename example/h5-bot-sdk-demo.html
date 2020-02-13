@@ -6,7 +6,7 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.10.js"></script>
+    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.5.0.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -30,6 +30,8 @@
 <button id="clear-log">清除页面日志</button>
 <button id="applicate-link">LinkClicked</button>
 <button id="applicate-ship">requireShipping</button>
+<button id="applicate-age">实名认证</button>
+<!-- <button id="link-realname">展示实名认证二维码</button> -->
 <div id="log"></div>
 <script>
     var $btnAccount = document.getElementById('applicate-account');
@@ -42,7 +44,9 @@
     var $btnClose = document.getElementById('request-close');
     var $btnLink = document.getElementById('applicate-link');
     var $btnShip = document.getElementById('applicate-ship');
-    var $btnBuy = document.getElementById('applicate-buy');
+    // var $btnBuy = document.getElementById('applicate-buy');
+    var $btnAge = document.getElementById('applicate-age');
+    // var $btnRealName = document.getElementById('link-realname');
 
     var $log = document.getElementById('log');
 
@@ -211,18 +215,35 @@
             botApp.requireShipping();
         }
 
-        $btnBuy.onclick = function () {
-            log('requireBuy，参数如下');
-            var data = {
-                productId: '191022141334493984',
-                sellerOrderId: '23r230203fsfd1l3nr32390'
-            };
-            log(data);
-            botApp.requireBuy(data, function (err, data) {
-                log('收到requireBuy回调');
+        // $btnBuy.onclick = function () {
+        //     log('requireBuy，参数如下');
+        //     var data = {
+        //         productId: '191022141334493984',
+        //         sellerOrderId: '23r230203fsfd1l3nr32390'
+        //     };
+        //     log(data);
+        //     botApp.requireBuy(data, function (err, data) {
+        //         log('收到requireBuy回调');
+        //         log(data);
+        //     });
+        // }
+
+        $btnAge.onclick = function () {
+            log('请求实名认证结果');
+            botApp.requireUserAgeInfo(function (err, data) {
+                log('收到requireUserAgeInfo结果');
                 log(data);
             });
         }
+
+        // $btnRealName.onclick = function () {
+        //     log('上报实名认证事件，参数如下');
+        //     var data = {
+        //         url: 'dueros://94e1a677-d1b3-4dd5-0f0c-b6dd0eeb1c6b/certification?action=realName'
+        //     };
+        //     log(data);
+        //     botApp.uploadLinkClicked(data);
+        // }
     });
 
 </script>
