@@ -1,4 +1,4 @@
-# BOT APP JS SDK *(v1.4.9)*
+# BOT APP JS SDK *(v1.5.0)*
 
 ## 本文档规范
 
@@ -33,7 +33,7 @@
 * 通过script标签引入(支持https)
 
 ```html
-<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.4.9.js"></script>
+<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.5.0js"></script>
 ```
 即可在全局环境下获取到`BotApp`对象
 > 使用webpack进行打包的模块化的开发形式参考webpack配置文件中的 [externals配置](https://webpack.js.org/configuration/externals/#externals)
@@ -166,7 +166,44 @@ BotApp SDK初始化之后，SDK内部会进行身份校验、注册等操作，�
     })
     ```
 
-## BotApp.requireCharge(data, [,callback]) 
+## BotApp.requireUserAgeInfo `SHOW ONLY`
+
+H5应用可通过本方法获取用户的实名认证信息，如果用户没有实名认证小度在家上会自动弹出实名认证的二维码。
+
+* 参数
+
+    callback(*Function*): 本回调会传入用户的实名认证结果，其schema如下
+    ```javascript
+    {
+        "status": "{{NUMBER}}", // 请求是否成功，0为成功，非0不成功
+        "msg": "{{STRING}}", // 请求返回的错误或成功信息
+        "logid": "{{STRING}}",
+        "data": {
+            "is_auth": "{{STRING}}", // 用户是否实名认证，1是、0否
+            "age_group": "{{STRING}}" // 用户年龄段，16岁-18岁为1，18岁以上为2，16岁以下为3
+        }
+    }
+    ```
+
+* 示例
+
+    ```javascript
+    botApp.requireUserAgeInfo(function (data) {
+        console.log(data);
+        // 打印如下：
+        {
+            "status": 0,
+            "msg": "success",
+            "logid": "15786556066708",
+            "data": {
+                "is_auth": "1",
+                "age_group": "2"
+            }
+        }
+    })
+    ```
+
+## BotApp.requireCharge(data, [,callback])
 H5应用可通过本方法发起收款，当用户支付成功后会：如果是在有屏音箱端，回调本SDK中`onChargeStatusChange(callback)`中的`callback`函数，如果是在小度App/小度音箱App中，会回调传入的`callback`函数
 
 对于用户支付成功的订单，会有服务端的订单通知接口，开发者应以该接口的订单支付成功通知为最终数据。
@@ -196,7 +233,7 @@ H5应用可通过本方法发起收款，当用户支付成功后会：如果是
         }
     }
     ```
-	
+
 	callback(*Function*)：本函数**只会**在小度App/小度音箱App中被回调，小度有屏音箱设备请使用`onChargeStatusChange`接收购买结果。调用可能会有明显延迟(当获取购买结果失败后SDK内部会重新请求2次，每次间隔1秒)。
 
 * 示例

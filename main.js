@@ -126,6 +126,25 @@ class BotApp {
         }
     }
 
+    requireUserAgeInfo(cb) {
+        if (this.config.skillID) {
+            this._getJSBridge(bridge => {
+                bridge.callHandler('requestUserAgeInfo', null, (payload) => {
+                    payload = JSON.parse(payload);
+                    cb && cb(null, payload);
+                    if (payload.status !== 0) {
+                        let link = `dueros://${this.config.skillID}/certification?action=realName`;
+                        this.uploadLinkClicked({
+                            url: link
+                        });
+                    }
+                });
+            });
+        } else {
+            throw new Error('Missing `skillID`, please configure `skillID` when initializes the `BotApp`');
+        }
+    }
+
     requireShipping() {
         if (this.config.skillID) {
             let link = `dueros://${this.config.skillID}/readyForShipping`;
