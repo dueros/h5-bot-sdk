@@ -166,7 +166,7 @@ BotApp SDK初始化之后，SDK内部会进行身份校验、注册等操作，�
     })
     ```
 
-## BotApp.requireUserAgeInfo `SHOW ONLY`
+## BotApp.requireUserAgeInfo(callback) *1.5+* `SHOW ONLY`
 
 H5应用可通过本方法获取用户的实名认证信息，如果用户没有实名认证小度在家上会自动弹出实名认证的二维码。
 
