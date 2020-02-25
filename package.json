@@ -1,12 +1,12 @@
 {
   "name": "@baidu/h5-bot-sdk",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "DuerOS H5 BOT JS SDK",
   "main": "lib/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "buildSingleFile": "webpack --config webpack.sdk.js",
-    "buildModule": "babel main.js --out-dir lib",
+    "buildModule": "babel ./src/main.js --out-dir lib",
     "build": "npm run buildSingleFile && npm run buildModule && npm run buildIframe",
     "dev": "webpack-dev-server --progress --colors --config webpack.iframe.dev.js",
     "buildIframe": "webpack --colors --config webpack.iframe.pro.js"

@@ -10,7 +10,7 @@ const PACKAGE = require('./package');
 module.exports = {
     // mode: 'development',
     mode: 'production',
-    entry: './main.js',
+    entry: './src/main.js',
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'h5-bot-sdk.' + PACKAGE.version + '.js',
@@ -20,9 +20,6 @@ module.exports = {
     plugins: [
         // 是用于保持模块引用的 module id 不变
         new webpack.HashedModuleIdsPlugin(),
-
-        // 减少闭包函数数量从而加快JS在浏览器的执行速度
-        new webpack.optimize.ModuleConcatenationPlugin(),
 
         // 在产出的开头注入版本信息
         new webpack.BannerPlugin(PACKAGE.name + ' - ' + PACKAGE.version),

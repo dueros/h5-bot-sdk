@@ -3,6 +3,8 @@
  * @author dengxuening<dengxuening@baidu.com>
  */
 
+import {LowVersionErrorMsg, ServiceError} from './errors';
+
 /**
  * @callback requestCallback 一种回调函数(随便定义的名字。。。)
  */
@@ -88,6 +90,7 @@ class BotApp {
                     }
                 });
             });
+            this._showVersion = this._parseShowVersion();
         }
     }
 
@@ -126,22 +129,77 @@ class BotApp {
         }
     }
 
-    requireUserAgeInfo(cb) {
-        if (this.config.skillID) {
-            this._getJSBridge(bridge => {
-                bridge.callHandler('requestUserAgeInfo', null, (payload) => {
-                    payload = JSON.parse(payload);
-                    cb && cb(null, payload);
-                    if (payload.status !== 0) {
-                        let link = `dueros://${this.config.skillID}/certification?action=realName`;
-                        this.uploadLinkClicked({
-                            url: link
-                        });
-                    }
-                });
-            });
+    /**
+     * 将SHOW端设备里的版本后解析出来
+     * @returns {string}
+     * @private
+     */
+    _parseShowVersion() {
+        let ua = navigator.userAgent;
+        let reg = /XDH-0F-A1 build\/([\d\.]+);/i;
+        let result = reg.exec(ua);
+        if (result) {
+            return result[1];
         } else {
-            throw new Error('Missing `skillID`, please configure `skillID` when initializes the `BotApp`');
+            throw new Error('Show version number parsing failed: ' + ua);
+        }
+    }
+
+    /**
+     * SHOW端设备的版本号对比
+     * @param {string} a 版本号
+     * @param {string} b 版本号
+     * @returns {number} 如果返回0，则表示版本号相同，如果返回1，a版本号大于b版本号，如果返回-1则a版本号小于b
+     * @private
+     */
+    _compareShowVersion(a, b) {
+        let [a1, a2, a3, a4] = String(a).split('.');
+        let [b1, b2, b3, b4] = String(b).split('.');
+        let aSize = Number(a1) * 1000 + Number(a2) * 100 + Number(a3) * 10 + Number(a4);
+        let bSize = Number(b1) * 1000 + Number(b2) * 100 + Number(b3) * 10 + Number(b4);
+        if (aSize === bSize) {
+            return 0;
+        } else if (aSize > bSize) {
+            return 1;
+        } else {
+            return -1;
+        }
+    }
+
+    // 获取用户实名认证的年龄段信息
+    // SHOW 1.35.0.0及其以后的版本可用
+    requireUserAgeInfo(cb) {
+        if (this.isInApp()) {
+            console.warn('requireUserAgeInfo: Your H5 app is not running on the App, and the callback function will not be called');
+            return;
+        } else {
+            this._validateCallback('requireUserAgeInfo', cb);
+            if (this._compareShowVersion(version, '1.35.0.0') >= 0) {
+                if (this.config.skillID) {
+                    this._getJSBridge(bridge => {
+                        bridge.callHandler('requestUserAgeInfo', null, (payload) => {
+                            payload = JSON.parse(payload);
+                            if (payload.status === 0) {
+                                cb && cb(null, payload.data);
+                            } else {
+                                cb && cb(new ServiceError(`logid:${payload.logid} msg:${payload.msg}`), null);
+                                console.error('requireUserAgeInfo: ', payload.logid, payload.msg);
+                            }
+
+                            if (payload.status !== 0 || Number(payload.data.is_auth) === 0) {
+                                let link = `dueros://${this.config.skillID}/certification?action=realName`;
+                                this.uploadLinkClicked({
+                                    url: link
+                                });
+                            }
+                        });
+                    });
+                } else {
+                    throw new Error('Missing `skillID`, please configure `skillID` when initializes the `BotApp`');
+                }
+            } else {
+                cb(new LowVersionErrorMsg(), null);
+            }
         }
     }
 

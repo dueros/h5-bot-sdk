@@ -172,36 +172,50 @@ H5应用可通过本方法获取用户的实名认证信息，如果用户没有
 
 * 参数
 
-    callback(*Function*): 本回调会传入用户的实名认证结果，其schema如下
+    callback(*Function(err, data)*): 本回调会传入用户的实名认证结果，其schema如下
+    
+    err:
+    ```javascript
+    {  
+        code: {{number}}
+        msg: {{string}}
+    }
+    ```
+    data:
     ```javascript
     {
-        "status": "{{NUMBER}}", // 请求是否成功，0为成功，非0不成功
-        "msg": "{{STRING}}", // 请求返回的错误或成功信息
-        "logid": "{{STRING}}",
-        "data": {
-            "is_auth": "{{STRING}}", // 用户是否实名认证，1是、0否
-            "age_group": "{{STRING}}" // 用户年龄段，16岁-18岁为1，18岁以上为2，16岁以下为3
-        }
+        "is_auth": "{{STRING}}", // 用户是否实名认证，1是、0否
+        "age_group": "{{STRING}}" // 用户年龄段，16岁-18岁为1，18岁以上为2，16岁以下为3
     }
     ```
 
 * 示例
-
+     
+     正常返回：
     ```javascript
-    botApp.requireUserAgeInfo(function (data) {
-        console.log(data);
+    botApp.requireUserAgeInfo(function (err, data) {
+        console.log(err, data);
+        // 打印如下：
+        null
+        {
+            "is_auth": "1",
+            "age_group": "2"
+        }
+    });
+    ```
+    设备版本过低返回：
+    ```javascript
+    botApp.requireUserAgeInfo(function (err, data) {
+        console.log(err, data);
         // 打印如下：
         {
-            "status": 0,
-            "msg": "success",
-            "logid": "15786556066708",
-            "data": {
-                "is_auth": "1",
-                "age_group": "2"
-            }
+            code: 1001,
+            msg: 'Device version too low'
         }
-    })
-    ```
+        null
+    });
+    ```    
+   
 
 ## BotApp.requireCharge(data, [,callback])
 H5应用可通过本方法发起收款，当用户支付成功后会：如果是在有屏音箱端，回调本SDK中`onChargeStatusChange(callback)`中的`callback`函数，如果是在小度App/小度音箱App中，会回调传入的`callback`函数
