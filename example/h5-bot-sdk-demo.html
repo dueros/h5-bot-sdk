@@ -232,7 +232,11 @@
             log('请求实名认证结果');
             botApp.requireUserAgeInfo(function (err, data) {
                 log('收到requireUserAgeInfo结果');
-                log(data);
+                if (err) {
+                    log(err);
+                } else {
+                    log(data);
+                }
             });
         }
 

@@ -174,7 +174,7 @@ class BotApp {
             return;
         } else {
             this._validateCallback('requireUserAgeInfo', cb);
-            if (this._compareShowVersion(version, '1.35.0.0') >= 0) {
+            if (this._compareShowVersion(this._showVersion, '1.35.0.0') >= 0) {
                 if (this.config.skillID) {
                     this._getJSBridge(bridge => {
                         bridge.callHandler('requestUserAgeInfo', null, (payload) => {
@@ -182,8 +182,8 @@ class BotApp {
                             if (payload.status === 0) {
                                 cb && cb(null, payload.data);
                             } else {
-                                cb && cb(new ServiceError(`logid:${payload.logid} msg:${payload.msg}`), null);
-                                console.error('requireUserAgeInfo: ', payload.logid, payload.msg);
+                                cb && cb(new ServiceError(`logid: ${payload.logid}, msg: ${payload.msg}`), null);
+                                console.error('requireUserAgeInfo has an error: ', payload.logid, payload.msg);
                             }
 
                             if (payload.status !== 0 || Number(payload.data.is_auth) === 0) {

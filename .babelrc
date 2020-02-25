@@ -16,6 +16,9 @@
         "stage-2"
     ],
     "plugins": [
+        ["@comandeer/babel-plugin-banner", {
+            "banner": "/* eslint-disable */"
+        }],
         "transform-runtime"
     ]
 }

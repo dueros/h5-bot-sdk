@@ -7,15 +7,15 @@
  * SHOW设备版本低时的错误
  */
 export class LowVersionErrorMsg {
-    constructor () {
+    constructor() {
         this.code = 1001;
         this.msg = 'Device version too low';
     }
 }
 
 export class ServiceError {
-    constructor (msg) {
+    constructor(msg) {
         this.code = 1002;
-        this.msg = 'Service error ' + msg;
+        this.msg = 'Service error, ' + msg;
     }
 }
