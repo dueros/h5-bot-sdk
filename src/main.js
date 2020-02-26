@@ -185,7 +185,7 @@ class BotApp {
                             if (payload.status === 0) {
                                 cb && cb(null, payload.data);
                             } else {
-                                cb && cb(new ServiceError(`logid: ${payload.logid}, msg: ${payload.msg}`), null);
+                                cb && cb(new ServiceError(`logid: ${payload.logid}, ${payload.msg}`), payload.data);
                                 console.error('requireUserAgeInfo has an error: ', payload.logid, payload.msg);
                             }
 
