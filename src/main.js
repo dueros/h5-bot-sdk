@@ -90,7 +90,6 @@ class BotApp {
                     }
                 });
             });
-            this._showVersion = this._parseShowVersion();
         }
     }
 
@@ -135,10 +134,14 @@ class BotApp {
      * @private
      */
     _parseShowVersion() {
+        if (this._showVersion) {
+            return this._showVersion;
+        }
         let ua = navigator.userAgent;
-        let reg = /XDH-0F-A1 build\/([\d\.]+);/i;
+        let reg = /build\/([\d\.]+);/i;
         let result = reg.exec(ua);
         if (result) {
+            this._showVersion = result[1];
             return result[1];
         } else {
             throw new Error('Show version number parsing failed: ' + ua);
@@ -174,7 +177,7 @@ class BotApp {
             return;
         } else {
             this._validateCallback('requireUserAgeInfo', cb);
-            if (this._compareShowVersion(this._showVersion, '1.35.0.0') >= 0) {
+            if (this._compareShowVersion(this._parseShowVersion(), '1.35.0.0') >= 0) {
                 if (this.config.skillID) {
                     this._getJSBridge(bridge => {
                         bridge.callHandler('requestUserAgeInfo', null, (payload) => {
