@@ -4,6 +4,7 @@
  */
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
+import {AdvEvent} from "./events";
 
 /**
  * @callback requestCallback 一种回调函数(随便定义的名字。。。)
@@ -29,6 +30,8 @@ class BotApp {
         this.config = config;
         this._init();
     }
+
+    static AdvEvent = AdvEvent;
 
     _init() {
         const registerConfig = JSON.stringify({
@@ -92,6 +95,18 @@ class BotApp {
             });
             this._showVersion = this._parseShowVersion();
         }
+
+        this._advShowCallback = this.config.advShowCallback
+            ? this.config.advShowCallback
+            : function () {};
+        if (/\d+/.test(this.config.advFirstShowTime)) {
+            clearTimeout(this._advFirstShowTimer);
+            this._advFirstShowTimer = setTimeout(() => {
+                this._getCommonlAdv();
+            });
+        } else {
+            throw new Error('advFirstShowTime must be a number, please check configuration');
+        }
     }
 
     _getJSBridge(cb) {
@@ -104,9 +119,9 @@ class BotApp {
         }
     }
 
-    _validateCallback(fnName, arg) {
+    _validateCallback(fnName, arg, index = 0) {
         if (typeof arg !== 'function') {
-            throw new TypeError(`[${fnName}]'s arguments[0] must be a function, but get a ${typeof arg}`);
+            throw new TypeError(`[${fnName}]'s arguments[${index}] must be a function, but get a ${typeof arg}`);
         }
     }
 
@@ -166,8 +181,12 @@ class BotApp {
         }
     }
 
-    // 获取用户实名认证的年龄段信息
-    // SHOW 1.35.0.0及其以后的版本可用
+    /**
+     * 获取用户实名认证的年龄段信息
+     * SHOW 1.35.0.0及其以后的版本可用
+     *
+     * @param {requestCallback} cb
+     */
     requireUserAgeInfo(cb) {
         if (this.isInApp()) {
             console.warn('requireUserAgeInfo: Your H5 app is not running on the App, and the callback function will not be called');
@@ -346,7 +365,12 @@ class BotApp {
         this._validateCallback('onHandleIntent', cb);
         this._getJSBridge(bridge => {
             bridge.registerHandler('onHandleIntent',  function (payload, callback) {
-                cb(JSON.parse(payload));
+                payload = JSON.parse(payload);
+                if (payload.intent.name === 'advertisement') {
+                    this._renderAdv(payload.intent.slots);
+                } else {
+                    cb(payload);
+                }
                 callback('js 回调');
             });
         });
@@ -359,7 +383,7 @@ class BotApp {
      */
     updateUiContext(data, cb) {
         if (cb) {
-            this._validateCallback('updateUiContext', cb);
+            this._validateCallback('updateUiContext', cb, 1);
         }
         data = JSON.stringify(data);
         this._getJSBridge(bridge => {
@@ -391,7 +415,7 @@ class BotApp {
      */
     speak(data, cb) {
         if (cb) {
-            this._validateCallback('speak', cb);
+            this._validateCallback('speak', cb, 1);
         }
         this._getJSBridge(bridge => {
             bridge.callHandler('speak', data, function () {
@@ -454,6 +478,19 @@ class BotApp {
                 callback(true) // 告知处理是否成功
             });
         });
+    }
+
+    /**
+     * 从意图槽位中解析广告物料并渲染广告
+     * @param {string} data
+     * @private
+     */
+    _renderAdv(data) {
+
+    }
+
+    _getCommonlAdv() {
+
     }
 }
 
