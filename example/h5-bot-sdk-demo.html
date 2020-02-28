@@ -7,7 +7,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
     <script src="https://cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>
-    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.5.2.js"></script>
+    <script src="/h5-bot-sdk.1.6.0.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -103,6 +103,16 @@
         botApp.onHandleScreenNavigatorEvent(function (data) {
             log('收到 onHandleScreenNavigatorEvent 调用');
             console.log(data);
+            log(data);
+        });
+
+        botApp.onDialogStateChanged(function (err, data) {
+            log('收到 onDialogStateChanged 调用')
+            log(data);
+        });
+
+        botApp.onHandleUnknowUtterance(function (err, data) {
+            log('收到 onHandleUnknowUtterance 调用')
             log(data);
         });
 

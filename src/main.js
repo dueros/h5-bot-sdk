@@ -429,7 +429,12 @@ class BotApp {
         this._validateCallback('onClickLink', cb);
         this._getJSBridge(bridge => {
             bridge.registerHandler('onClickLink',  function (payload, callback) {
-                cb(JSON.parse(payload));
+                payload = JSON.parse(payload);
+                if (payload.url === 'http://sdk.bot.dueros.ai?action=known_rance') {
+                    this._handleUnknowUtteranceCb && this._handleUnknowUtteranceCb(null, payload.params);
+                } else {
+                    cb(payload);
+                }
                 // 告知app是否处理成功
                 callback(true);
             })
@@ -457,6 +462,21 @@ class BotApp {
                 callback(true) // 告知处理是否成功
             });
         });
+    }
+
+    onDialogStateChanged(cb) {
+        this._validateCallback('onDialogStateChanged', cb);
+        this._getJSBridge(bridge => {
+            bridge.registerHandler('onDialogStateChanged',  function (state, callback) {
+                cb(null, state);
+                callback(true) // 告知处理是否成功
+            });
+        });
+    }
+
+    onHandleUnknowUtterance(cb) {
+        this._validateCallback('onHandleUnknowUtterance', cb);
+        this._handleUnknowUtteranceCb = cb;
     }
 }
 
