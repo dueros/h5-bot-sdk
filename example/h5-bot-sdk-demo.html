@@ -80,18 +80,20 @@
             signature2: '1ea04b2c23877a9a221aace7384dc2d0',
             skillID: '699e74f5-b879-1926-1e11-51998f05ea68',
             zIndex: 9999,
-            advCloseAction: 1,
-            gameScreenType: 1,
-            advFirstShowTime: 10,
-            advShowCallback: function (err, data) {
-                if (data.action === BotApp.AdvEvent.CLICK) {
-                    log('用户点击了广告');
-                } else if (data.action === BotApp.AdvEvent.CLOSE) {
-                    log('用户关闭了广告');
-                } else if (data.action === BotApp.AdvEvent.SHOW) {
-                    log('广告展示成功');
+            adv: {
+                screenShapeType: 1,
+                displayStrategy: 1,
+                firstShowTime: 10,
+                displayCallback: function (err, data) {
+                    if (data.action === BotApp.AdvEvent.CLICK) {
+                        log('用户点击了广告');
+                    } else if (data.action === BotApp.AdvEvent.CLOSE) {
+                        log('用户关闭了广告');
+                    } else if (data.action === BotApp.AdvEvent.SHOW) {
+                        log('广告展示成功');
+                    }
                 }
-            }
+            },
         });
 
         botApp.onLinkAccountSuccess(function (data) {

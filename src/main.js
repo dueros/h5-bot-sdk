@@ -4,7 +4,9 @@
  */
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
-import {AdvEvent} from "./events";
+import {AdEvent} from "./events";
+import {isSet, parseH5Url} from "./utils";
+
 
 /**
  * @callback requestCallback 一种回调函数(随便定义的名字。。。)
@@ -27,11 +29,33 @@ class BotApp {
      * @param {string} config.skillID // 可选字段
      */
     constructor (config = {}) {
-        this.config = config;
+        // todo: 统一的参数校验
+        this.config = {
+            zIndex: 9999,
+            ...config,
+            disablead: false,
+            screenShapeType: 1, // 1 => 竖屏， 2 => 全屏
+            adDisplayStrategy: 1, // 1 => 用户关闭后不再填充广告， 2 => 用户关闭后再填充一次
+            adDisplayCallback: function (err, data) {},
+            adFirstShowTime: 10,
+            adBannerPos: {
+                right: '30px',
+                bottom: '30px'
+            }
+        };
         this._init();
+
+        // session期间最多弹出广告2次
+        this._commonadShowTimes = 2;
+
+        // 广告弹出后，每次切换间隔10s
+        this._commonadSwitchInterval = 10000;
+
+        // 广告关闭后，下次打开在60s后
+        this._commonadReopenTimeout = 60000;
     }
 
-    static AdvEvent = AdvEvent;
+    static adEvent = AdEvent;
 
     _init() {
         const registerConfig = JSON.stringify({
@@ -94,19 +118,64 @@ class BotApp {
                 });
             });
             this._showVersion = this._parseShowVersion();
+            window.addEventListener('message', (event) => {
+                if (this.config._duerosDebugadIframeUrl) {
+                    this._adMsgTarget = parseH5Url(this.config._duerosDebugadIframeUrl);
+                } else {
+                    this._adMsgTarget = 'https://xiaodu.baidu.com';
+                }
+                if (event.origin === this._adMsgTarget) {
+                    let data = event.data;
+                    if (data.type === 'ad_load_material') {
+                        this._adDisplayCallback(null, {
+                            action: AdEvent.SHOW
+                        });
+                    } else if (data.type === 'ad_click') {
+                        this.uploadLinkClicked({
+                            url: data.linkUrl
+                        });
+                        this._adDisplayCallback(null, {
+                            action: AdEvent.CLICK
+                        });
+                    } else if (data.type === 'ad_close') {
+                        this._adDisplayCallback(null, {
+                            action: AdEvent.CLOSE
+                        });
+
+                        this._closeCommonad();
+
+                        // 如果开发者选择广告策略 2
+                        // 则在某一时间之后再次打开
+                        if (this.config.adDisplayStrategy === 2) {
+                            if (this._commonadShowTimes > 0) {
+                                clearTimeout(this._commonadReshowTimeout);
+                                let fireImmediately = true;
+                                this._commonadReshowTimeout = setTimeout(() => {
+                                    this._startCommonadSwitch(fireImmediately);
+                                    fireImmediately = false;
+                                }, this._commonadReopenTimeout);
+                            }
+                        }
+                    }
+                }
+            });
         }
 
-        this._advShowCallback = this.config.advShowCallback
-            ? this.config.advShowCallback
+        this._adDisplayCallback = this.config.adDisplayCallback
+            ? this.config.adDisplayCallback
             : function () {};
-        if (/\d+/.test(this.config.advFirstShowTime)) {
-            clearTimeout(this._advFirstShowTimer);
-            this._advFirstShowTimer = setTimeout(() => {
-                this._getCommonlAdv();
-            });
+
+        if (/\d+/.test(this.config.adFirstShowTime)) {
+            clearTimeout(this._adFirstShowTimer);
+            this._adFirstShowTimer = setTimeout(() => {
+                this._requestCommonadMaterial();
+                this._startCommonadSwitch();
+                this._commonadShowTimes--;
+            }, this.config.adFirstShowTime * 1000);
         } else {
-            throw new Error('advFirstShowTime must be a number, please check configuration');
+            throw new Error('adFirstShowTime must be a number, please check configuration');
         }
+
     }
 
     _getJSBridge(cb) {
@@ -366,8 +435,8 @@ class BotApp {
         this._getJSBridge(bridge => {
             bridge.registerHandler('onHandleIntent',  function (payload, callback) {
                 payload = JSON.parse(payload);
-                if (payload.intent.name === 'advertisement') {
-                    this._renderAdv(payload.intent.slots);
+                if (payload.intent.name === 'Renderadertisement') {
+                    this._renderad(payload.intent.slots);
                 } else {
                     cb(payload);
                 }
@@ -485,12 +554,88 @@ class BotApp {
      * @param {string} data
      * @private
      */
-    _renderAdv(data) {
+    _renderad(data) {
+        if (this._adIframe1) {
+            this._setadPosition(this._adIframe1);
+        } else {
+            this._adIframe1 = document.createElement('iframe');
+            this._adIframe1.src = this.config._duerosDebugadIframeUrl
+                ? this.config._duerosDebugadIframeUrl
+                : 'https://xiaodu.baidu.com/sdk/adContainer.html';
+            document.body.appendChild(this._adIframe1);
+            this._adIframe1.cssText = 'position: absolute;';
 
+            this._setadPosition(this._adIframe1);
+        }
+        this._adIframe1.style.display = 'block';
     }
 
-    _getCommonlAdv() {
+    /**
+     * 获取广告物料
+     * @private
+     */
+    _requestCommonadMaterial() {
+        this.uploadLinkClicked({
+            url: `dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?botId=${this.config.skillID}&adSlotId=y&adType=image`
+        });
+    }
 
+    _setadPosition(iframeDOM) {
+        // 如果是竖屏游戏
+        if (this.config.screenShapeType === 1) {
+            iframeDOM.style.bottom = '30px';
+            if (this._lastadDisplayisLeft) {
+                iframeDOM.style.right = '23px';
+                this._lastadDisplayisLeft = false;
+            } else {
+                iframeDOM.style.left = '23px';
+                this._lastadDisplayisLeft = true;
+            }
+        // 如果是全屏游戏
+        } else if (this.config.screenShapeType === 2) {
+            if (isSet(this.config.adBannerPos.top)) {
+                iframeDOM.style.top = this.config.adBannerPos.top;
+            }
+            if (isSet(this.config.adBannerPos.right)) {
+                iframeDOM.style.right = this.config.adBannerPos.right;
+            }
+            if (isSet(this.config.adBannerPos.bottom)) {
+                iframeDOM.style.bottom = this.config.adBannerPos.bottom;
+            }
+            if (isSet(this.config.adBannerPos.left)) {
+                iframeDOM.style.left = this.config.adBannerPos.left;
+            }
+        }
+    }
+
+    /**
+     * 开始轮换广告
+     * @param {boolean} fireImmediately 是否立即轮换一次广告
+     * @private
+     */
+    _startCommonadSwitch(fireImmediately) {
+        if (fireImmediately) {
+            // 请求到素材后，会在onHandleIntent里处理
+            this._requestCommonadMaterial();
+        }
+        clearInterval(this._commonadSwitchTimer);
+        this._commonadSwitchTimer = setInterval(() => {
+            // 请求到素材后，会在onHandleIntent里处理
+            this._requestCommonadMaterial();
+        }, this._commonadSwitchInterval);
+    }
+
+    /**
+     * 停止广告轮换
+     * @private
+     */
+    _stopCommonadSwitch() {
+        clearInterval(this._commonadSwitchTimer);
+    }
+
+    _closeCommonad() {
+        this._stopCommonadSwitch();
+        this._adIframe1.style.display = 'none';
     }
 }
 

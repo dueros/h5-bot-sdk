@@ -7,7 +7,7 @@
  * 广告相关事件
  * @type {{SHOW: number, CLICK: number, CLOSE: number}}
  */
-export const AdvEvent = {
+export const AdEvent = {
     SHOW: 1,
     CLICK: 2,
     CLOSE: 3
