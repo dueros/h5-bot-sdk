@@ -428,10 +428,10 @@ class BotApp {
     onClickLink(cb) {
         this._validateCallback('onClickLink', cb);
         this._getJSBridge(bridge => {
-            bridge.registerHandler('onClickLink',  function (payload, callback) {
+            bridge.registerHandler('onClickLink', (payload, callback) => {
                 payload = JSON.parse(payload);
-                if (payload.url === 'http://sdk.bot.dueros.ai?action=known_rance') {
-                    this._handleUnknowUtteranceCb && this._handleUnknowUtteranceCb(null, payload.params);
+                if (payload.url === 'http://sdk.bot.dueros.ai?action=unknown_utterance') {
+                    this._handleUnknowUtteranceCb && this._handleUnknowUtteranceCb(null, JSON.parse(payload.params));
                 } else {
                     cb(payload);
                 }
@@ -466,17 +466,39 @@ class BotApp {
 
     onDialogStateChanged(cb) {
         this._validateCallback('onDialogStateChanged', cb);
-        this._getJSBridge(bridge => {
-            bridge.registerHandler('onDialogStateChanged',  function (state, callback) {
-                cb(null, state);
-                callback(true) // 告知处理是否成功
+        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+            this._getJSBridge(bridge => {
+                bridge.registerHandler('onDialogStateChanged',  function (state, callback) {
+                    cb(null, state);
+                    callback(true); // 告知处理是否成功
+                });
             });
-        });
+        } else {
+            cb(new LowVersionErrorMsg(), null);
+        }
     }
 
     onHandleUnknowUtterance(cb) {
         this._validateCallback('onHandleUnknowUtterance', cb);
-        this._handleUnknowUtteranceCb = cb;
+        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+            this._handleUnknowUtteranceCb = cb;
+        } else {
+            cb(new LowVersionErrorMsg(), null);
+        }
+    }
+
+    canGoBack(cb) {
+        this._validateCallback('canGoBack', cb);
+        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+            this._getJSBridge(bridge => {
+                bridge.callHandler('canGoBack', null, (payload) => {
+                    payload = JSON.parse(payload);
+                    cb(null, payload.data);
+                });
+            });
+        } else {
+            cb(new LowVersionErrorMsg(), null);
+        }
     }
 }
 

@@ -33,7 +33,7 @@
 * 通过script标签引入(支持https)
 
 ```html
-<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.5.2.js"></script>
+<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.6.0.js"></script>
 ```
 即可在全局环境下获取到`BotApp`对象
 > 使用webpack进行打包的模块化的开发形式参考webpack配置文件中的 [externals配置](https://webpack.js.org/configuration/externals/#externals)
@@ -173,10 +173,10 @@ H5应用可通过本方法获取用户的实名认证信息，如果用户没有
 * 参数
 
     callback(*Function(err, data)*): 本回调会传入用户的实名认证结果，其schema如下
-    
+
     err:
     ```javascript
-    {  
+    {
         code: {{number}}
         msg: {{string}}
     }
@@ -190,7 +190,7 @@ H5应用可通过本方法获取用户的实名认证信息，如果用户没有
     ```
 
 * 示例
-     
+
      正常返回：
     ```javascript
     botApp.requireUserAgeInfo(function (err, data) {
@@ -214,8 +214,8 @@ H5应用可通过本方法获取用户的实名认证信息，如果用户没有
         }
         null
     });
-    ```    
-   
+    ```
+
 
 ## BotApp.requireCharge(data, [,callback])
 H5应用可通过本方法发起收款，当用户支付成功后会：如果是在有屏音箱端，回调本SDK中`onChargeStatusChange(callback)`中的`callback`函数，如果是在小度App/小度音箱App中，会回调传入的`callback`函数
@@ -561,7 +561,7 @@ H5：调用updateUiContext([(utterances="第一个", url="{url1}"), (utterances=
         enableGeneralUtterances: true,
         hyperUtterances: [
             {
-                url: 'https://www.apple.com', // 与下方的utterances绑定的URL，当用户的Query与下方的utterances匹配时，则表示选中了本URL
+                url: 'https://www.apple.com', // 当用户的语音对话内容与utterances匹配时，SDK会调用onClickLink中的回调函数，并将本URL当做参数。
                 utterances: ['苹果'],
                 type: 'link',
                 params: {}
@@ -584,6 +584,44 @@ H5：调用updateUiContext([(utterances="第一个", url="{url1}"), (utterances=
         console.log(result);
         // 返回结果如下
         true
+    });
+    ```
+
+## botApp.onHandleUnknowUtterance(callback) *1.6+* `SHOW ONLY`
+必须先调用`updateUiContext`，同时将`enableGeneralUtterances`设置为`false`。当用户的对话内容不在`updateUiContext`设置的范围内时，开发者可使用本能力获取用户语音对话的语音识别文字结果。
+
+* 参数
+
+    callback(*Function*)：回调函数的参数是用户对话的内容，其schema如下：
+
+    ```javascript
+    {
+        "query": "{string}"
+    }
+    ```
+
+* 示例
+
+    ```javascript
+    botApp.updateUiContext({
+        enableGeneralUtterances: false,
+        hyperUtterances: [
+            {
+                url: 'https://www.banana.com',
+                utterances: ['香蕉'],
+                type: 'link',
+                params: {}
+            }
+        ]
+    });
+
+    botApp.onHandleUnknowUtterance(function (data) {
+        console.log(data);
+        // 当用户对话：小度小度，苹果
+        // 打印结果如下：
+        {
+            query: "苹果"
+        }
     });
     ```
 
@@ -685,6 +723,57 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 
     ```javascript
     botApp.requireShipping();
+    ```
+
+## BotApp.onDialogStateChanged(callback) *1.6+* `SHOW ONLY`
+用户对话状态变化通知，用户唤醒设备，发起语音指令，TTS播报，进入空闲状态都会受收到回调通知。
+
+* 参数
+
+    callback(*Function*)：当用户与设备对话状态改变时，本回调会被调用，详细状态定义如下：
+
+    |状态名称 | 状态值 |
+    |---|---|
+    | 空闲状态| IDLE |
+    |正在语音输入| LISTENING |
+    |语音输入完成，等待后端返回 | THINKING |
+    |正在进行TTS播报 | SPEAKING |
+
+    callback参数scheme如下：
+
+    ```javascript
+    {{string}}
+    ```
+
+* 示例
+
+    ```javascript
+    botApp.onDialogStateChanged(function (status) {
+        console.log(status);
+        // 打印如下：
+        LISTENING
+    })
+    ```
+
+## BotApp.canGoBack(callback) *1.6+* `SHOW ONLY`
+获取设备浏览器历史记记录是否还能后退
+
+* 参数
+
+    callback(*Function*)：回调中会传入一个布尔值，告知是否还能回退浏览器历史记录，schema示例如下
+    
+    ```javascript
+        {{Boolean}}
+    ```
+
+* 示例
+
+    ```javascript
+     botApp.canGoBack(function(state) {  
+         console.log(state);
+         // 打印如下
+         true // 也有可能是false
+    });
     ```
 
 ## 附表
