@@ -4,7 +4,7 @@
  */
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
-import {AdEvent} from "./events";
+import {AdAction} from "./events";
 import {isSet, parseH5Url} from "./utils";
 
 
@@ -32,7 +32,6 @@ class BotApp {
         // todo: 统一的参数校验
         this.config = {
             zIndex: 9999,
-            ...config,
             disablead: false,
             screenShapeType: 1, // 1 => 竖屏， 2 => 全屏
             adDisplayStrategy: 1, // 1 => 用户关闭后不再填充广告， 2 => 用户关闭后再填充一次
@@ -41,21 +40,22 @@ class BotApp {
             adBannerPos: {
                 right: '30px',
                 bottom: '30px'
-            }
+            },
+            ...config,
         };
         this._init();
 
         // session期间最多弹出广告2次
-        this._commonadShowTimes = 2;
+        this._commonAdShowTimes = 2;
 
         // 广告弹出后，每次切换间隔10s
         this._commonadSwitchInterval = 10000;
 
         // 广告关闭后，下次打开在60s后
-        this._commonadReopenTimeout = 60000;
+        this._commonAdReopenTimeout = 60000;
     }
 
-    static adEvent = AdEvent;
+    static AdAction = AdAction;
 
     _init() {
         const registerConfig = JSON.stringify({
@@ -65,7 +65,8 @@ class BotApp {
             signature2: this.config.signature2
         });
 
-        this._msgTarget = 'http://xiaodu.baidu.com';
+        this._isCommonAdClosed = false;
+        this._gameWrapperMsgTarget = 'http://xiaodu.baidu.com';
 
         if (this.isInApp()) {
             window.addEventListener('message', event => {
@@ -73,16 +74,16 @@ class BotApp {
                 if (data.type === 'wrapper_location_protocal') {
                     // 如果检测到父页面是https协议的，则升级为https
                     if (data.data.indexOf('https') > -1) {
-                        this._msgTarget = 'https://xiaodu.baidu.com';
+                        this._gameWrapperMsgTarget = 'https://xiaodu.baidu.com';
                     }
                     // 确认链接是否是https之后开始注册
                     window.parent.postMessage({
                         type: 'register',
                         data: this.config
-                    }, this._msgTarget);
+                    }, this._gameWrapperMsgTarget);
                 }
 
-                if (event.origin === this._msgTarget) {
+                if (event.origin === this._gameWrapperMsgTarget) {
                     console.log('receive h5game-wrapper\'s message ', data);
                     if (data.type === 'authorized_success' || data.type === 'authorized_fail') {
                         this._linkAccountResultCb(data);
@@ -118,42 +119,44 @@ class BotApp {
                 });
             });
             this._showVersion = this._parseShowVersion();
+            if (this.config._duerosDebugadIframeUrl) {
+                this._adMsgTarget = parseH5Url(this.config._duerosDebugadIframeUrl);
+            } else {
+                this._adMsgTarget = 'https://xiaodu.baidu.com';
+            }
             window.addEventListener('message', (event) => {
-                if (this.config._duerosDebugadIframeUrl) {
-                    this._adMsgTarget = parseH5Url(this.config._duerosDebugadIframeUrl);
-                } else {
-                    this._adMsgTarget = 'https://xiaodu.baidu.com';
-                }
                 if (event.origin === this._adMsgTarget) {
                     let data = event.data;
+                    console.log('receive msg from iframe: ', data);
                     if (data.type === 'ad_load_material') {
+                        // todo ...
                         this._adDisplayCallback(null, {
-                            action: AdEvent.SHOW
+                            action: AdAction.SHOW
                         });
                     } else if (data.type === 'ad_click') {
                         this.uploadLinkClicked({
                             url: data.linkUrl
                         });
                         this._adDisplayCallback(null, {
-                            action: AdEvent.CLICK
+                            action: AdAction.CLICK
                         });
                     } else if (data.type === 'ad_close') {
                         this._adDisplayCallback(null, {
-                            action: AdEvent.CLOSE
+                            action: AdAction.CLOSE
                         });
 
-                        this._closeCommonad();
+                        this._closeCommonAd();
 
                         // 如果开发者选择广告策略 2
                         // 则在某一时间之后再次打开
                         if (this.config.adDisplayStrategy === 2) {
-                            if (this._commonadShowTimes > 0) {
+                            // 如果广告打开次数还有剩余
+                            if (this._commonAdShowTimes > 0) {
+                                this._commonAdShowTimes--;
                                 clearTimeout(this._commonadReshowTimeout);
-                                let fireImmediately = true;
                                 this._commonadReshowTimeout = setTimeout(() => {
-                                    this._startCommonadSwitch(fireImmediately);
-                                    fireImmediately = false;
-                                }, this._commonadReopenTimeout);
+                                    this._startCommonAdSwitch(true);
+                                }, this._commonAdReopenTimeout);
                             }
                         }
                     }
@@ -165,12 +168,12 @@ class BotApp {
             ? this.config.adDisplayCallback
             : function () {};
 
+        // 校验是否是数字
         if (/\d+/.test(this.config.adFirstShowTime)) {
             clearTimeout(this._adFirstShowTimer);
             this._adFirstShowTimer = setTimeout(() => {
-                this._requestCommonadMaterial();
-                this._startCommonadSwitch();
-                this._commonadShowTimes--;
+                this._startCommonAdSwitch(true);
+                this._commonAdShowTimes--;
             }, this.config.adFirstShowTime * 1000);
         } else {
             throw new Error('adFirstShowTime must be a number, please check configuration');
@@ -225,7 +228,7 @@ class BotApp {
         if (result) {
             return result[1];
         } else {
-            throw new Error('Show version number parsing failed: ' + ua);
+            throw new Error('Device version number parsing failed: ' + ua);
         }
     }
 
@@ -321,7 +324,7 @@ class BotApp {
             this._linkAccountResultCb = cb;
             window.parent.postMessage({
                 type: 'request_authorization'
-            }, this._msgTarget);
+            }, this._gameWrapperMsgTarget);
         } else {
             if (cb) {
                 console.warn('requireLinkAccount: Your H5 app is not running on the App, and the callback function will not be called');
@@ -363,7 +366,7 @@ class BotApp {
             window.parent.postMessage({
                 type: 'charge',
                 data
-            }, this._msgTarget);
+            }, this._gameWrapperMsgTarget);
         } else {
             data = JSON.stringify(data);
             this._getJSBridge(bridge => {
@@ -394,7 +397,7 @@ class BotApp {
             window.parent.postMessage({
                 type: 'buy',
                 data: postData
-            }, this._msgTarget);
+            }, this._gameWrapperMsgTarget);
         } else {
             console.error('Method `requireBuy` can only be called in App');
         }
@@ -433,10 +436,15 @@ class BotApp {
     onHandleIntent(cb) {
         this._validateCallback('onHandleIntent', cb);
         this._getJSBridge(bridge => {
-            bridge.registerHandler('onHandleIntent',  function (payload, callback) {
+            bridge.registerHandler('onHandleIntent',  (payload, callback) => {
                 payload = JSON.parse(payload);
                 if (payload.intent.name === 'Renderadertisement') {
-                    this._renderad(payload.intent.slots);
+                    // 做个开关。因为广告物料的返回是异步的，且有时间间隔
+                    // 如果刚好在网络请求期间用户点击了关闭，然后物料返回
+                    // 了，这时就又会渲染广告，造成关不掉的现象
+                    if (!this._isCommonAdClosed) {
+                        this._renderAd(payload.intent.slots);
+                    }
                 } else {
                     cb(payload);
                 }
@@ -501,7 +509,7 @@ class BotApp {
         if (this.isInApp()) {
             window.parent.postMessage({
                 type: 'closeWebView'
-            }, this._msgTarget);
+            }, this._gameWrapperMsgTarget);
         } else {
             this._getJSBridge(bridge => {
                 bridge.callHandler('requestClose');
@@ -554,20 +562,37 @@ class BotApp {
      * @param {string} data
      * @private
      */
-    _renderad(data) {
-        if (this._adIframe1) {
-            this._setadPosition(this._adIframe1);
-        } else {
+    _renderAd(data) {
+        data = JSON.parse(data);
+        if (!this._adIframe1) {
             this._adIframe1 = document.createElement('iframe');
+            let adIframeQuery = encodeURIComponent(parseH5Url(window.location.href));
             this._adIframe1.src = this.config._duerosDebugadIframeUrl
-                ? this.config._duerosDebugadIframeUrl
-                : 'https://xiaodu.baidu.com/sdk/adContainer.html';
+                ? this.config._duerosDebugadIframeUrl + `?msgTarget=${adIframeQuery}`
+                : `https://xiaodu.baidu.com/sdk/adContainer.html?msgTarget=${adIframeQuery}`;
+            this._adIframe1.scrolling = 'no';
+            this._adIframe1.frameborder = '0';
             document.body.appendChild(this._adIframe1);
-            this._adIframe1.cssText = 'position: absolute;';
-
-            this._setadPosition(this._adIframe1);
+            this._adIframe1.style.cssText += `display: block; z-index: ${this.config.zIndex};position: absolute;`;
         }
         this._adIframe1.style.display = 'block';
+        this._setAdPosition();
+        let postData = {
+            type: 'ad_set_material',
+            data: {
+                ...data,
+                screenShapeType: this.config.screenShapeType,
+            }
+        };
+
+        if (this._adIframe1Loaded) {
+            this._adIframe1.contentWindow.postMessage(postData, this._adMsgTarget);
+        } else {
+            this._adIframe1.onload = () => {
+                this._adIframe1.contentWindow.postMessage(postData, this._adMsgTarget);
+                this._adIframe1Loaded = true;
+            }
+        }
     }
 
     /**
@@ -580,30 +605,31 @@ class BotApp {
         });
     }
 
-    _setadPosition(iframeDOM) {
+    _setAdPosition() {
         // 如果是竖屏游戏
         if (this.config.screenShapeType === 1) {
-            iframeDOM.style.bottom = '30px';
+            this._adIframe1.style.cssText += 'width: 242px; height: 214px;bottom: 30px;';
             if (this._lastadDisplayisLeft) {
-                iframeDOM.style.right = '23px';
+                this._adIframe1.style.right = '23px';
                 this._lastadDisplayisLeft = false;
             } else {
-                iframeDOM.style.left = '23px';
+                this._adIframe1.style.left = '23px';
                 this._lastadDisplayisLeft = true;
             }
         // 如果是全屏游戏
         } else if (this.config.screenShapeType === 2) {
+            console.log(2);
             if (isSet(this.config.adBannerPos.top)) {
-                iframeDOM.style.top = this.config.adBannerPos.top;
+                this._adIframe1.style.top = this.config.adBannerPos.top;
             }
             if (isSet(this.config.adBannerPos.right)) {
-                iframeDOM.style.right = this.config.adBannerPos.right;
+                this._adIframe1.style.right = this.config.adBannerPos.right;
             }
             if (isSet(this.config.adBannerPos.bottom)) {
-                iframeDOM.style.bottom = this.config.adBannerPos.bottom;
+                this._adIframe1.style.bottom = this.config.adBannerPos.bottom;
             }
             if (isSet(this.config.adBannerPos.left)) {
-                iframeDOM.style.left = this.config.adBannerPos.left;
+                this._adIframe1.style.left = this.config.adBannerPos.left;
             }
         }
     }
@@ -613,13 +639,14 @@ class BotApp {
      * @param {boolean} fireImmediately 是否立即轮换一次广告
      * @private
      */
-    _startCommonadSwitch(fireImmediately) {
+    _startCommonAdSwitch(fireImmediately) {
+        this._isCommonAdClosed = false;
         if (fireImmediately) {
             // 请求到素材后，会在onHandleIntent里处理
             this._requestCommonadMaterial();
         }
-        clearInterval(this._commonadSwitchTimer);
-        this._commonadSwitchTimer = setInterval(() => {
+        clearInterval(this._commonAdSwitchTimer);
+        this._commonAdSwitchTimer = setInterval(() => {
             // 请求到素材后，会在onHandleIntent里处理
             this._requestCommonadMaterial();
         }, this._commonadSwitchInterval);
@@ -629,12 +656,13 @@ class BotApp {
      * 停止广告轮换
      * @private
      */
-    _stopCommonadSwitch() {
-        clearInterval(this._commonadSwitchTimer);
+    _stopCommonAdSwitch() {
+        clearInterval(this._commonAdSwitchTimer);
     }
 
-    _closeCommonad() {
-        this._stopCommonadSwitch();
+    _closeCommonAd() {
+        this._stopCommonAdSwitch();
+        this._isCommonAdClosed = true;
         this._adIframe1.style.display = 'none';
     }
 }

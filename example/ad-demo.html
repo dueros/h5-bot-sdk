@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="zh_CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>H5 BOT SDK DEMO</title>
+    <script>
+        window.WebViewJavascriptBridge = {
+            init: function () {
+
+            },
+            callHandler: function (funName, data, cb) {
+                console.log(funName, data, cb);
+                if (funName === 'uploadLinkClicked') {
+                    setTimeout(() => {
+                        this.uploadLinkClicked();
+                    }, 1000);
+                }
+            },
+            registerHandler: function (funName, cb) {
+                console.log(funName, cb);
+                if (funName === 'onHandleIntent') {
+                    this.handleIntentCb = cb;
+                }
+            },
+
+            uploadLinkClicked() {
+                this.handleIntentCb(JSON.stringify({
+                    intent: {
+                        name: 'Renderadertisement',
+                        slots: JSON.stringify({
+                            imgUrl: 'https://duerstatic.bj.bcebos.com/dbp-image%2Fdbp_banner%2Fdbp-baiduyun-award.png',
+                            desc: '百度云服务悬赏',
+                            linkClick: 'dueros://link1'
+                        })
+                    },
+                }),  function () {});
+            }
+
+        }
+    </script>
+    <!--<script src="http://cdn.dengxuening.com/h5-bot-sdk.1.7.0.js"></script>-->
+    <script src="http://127.0.0.1:8081/dist/h5-bot-sdk.1.7.0.js"></script>
+    <style>
+        button {
+            min-width: 120px;
+            height: 40px;
+        }
+        #log{
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+<button id="applicate-account">账号绑定</button>
+<button id="applicate-pay">使用requireCharge购买</button>
+<!--<button id="applicate-buy">使用Buy购买</button>-->
+<button id="applicate-listen">激活聆听</button>
+<button id="applicate-speak">播报"我要早点下班"</button>
+<button id="applicate-register">获取register结果</button>
+<button id="applicate-uicontext">updateUIContext</button>
+<button id="request-close">退出页面</button>
+<button id="clear-log">清除页面日志</button>
+<button id="applicate-link">LinkClicked</button>
+<button id="applicate-ship">requireShipping</button>
+<button id="applicate-age">实名认证</button>
+<button id="adv-banner">banner广告展示</button>
+<button id="adv-vertical">竖屏广告展示</button>
+<button id="adv-incentive">激励广告展示</button>
+<!-- <button id="link-realname">展示实名认证二维码</button> -->
+<div id="log"></div>
+<script>
+    var $btnAccount = document.getElementById('applicate-account');
+    var $btnPay = document.getElementById('applicate-pay');
+    var $btnListen = document.getElementById('applicate-listen');
+    var $btnSpeak = document.getElementById('applicate-speak');
+    var $btnGetRegisterResult = document.getElementById('applicate-register');
+    var $btnUpdateUIContext = document.getElementById('applicate-uicontext');
+    var $btnClearLog = document.getElementById('clear-log');
+    var $btnClose = document.getElementById('request-close');
+    var $btnLink = document.getElementById('applicate-link');
+    var $btnShip = document.getElementById('applicate-ship');
+    // var $btnBuy = document.getElementById('applicate-buy');
+    var $btnAge = document.getElementById('applicate-age');
+    // var $btnRealName = document.getElementById('link-realname');
+    var $btnAdvBanner = document.getElementById('adv-banner');
+    var $btnAdvVertical = document.getElementById('adv-vertical');
+    var $btnAdvIncentive = document.getElementById('adv-incentive');
+
+    var $log = document.getElementById('log');
+
+    function log(data) {
+        if (typeof data === 'object') {
+            try {
+                data = JSON.stringify(data);
+            } catch (e) {
+                data = JSON.stringify(e);
+            }
+        }
+        var now = new Date();
+        var hour = now.getHours();
+        var minu = now.getMinutes();
+        var sec = now.getSeconds();
+        var dateStr = '<br>[' + hour + ':' + minu + ':' + sec + ']';
+        $log.innerHTML += dateStr + data;
+    }
+
+    window.addEventListener('load', function () {
+        window.botApp = new BotApp({
+            random1: '3a939b0cee832fb0e634e1f6f28ee44e',
+            signature1: 'e6f8041f11824ec2fed7b11e27f6588a',
+            random2: '4a983fd442144eaec73c3ca35ae78aa0',
+            signature2: '1ea04b2c23877a9a221aace7384dc2d0',
+            skillID: '699e74f5-b879-1926-1e11-51998f05ea68',
+            zIndex: 9999,
+            // http://localhost.baidu.com:8080/iframe/ad-wrapper.html
+            screenShapeType: 1, // 1 => 竖屏， 2 => 全屏
+            adDisplayStrategy: 2, // 1 => 用户关闭后不再填充广告， 2 => 用户关闭后再填充一次
+            adDisplayCallback: function (err, data) {
+                if (data.action === BotApp.AdAction.CLICK) {
+                    log('用户点击了广告');
+                } else if (data.action === BotApp.AdAction.CLOSE) {
+                    log('用户关闭了广告');
+                } else if (data.action === BotApp.AdAction.SHOW) {
+                    log('广告展示成功');
+                }
+            },
+            adFirstShowTime: 1,
+                adBannerPos: {
+                right: '30px',
+                bottom: '30px'
+            },
+            _duerosDebugadIframeUrl: 'http://192.168.0.3:8080/iframe/ad-wrapper.html'
+        });
+
+        botApp.onLinkAccountSuccess(function (data) {
+            log('收到 onLinkAccountSuccess 调用');
+            console.log(data);
+            log(data);
+        });
+
+        botApp.onChargeStatusChange(function (data) {
+            log('收到 onChargeStatusChange 调用');
+            log(data);
+        });
+
+        botApp.onHandleIntent(function (data) {
+            log('收到 onHandleIntent 调用');
+            console.log(data);
+            log(data);
+        });
+
+        botApp.onClickLink(function (data) {
+            log('收到 onClickLink 调用');
+            console.log(data);
+            log(data);
+        });
+
+        botApp.onHandleScreenNavigatorEvent(function (data) {
+            log('收到 onHandleScreenNavigatorEvent 调用');
+            console.log(data);
+            log(data);
+        });
+
+        $btnAccount.onclick = function () {
+            log('发起账号授权');
+            botApp.requireLinkAccount(function (data) {
+                log('收到授权结果');
+                log(data);
+            });
+        };
+
+        $btnPay.onclick = function () {
+            var data = {
+                token: 'fjaksvmakfjiefj23fdsnfs',
+                chargeBaiduPay: {
+                    authorizeAttributes: {
+                        authorizationAmount: {
+                            amount: '0.01',
+                            currencyCode: 'CNY'
+                        },
+                        sellerAuthorizationNote: '双11大促'
+                    },
+                    sellerOrderAttributes: {
+                        sellerOrderId: 'hfuawffu2jkjk12e23',
+                        productName: 'Mac Book Pro 2019',
+                        productId: '191025095313376709',
+                        description: '笔记本电脑',
+                        sellerNote: '大促销'
+                    }
+                }
+            };
+            log('发起收款，参数如下');
+            log(data);
+            botApp.requireCharge(data, function (err, data) {
+                console.error(err);
+                console.log(data);
+                log(data);
+            });
+        }
+
+        $btnListen.onclick = function () {
+            log('开始激活聆听');
+            botApp.listen();
+        }
+
+        $btnSpeak.onclick = function () {
+            log('开始播报TTS');
+            botApp.speak('我要早点下班', function () {
+                log('TTS播报完毕');
+            });
+        }
+
+        $btnUpdateUIContext.onclick = function () {
+            log('开始定义UIContext，参数如下');
+            var data = {
+                enableGeneralUtterances: true,
+                hyperUtterances: [
+                    {
+                        url: 'https://www.apple.com',
+                        utterances: ['苹果'],
+                        type: 'link',
+                        params: {}
+                    },
+                    {
+                        url: 'https://www.banana.com',
+                        utterances: ['香蕉'],
+                        type: 'link',
+                        params: {}
+                    },
+                    {
+                        url: 'https://www.strawberry.com',
+                        utterances: ['草莓'],
+                        type: 'link',
+                        params: {}
+                    },
+                ]
+            };
+            log(data);
+            botApp.updateUiContext(data, function () {
+                log('发送updateUiContext完毕');
+            });
+        }
+
+        $btnGetRegisterResult.onclick = function () {
+            log('开始获取注册结果');
+            botApp.getRegisterResult(function (data) {
+                log('收到register结果');
+                log(data);
+            });
+        }
+
+        $btnClearLog.onclick = function () {
+            $log.innerHTML = '';
+        }
+
+        $btnClose.onclick = function () {
+            log('请求退出');
+            botApp.requestClose();
+        }
+
+        $btnLink.onclick = function () {
+            log('上报LinkClicked，参数如下');
+            var data = {
+                url: 'dueros://d7a12baa-47d5-437f-7af6-05bc9c4e5c28/?openbot=true&oss_channel=ls_m'
+            };
+            log(data);
+            botApp.uploadLinkClicked(data);
+        }
+
+        $btnShip.onclick = function () {
+            log('上报requireShipping');
+            botApp.requireShipping();
+        }
+
+        // $btnBuy.onclick = function () {
+        //     log('requireBuy，参数如下');
+        //     var data = {
+        //         productId: '191022141334493984',
+        //         sellerOrderId: '23r230203fsfd1l3nr32390'
+        //     };
+        //     log(data);
+        //     botApp.requireBuy(data, function (err, data) {
+        //         log('收到requireBuy回调');
+        //         log(data);
+        //     });
+        // }
+
+        $btnAge.onclick = function () {
+            log('请求实名认证结果');
+            botApp.requireUserAgeInfo(function (err, data) {
+                log('收到requireUserAgeInfo结果');
+                if (err) {
+                    log(err);
+                } else {
+                    log(data);
+                }
+            });
+        }
+
+        // $btnRealName.onclick = function () {
+        //     log('上报实名认证事件，参数如下');
+        //     var data = {
+        //         url: 'dueros://94e1a677-d1b3-4dd5-0f0c-b6dd0eeb1c6b/certification?action=realName'
+        //     };
+        //     log(data);
+        //     botApp.uploadLinkClicked(data);
+        // }
+
+        $btnAdvBanner.onclick = function () {
+            log('尝试展示banner广告');
+            botApp.showBannerAdv(function (err, data) {
+                if (err) {
+                    log('广告展示失败');
+                    log(err);
+                } else {
+                    if (data.action === botApp.AdAction.CLICK) {
+                        log('用户点击了广告');
+                    } else if (data.action === botApp.AdAction.CLOSE) {
+                        log('用户关闭了广告');
+                    } else if (data.action === botApp.AdAction.SHOW) {
+                        log('广告展示成功');
+                    }
+                }
+            });
+        }
+        $btnAdvVertical.onclick = function () {
+            log('尝试展示竖屏广告');
+            botApp.showVerticalAdv(function (err, data) {
+                if (data.action === botApp.AdAction.CLICK) {
+                    log('用户点击了广告');
+                } else if (data.action === botApp.AdAction.CLOSE) {
+                    log('用户关闭了广告');
+                } else if (data.action === botApp.AdAction.SHOW) {
+                    log('广告展示成功');
+                }
+            });
+        }
+        $btnAdvIncentive.onclick = function () {
+            log('尝试展示激励广告');
+            botApp.showIncentiveAdv();
+        }
+    });
+
+</script>
+</body>
+</html>
