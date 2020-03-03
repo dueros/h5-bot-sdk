@@ -35,7 +35,7 @@ export function encodeQueryData(data) {
 }
 
 export function isSet(k) {
-    return typeof k === 'undefined';
+    return typeof k !== 'undefined';
 }
 
 export function parseH5Url(url) {

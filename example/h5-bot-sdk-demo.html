@@ -6,7 +6,8 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.5.1.js"></script>
+    <script src="https://cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>
+    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.5.2.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -37,6 +38,8 @@
 <!-- <button id="link-realname">展示实名认证二维码</button> -->
 <div id="log"></div>
 <script>
+    var vConsole = new VConsole();// 初始化
+    console.log(BotApp);
     var $btnAccount = document.getElementById('applicate-account');
     var $btnPay = document.getElementById('applicate-pay');
     var $btnListen = document.getElementById('applicate-listen');
@@ -71,7 +74,6 @@
         var dateStr = '<br>[' + hour + ':' + minu + ':' + sec + ']';
         $log.innerHTML += dateStr + data;
     }
-
     window.addEventListener('load', function () {
         var botApp = new BotApp({
             random1: '3a939b0cee832fb0e634e1f6f28ee44e',

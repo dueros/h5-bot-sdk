@@ -41,8 +41,11 @@
         }
     </script>
     <!--<script src="http://cdn.dengxuening.com/h5-bot-sdk.1.7.0.js"></script>-->
-    <script src="http://127.0.0.1:8081/dist/h5-bot-sdk.1.7.0.js"></script>
+    <script src="http://192.168.0.3:8081/dist/h5-bot-sdk.1.7.0.js?v=1"></script>
     <style>
+        body {
+            background: aqua;
+        }
         button {
             min-width: 120px;
             height: 40px;
@@ -116,7 +119,7 @@
             skillID: '699e74f5-b879-1926-1e11-51998f05ea68',
             zIndex: 9999,
             // http://localhost.baidu.com:8080/iframe/ad-wrapper.html
-            screenShapeType: 1, // 1 => 竖屏， 2 => 全屏
+            screenShapeType: 2, // 1 => 竖屏， 2 => 全屏
             adDisplayStrategy: 2, // 1 => 用户关闭后不再填充广告， 2 => 用户关闭后再填充一次
             adDisplayCallback: function (err, data) {
                 if (data.action === BotApp.AdAction.CLICK) {
@@ -129,8 +132,8 @@
             },
             adFirstShowTime: 1,
                 adBannerPos: {
-                right: '30px',
-                bottom: '30px'
+                right: '130px',
+                bottom: '130px'
             },
             _duerosDebugadIframeUrl: 'http://192.168.0.3:8080/iframe/ad-wrapper.html'
         });

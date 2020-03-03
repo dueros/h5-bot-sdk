@@ -53,6 +53,7 @@ class BotApp {
 
         // 广告关闭后，下次打开在60s后
         this._commonAdReopenTimeout = 60000;
+        this._commonAdReopenTimeout = 2000; // todo ... just for test
     }
 
     static AdAction = AdAction;
@@ -222,10 +223,14 @@ class BotApp {
      * @private
      */
     _parseShowVersion() {
+        if (this._showVersion) {
+            return this._showVersion;
+        }
         let ua = navigator.userAgent;
-        let reg = /XDH-0F-A1 build\/([\d\.]+);/i;
+        let reg = /build\/([\d\.]+);/i;
         let result = reg.exec(ua);
         if (result) {
+            this._showVersion = result[1];
             return result[1];
         } else {
             throw new Error('Device version number parsing failed: ' + ua);
@@ -265,7 +270,7 @@ class BotApp {
             return;
         } else {
             this._validateCallback('requireUserAgeInfo', cb);
-            if (this._compareShowVersion(this._showVersion, '1.35.0.0') >= 0) {
+            if (this._compareShowVersion(this._parseShowVersion(), '1.35.0.0') >= 0) {
                 if (this.config.skillID) {
                     this._getJSBridge(bridge => {
                         bridge.callHandler('requestUserAgeInfo', null, (payload) => {
@@ -273,7 +278,7 @@ class BotApp {
                             if (payload.status === 0) {
                                 cb && cb(null, payload.data);
                             } else {
-                                cb && cb(new ServiceError(`logid: ${payload.logid}, msg: ${payload.msg}`), null);
+                                cb && cb(new ServiceError(`logid: ${payload.logid}, ${payload.msg}`), payload.data);
                                 console.error('requireUserAgeInfo has an error: ', payload.logid, payload.msg);
                             }
 
@@ -571,9 +576,10 @@ class BotApp {
                 ? this.config._duerosDebugadIframeUrl + `?msgTarget=${adIframeQuery}`
                 : `https://xiaodu.baidu.com/sdk/adContainer.html?msgTarget=${adIframeQuery}`;
             this._adIframe1.scrolling = 'no';
-            this._adIframe1.frameborder = '0';
+            this._adIframe1.frameBorder = 0;
+            this._adIframe1.allowTransparency = 'true';
             document.body.appendChild(this._adIframe1);
-            this._adIframe1.style.cssText += `display: block; z-index: ${this.config.zIndex};position: absolute;`;
+            this._adIframe1.style.cssText += `display: block; z-index: ${this.config.zIndex};position: absolute; background-color=transparent;`;
         }
         this._adIframe1.style.display = 'block';
         this._setAdPosition();
@@ -610,25 +616,32 @@ class BotApp {
         if (this.config.screenShapeType === 1) {
             this._adIframe1.style.cssText += 'width: 242px; height: 214px;bottom: 30px;';
             if (this._lastadDisplayisLeft) {
+                this._adIframe1.style.left = '';
                 this._adIframe1.style.right = '23px';
                 this._lastadDisplayisLeft = false;
             } else {
                 this._adIframe1.style.left = '23px';
+                this._adIframe1.style.right = '';
                 this._lastadDisplayisLeft = true;
             }
         // 如果是全屏游戏
         } else if (this.config.screenShapeType === 2) {
-            console.log(2);
+            this._adIframe1.style.cssText += 'width: 446px; height: 118px;';
+            console.log('909090', typeof this.config.adBannerPos.top, isSet(this.config.adBannerPos.top), this.config.adBannerPos, this.config.adBannerPos.top);
             if (isSet(this.config.adBannerPos.top)) {
+                console.log(1);
                 this._adIframe1.style.top = this.config.adBannerPos.top;
             }
             if (isSet(this.config.adBannerPos.right)) {
+                console.log(2);
                 this._adIframe1.style.right = this.config.adBannerPos.right;
             }
             if (isSet(this.config.adBannerPos.bottom)) {
+                console.log(3);
                 this._adIframe1.style.bottom = this.config.adBannerPos.bottom;
             }
             if (isSet(this.config.adBannerPos.left)) {
+                console.log(4);
                 this._adIframe1.style.left = this.config.adBannerPos.left;
             }
         }
