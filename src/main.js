@@ -53,7 +53,6 @@ class BotApp {
 
         // 广告关闭后，下次打开在60s后
         this._commonAdReopenTimeout = 60000;
-        this._commonAdReopenTimeout = 2000; // todo ... just for test
     }
 
     static AdAction = AdAction;
@@ -130,7 +129,7 @@ class BotApp {
                     let data = event.data;
                     console.log('receive msg from iframe: ', data);
                     if (data.type === 'ad_load_material') {
-                        // todo ...
+                        // todo ... 告知开发者广告打开情况
                         this._adDisplayCallback(null, {
                             action: AdAction.SHOW
                         });
@@ -579,7 +578,7 @@ class BotApp {
             this._adIframe1.frameBorder = 0;
             this._adIframe1.allowTransparency = 'true';
             document.body.appendChild(this._adIframe1);
-            this._adIframe1.style.cssText += `display: block; z-index: ${this.config.zIndex};position: absolute; background-color=transparent;`;
+            this._adIframe1.style.cssText += `display: block; z-index: ${this.config.zIndex};position: fixed; background-color=transparent;`;
         }
         this._adIframe1.style.display = 'block';
         this._setAdPosition();
