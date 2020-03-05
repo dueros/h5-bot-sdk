@@ -1522,10 +1522,17 @@ var BotApp = function () {
     }, {
         key: "onClickLink",
         value: function onClickLink(cb) {
+            var _this5 = this;
+
             this._validateCallback('onClickLink', cb);
             this._getJSBridge(function (bridge) {
                 bridge.registerHandler('onClickLink', function (payload, callback) {
-                    cb(JSON.parse(payload));
+                    payload = JSON.parse(payload);
+                    if (payload.url === 'http://sdk.bot.dueros.ai?action=unknown_utterance') {
+                        _this5._handleUnknowUtteranceCb && _this5._handleUnknowUtteranceCb(null, JSON.parse(payload.params));
+                    } else {
+                        cb(payload);
+                    }
                     // 告知app是否处理成功
                     callback(true);
                 });
@@ -1557,6 +1564,46 @@ var BotApp = function () {
                 });
             });
         }
+    }, {
+        key: "onDialogStateChanged",
+        value: function onDialogStateChanged(cb) {
+            this._validateCallback('onDialogStateChanged', cb);
+            if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+                this._getJSBridge(function (bridge) {
+                    bridge.registerHandler('onDialogStateChanged', function (state, callback) {
+                        cb(null, state);
+                        callback(true); // 告知处理是否成功
+                    });
+                });
+            } else {
+                cb(new _errors.LowVersionErrorMsg(), null);
+            }
+        }
+    }, {
+        key: "onHandleUnknowUtterance",
+        value: function onHandleUnknowUtterance(cb) {
+            this._validateCallback('onHandleUnknowUtterance', cb);
+            if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+                this._handleUnknowUtteranceCb = cb;
+            } else {
+                cb(new _errors.LowVersionErrorMsg(), null);
+            }
+        }
+    }, {
+        key: "canGoBack",
+        value: function canGoBack(cb) {
+            this._validateCallback('canGoBack', cb);
+            if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+                this._getJSBridge(function (bridge) {
+                    bridge.callHandler('canGoBack', null, function (payload) {
+                        payload = JSON.parse(payload);
+                        cb(null, payload.data);
+                    });
+                });
+            } else {
+                cb(new _errors.LowVersionErrorMsg(), null);
+            }
+        }
 
         /**
          * 从意图槽位中解析广告物料并渲染广告
@@ -1567,9 +1614,8 @@ var BotApp = function () {
     }, {
         key: "_renderAd",
         value: function _renderAd(data) {
-            var _this5 = this;
+            var _this6 = this;
 
-            debugger;
             var _data = JSON.parse(data);
             var serverAdIframeAddr = decodeURIComponent(_data.props.htmlAddress);
             if (_data.status === 0) {
@@ -1617,8 +1663,8 @@ var BotApp = function () {
                     this._adIframe1.contentWindow.postMessage(postData, this._adMsgTarget);
                 } else {
                     this._adIframe1.onload = function () {
-                        _this5._adIframe1.contentWindow.postMessage(postData, _this5._adMsgTarget);
-                        _this5._adIframe1Loaded = true;
+                        _this6._adIframe1.contentWindow.postMessage(postData, _this6._adMsgTarget);
+                        _this6._adIframe1Loaded = true;
                     };
                 }
             } else {
@@ -1685,7 +1731,7 @@ var BotApp = function () {
     }, {
         key: "_startCommonAdSwitch",
         value: function _startCommonAdSwitch(fireImmediately) {
-            var _this6 = this;
+            var _this7 = this;
 
             this._isCommonAdClosed = false;
             if (fireImmediately) {
@@ -1695,7 +1741,7 @@ var BotApp = function () {
             clearInterval(this._commonAdSwitchTimer);
             this._commonAdSwitchTimer = setInterval(function () {
                 // 请求到素材后，会在onHandleIntent里处理
-                _this6._requestCommonadMaterial();
+                _this7._requestCommonadMaterial();
             }, this._commonadSwitchInterval);
         }
 

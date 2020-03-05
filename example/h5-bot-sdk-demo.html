@@ -6,8 +6,8 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="https://cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>
-    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.5.2.js"></script>
+    <script src="//cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>
+    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.6.0.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -32,14 +32,19 @@
 <button id="applicate-link">LinkClicked</button>
 <button id="applicate-ship">requireShipping</button>
 <button id="applicate-age">实名认证</button>
+<<<<<<< HEAD
 <button id="adv-banner">banner广告展示</button>
 <button id="adv-vertical">竖屏广告展示</button>
 <button id="adv-incentive">激励广告展示</button>
+=======
+<button id="applicate-cangoback">canGoBack</button>
+<!--<button id="applicate-historypush">增加浏览器历史记录</button>-->
+<!--<button id="applicate-historypop">浏览器历史记录回退</button>-->
+>>>>>>> origin/master
 <!-- <button id="link-realname">展示实名认证二维码</button> -->
 <div id="log"></div>
 <script>
     var vConsole = new VConsole();// 初始化
-    console.log(BotApp);
     var $btnAccount = document.getElementById('applicate-account');
     var $btnPay = document.getElementById('applicate-pay');
     var $btnListen = document.getElementById('applicate-listen');
@@ -53,9 +58,14 @@
     // var $btnBuy = document.getElementById('applicate-buy');
     var $btnAge = document.getElementById('applicate-age');
     // var $btnRealName = document.getElementById('link-realname');
+<<<<<<< HEAD
     var $btnAdvBanner = document.getElementById('adv-banner');
     var $btnAdvVertical = document.getElementById('adv-vertical');
     var $btnAdvIncentive = document.getElementById('adv-incentive');
+=======
+    var $btnCanGoBack = document.getElementById('applicate-cangoback');
+    // var $btnHistoryPush = document.getElementById('applicate-historypush');
+>>>>>>> origin/master
 
     var $log = document.getElementById('log');
 
@@ -127,6 +137,18 @@
             log(data);
         });
 
+        botApp.onDialogStateChanged(function (err, data) {
+            log('收到 onDialogStateChanged 调用');
+            log(err);
+            log(data);
+        });
+
+        botApp.onHandleUnknowUtterance(function (err, data) {
+            log('收到 onHandleUnknowUtterance 调用');
+            log(err);
+            log(data);
+        });
+
         $btnAccount.onclick = function () {
             log('发起账号授权');
             botApp.requireLinkAccount(function (data) {
@@ -179,7 +201,7 @@
         $btnUpdateUIContext.onclick = function () {
             log('开始定义UIContext，参数如下');
             var data = {
-                enableGeneralUtterances: true,
+                enableGeneralUtterances: false,
                 hyperUtterances: [
                     {
                         url: 'https://www.apple.com',
@@ -272,6 +294,7 @@
         //     botApp.uploadLinkClicked(data);
         // }
 
+<<<<<<< HEAD
         $btnAdvBanner.onclick = function () {
             log('尝试展示banner广告');
             botApp.showBannerAdv(function (err, data) {
@@ -305,6 +328,27 @@
             log('尝试展示激励广告');
             botApp.showIncentiveAdv();
         }
+=======
+        $btnCanGoBack.onclick = function () {
+            log('调用canGoBack，结果如下');
+            botApp.canGoBack(function (err, state) {
+                log(err);
+                log(state);
+            });
+        }
+
+        // $btnHistoryPush.onclick = function () {
+        //     log('浏览器历史记录push')
+        //     history.pushState({
+        //         test: "aa"
+        //     }, "page new", Date.now() + ".html")
+        // }
+        //
+        // document.getElementById('applicate-historypop').onclick = function () {
+        //     log('浏览器历史记录back')
+        //     history.back();
+        // }
+>>>>>>> origin/master
     });
 
 </script>
