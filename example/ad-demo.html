@@ -6,39 +6,39 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
     <script>
-        window.WebViewJavascriptBridge = {
-            init: function () {
-
-            },
-            callHandler: function (funName, data, cb) {
-                console.log(funName, data, cb);
-                if (funName === 'uploadLinkClicked') {
-                    setTimeout(() => {
-                        this.uploadLinkClicked(data);
-                    }, 1000);
-                }
-            },
-            registerHandler: function (funName, cb) {
-                console.log(funName, cb);
-                if (funName === 'onHandleIntent') {
-                    this.handleIntentCb = cb;
-                }
-            },
-
-            uploadLinkClicked(data) {
-                data = JSON.parse(data);
-                if (data.url.indexOf('getAdResources') > -1) {
-                    this.handleIntentCb(JSON.stringify({
-                        intent: {
-                            name: 'Renderadertisement',
-                            slots: []
-                        },
-                        customData:  "{\"status\":0,\"materials\":[{\"type\":\"IMAGE_LEFT\",\"assets\":{\"image\":{\"url\":\"https:\\/\\/lupic.cdn.bcebos.com\\/20191130\\/6368960%2320.jpg\"},\"title\":\"游戏盒子下载游戏盒子排行榜\",\"content\":\"\"},\"monitors\":{\"exposure\":[\"dueros:\\/\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NWamhoa0c2aWN0NlgwaTdRMjhVUVl1RUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnWDR6YUppUDZcL1JjUmZaZ2NmRExFWFpkbno3Z24yckVLWkp0Y2V1REFEa1hJcjhnV1d6bHNGY1RubkYwZ3ZBZnk3V2NFdWFVN0JYbUlIQ09QbEtYeGZwZFJmdUU3MWtpSXdiZEJ2ZUtsOXpjMzl0WGVOblJxejlsMVdsU1wvaXQ2UlwvMmVsenY3a2ZiUm1GWHdLZ0NhT0dDN1RaN0h0QVhqbEE5MlhHUlJRNjVSNmRuaHVySHJQXC9DUFZCeXZEVXJzU2dycTZCSmd5XC94b1dqRzRcL2RabFpUU3JkSUJSQ0dvTzM3MWJvUXRZRmRBY0ZUN243MjBxc2RwMEF3ejJPdUhGQW0rZnhBUnpOdGRmQmVzVTk0TUV3a1JvZm9vakxUUGMydDNScjl3ZjZibmc9IiwiYWRTbG90IjoiMTEwMDAwIiwidGVtcGxhdGVJZCI6IklNQUdFIiwiZXZlbnQiOiJFWFBPU1VSRSIsImFkX3RlbXBsYXRlIjoiSU1BR0UiLCJhZF9tYXRlcmlhbF9pZCI6Im1zc3AtMzk1NjYwNjUyOCJ9\"],\"click\":[\"dueros:\\/\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NWamhoa0c2aWN0NlgwaTdRMjhVUVl1RUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnWDR6YUppUDZcL1JjUmZaZ2NmRExFWFpkbno3Z24yckVLWkp0Y2V1REFEa1hJcjhnV1d6bHNGY1RubkYwZ3ZBZnk3V2NFdWFVN0JYbUlIQ09QbEtYeGZwZFJmdUU3MWtpSXdiZEJ2ZUtsOXpjMzl0WGVOblJxejlsMVdsU1wvaXQ2UlwvMmVsenY3a2ZiUm1GWHdLZ0NhT0dDN1RaN0h0QVhqbEE5MlhHUlJRNjVSNmRuaHVySHJQXC9DUFZCeXZEVXJzU2dycTZCSmd5XC94b1dqRzRcL2RabFpUU3JkSUJSQ0dvTzM3MWJvUXRZRmRBY0ZUN243MjBxc2RwMEF3ejJPdUhGQW0rZnhBUnpOdGRmQmVzVTk0TUV3a1JvZm9vakxUUGMydDNScjl3ZjZibmc9IiwiYWRTbG90IjoiMTEwMDAwIiwidGVtcGxhdGVJZCI6IklNQUdFIiwiZXZlbnQiOiJDTElDSyIsImFkX3RlbXBsYXRlIjoiSU1BR0UiLCJhZF9tYXRlcmlhbF9pZCI6Im1zc3AtMzk1NjYwNjUyOCJ9&clickUrl=http%3A%2F%2Fcpro.baidu.com%2Fcpro%2Fui%2Fuijs.php%3Fen%3DmywWUA71T1Yknzu9TZKxpyfqn1T3P16vn101rau9TZKxTv-b5yRkm1m1nvu-FhPC5H0huAbqPHcYnW63Fh-VuybqrjmsP1R3njf1rHbzPWbYFh-Vuy-xmL0qnauGTdq9TZ0qniuJp1Y1uym1rym4nWbdrj6vuhD3Fh_qFRcYFRm1FRfsFRPDFRf1FRP7FRPAFRcLFRFKFRfsFRfLFRf1FhkdpvbqniuVmLKV5HRLnjnhULnqmy4bThqGuauk5yRkm1m1nvu-gvPsTBuzmWYkFMF15HDhTvwogLmqPau1uAVxIhNzTv-EUWYdQWm8nau1uyk_ugFxpyfqnBu1pyfqmH6vuW63rHR4nW-huWn1uiu1IA-b5HmsnjDhIjdYTAP_pyPouyf1gvdEm-q9TLKxnzuYUgnqnHR3n1ckP1fzPauYIHYvrHnzPWDkFMRqpZwYTaR1fiRzwBRzwWwBuAcYmiRzwaRzwARkm1m1nvu-FHF7mvqVFMNGUy-b5HcYP1b1PW6vrjbhIWYzFhbqnhmdmh7hujm%26adx%3D1%26besl%3D0%26br%3D0%26c%3Dnews%26cf%3D1%26cp%3Dfc_middle_page_app%26cvrq%3D1334291%26ds%3Dfmp%26eid_list%3D106247_106249_1021%26fr%3D1%26fv%3D0%26h%3D600%26haacp%3D60%26iif%3D1%26img_typ%3D22566%26itm%3D0%26lu_idc%3Dtc%26lukid%3D1%26lus%3Da86f8895929ff33e%26lust%3D5e5dfb10%26mscf%3D0%26mtids%3D6368960%26n%3D10%26nttp%3D3%26oi%3D25%26p%3Dbaidu%26sce%3D5%26sh%3D600%26sr%3D0%26ssp2%3D0%26sw%3D1024%26swi%3D1%26tpl%3Dtemplate_inlay_all_mobile_lu_native_ad_app_feed_rect%26tsf%3Ddtp%3A2%26tt_sign%3D%25D3%25CE%25CF%25B7%25BA%25D0%25D7%25D3%25CF%25C2%25D4%25D8%25D3%25CE%25CF%25B7%25BA%25D0%25D7%25D3%25C5%25C5%25D0%25D0%25B0%25F1%26tt_src%3D1%26u%3D%26uicf%3Dlurecv%26urlid%3D0%26w%3D1024%26wi%3D4%26eot%3D1\"],\"close\":[\"dueros:\\/\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NWamhoa0c2aWN0NlgwaTdRMjhVUVl1RUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnWDR6YUppUDZcL1JjUmZaZ2NmRExFWFpkbno3Z24yckVLWkp0Y2V1REFEa1hJcjhnV1d6bHNGY1RubkYwZ3ZBZnk3V2NFdWFVN0JYbUlIQ09QbEtYeGZwZFJmdUU3MWtpSXdiZEJ2ZUtsOXpjMzl0WGVOblJxejlsMVdsU1wvaXQ2UlwvMmVsenY3a2ZiUm1GWHdLZ0NhT0dDN1RaN0h0QVhqbEE5MlhHUlJRNjVSNmRuaHVySHJQXC9DUFZCeXZEVXJzU2dycTZCSmd5XC94b1dqRzRcL2RabFpUU3JkSUJSQ0dvTzM3MWJvUXRZRmRBY0ZUN243MjBxc2RwMEF3ejJPdUhGQW0rZnhBUnpOdGRmQmVzVTk0TUV3a1JvZm9vakxUUGMydDNScjl3ZjZibmc9IiwiYWRTbG90IjoiMTEwMDAwIiwidGVtcGxhdGVJZCI6IklNQUdFIiwiZXZlbnQiOiJDTE9TRSIsImFkX3RlbXBsYXRlIjoiSU1BR0UiLCJhZF9tYXRlcmlhbF9pZCI6Im1zc3AtMzk1NjYwNjUyOCJ9\"]},\"props\":{\"autoSwitch\":true,\"duration\":10000}}],\"props\":{\"autoSwitch\":true,\"duration\":10000,\"htmlAddress\":\"http%3A%2F%2Fxiaodu.baidu.com%2Fh5game%2Fadvertiment.html\"}}"
-                    }),  function () {});
-                }
-            }
-
-        }
+        // window.WebViewJavascriptBridge = {
+        //     init: function () {
+        //
+        //     },
+        //     callHandler: function (funName, data, cb) {
+        //         console.log('callHandler: ', funName, data);
+        //         if (funName === 'uploadLinkClicked') {
+        //             setTimeout(() => {
+        //                 this.uploadLinkClicked(data);
+        //             }, 1000);
+        //         }
+        //     },
+        //     registerHandler: function (funName, cb) {
+        //         console.log('registerHandler: ', funName);
+        //         if (funName === 'onHandleIntent') {
+        //             this.handleIntentCb = cb;
+        //         }
+        //     },
+        //
+        //     uploadLinkClicked(data) {
+        //         data = JSON.parse(data);
+        //         if (data.url.indexOf('getAdResources') > -1) {
+        //             this.handleIntentCb(JSON.stringify({
+        //                 intent: {
+        //                     name: 'Renderadertisement',
+        //                     slots: []
+        //                 },
+        //                 customData:  "{\"status\":0,\"materials\":[{\"type\":\"IMAGE_LEFT\",\"assets\":{\"image\":{\"url\":\"https:\\/\\/lupic.cdn.bcebos.com\\/20191130\\/6368960%2320.jpg\"},\"title\":\"游戏盒子下载游戏盒子排行榜\",\"content\":\"\"},\"monitors\":{\"exposure\":[\"dueros:\\/\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NWamhoa0c2aWN0NlgwaTdRMjhVUVl1RUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnWDR6YUppUDZcL1JjUmZaZ2NmRExFWFpkbno3Z24yckVLWkp0Y2V1REFEa1hJcjhnV1d6bHNGY1RubkYwZ3ZBZnk3V2NFdWFVN0JYbUlIQ09QbEtYeGZwZFJmdUU3MWtpSXdiZEJ2ZUtsOXpjMzl0WGVOblJxejlsMVdsU1wvaXQ2UlwvMmVsenY3a2ZiUm1GWHdLZ0NhT0dDN1RaN0h0QVhqbEE5MlhHUlJRNjVSNmRuaHVySHJQXC9DUFZCeXZEVXJzU2dycTZCSmd5XC94b1dqRzRcL2RabFpUU3JkSUJSQ0dvTzM3MWJvUXRZRmRBY0ZUN243MjBxc2RwMEF3ejJPdUhGQW0rZnhBUnpOdGRmQmVzVTk0TUV3a1JvZm9vakxUUGMydDNScjl3ZjZibmc9IiwiYWRTbG90IjoiMTEwMDAwIiwidGVtcGxhdGVJZCI6IklNQUdFIiwiZXZlbnQiOiJFWFBPU1VSRSIsImFkX3RlbXBsYXRlIjoiSU1BR0UiLCJhZF9tYXRlcmlhbF9pZCI6Im1zc3AtMzk1NjYwNjUyOCJ9\"],\"click\":[\"dueros:\\/\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NWamhoa0c2aWN0NlgwaTdRMjhVUVl1RUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnWDR6YUppUDZcL1JjUmZaZ2NmRExFWFpkbno3Z24yckVLWkp0Y2V1REFEa1hJcjhnV1d6bHNGY1RubkYwZ3ZBZnk3V2NFdWFVN0JYbUlIQ09QbEtYeGZwZFJmdUU3MWtpSXdiZEJ2ZUtsOXpjMzl0WGVOblJxejlsMVdsU1wvaXQ2UlwvMmVsenY3a2ZiUm1GWHdLZ0NhT0dDN1RaN0h0QVhqbEE5MlhHUlJRNjVSNmRuaHVySHJQXC9DUFZCeXZEVXJzU2dycTZCSmd5XC94b1dqRzRcL2RabFpUU3JkSUJSQ0dvTzM3MWJvUXRZRmRBY0ZUN243MjBxc2RwMEF3ejJPdUhGQW0rZnhBUnpOdGRmQmVzVTk0TUV3a1JvZm9vakxUUGMydDNScjl3ZjZibmc9IiwiYWRTbG90IjoiMTEwMDAwIiwidGVtcGxhdGVJZCI6IklNQUdFIiwiZXZlbnQiOiJDTElDSyIsImFkX3RlbXBsYXRlIjoiSU1BR0UiLCJhZF9tYXRlcmlhbF9pZCI6Im1zc3AtMzk1NjYwNjUyOCJ9&clickUrl=http%3A%2F%2Fcpro.baidu.com%2Fcpro%2Fui%2Fuijs.php%3Fen%3DmywWUA71T1Yknzu9TZKxpyfqn1T3P16vn101rau9TZKxTv-b5yRkm1m1nvu-FhPC5H0huAbqPHcYnW63Fh-VuybqrjmsP1R3njf1rHbzPWbYFh-Vuy-xmL0qnauGTdq9TZ0qniuJp1Y1uym1rym4nWbdrj6vuhD3Fh_qFRcYFRm1FRfsFRPDFRf1FRP7FRPAFRcLFRFKFRfsFRfLFRf1FhkdpvbqniuVmLKV5HRLnjnhULnqmy4bThqGuauk5yRkm1m1nvu-gvPsTBuzmWYkFMF15HDhTvwogLmqPau1uAVxIhNzTv-EUWYdQWm8nau1uyk_ugFxpyfqnBu1pyfqmH6vuW63rHR4nW-huWn1uiu1IA-b5HmsnjDhIjdYTAP_pyPouyf1gvdEm-q9TLKxnzuYUgnqnHR3n1ckP1fzPauYIHYvrHnzPWDkFMRqpZwYTaR1fiRzwBRzwWwBuAcYmiRzwaRzwARkm1m1nvu-FHF7mvqVFMNGUy-b5HcYP1b1PW6vrjbhIWYzFhbqnhmdmh7hujm%26adx%3D1%26besl%3D0%26br%3D0%26c%3Dnews%26cf%3D1%26cp%3Dfc_middle_page_app%26cvrq%3D1334291%26ds%3Dfmp%26eid_list%3D106247_106249_1021%26fr%3D1%26fv%3D0%26h%3D600%26haacp%3D60%26iif%3D1%26img_typ%3D22566%26itm%3D0%26lu_idc%3Dtc%26lukid%3D1%26lus%3Da86f8895929ff33e%26lust%3D5e5dfb10%26mscf%3D0%26mtids%3D6368960%26n%3D10%26nttp%3D3%26oi%3D25%26p%3Dbaidu%26sce%3D5%26sh%3D600%26sr%3D0%26ssp2%3D0%26sw%3D1024%26swi%3D1%26tpl%3Dtemplate_inlay_all_mobile_lu_native_ad_app_feed_rect%26tsf%3Ddtp%3A2%26tt_sign%3D%25D3%25CE%25CF%25B7%25BA%25D0%25D7%25D3%25CF%25C2%25D4%25D8%25D3%25CE%25CF%25B7%25BA%25D0%25D7%25D3%25C5%25C5%25D0%25D0%25B0%25F1%26tt_src%3D1%26u%3D%26uicf%3Dlurecv%26urlid%3D0%26w%3D1024%26wi%3D4%26eot%3D1\"],\"close\":[\"dueros:\\/\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NWamhoa0c2aWN0NlgwaTdRMjhVUVl1RUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnWDR6YUppUDZcL1JjUmZaZ2NmRExFWFpkbno3Z24yckVLWkp0Y2V1REFEa1hJcjhnV1d6bHNGY1RubkYwZ3ZBZnk3V2NFdWFVN0JYbUlIQ09QbEtYeGZwZFJmdUU3MWtpSXdiZEJ2ZUtsOXpjMzl0WGVOblJxejlsMVdsU1wvaXQ2UlwvMmVsenY3a2ZiUm1GWHdLZ0NhT0dDN1RaN0h0QVhqbEE5MlhHUlJRNjVSNmRuaHVySHJQXC9DUFZCeXZEVXJzU2dycTZCSmd5XC94b1dqRzRcL2RabFpUU3JkSUJSQ0dvTzM3MWJvUXRZRmRBY0ZUN243MjBxc2RwMEF3ejJPdUhGQW0rZnhBUnpOdGRmQmVzVTk0TUV3a1JvZm9vakxUUGMydDNScjl3ZjZibmc9IiwiYWRTbG90IjoiMTEwMDAwIiwidGVtcGxhdGVJZCI6IklNQUdFIiwiZXZlbnQiOiJDTE9TRSIsImFkX3RlbXBsYXRlIjoiSU1BR0UiLCJhZF9tYXRlcmlhbF9pZCI6Im1zc3AtMzk1NjYwNjUyOCJ9\"]},\"props\":{\"autoSwitch\":true,\"duration\":10000}}],\"props\":{\"autoSwitch\":true,\"duration\":10000,\"htmlAddress\":\"http%3A%2F%2F172.24.188.127%3A8080%2Fiframe%2Fad-wrapper.html\"}}"
+        //             }),  function () {});
+        //         }
+        //     }
+        //
+        // }
     </script>
     <!--<script src="http://cdn.dengxuening.com/h5-bot-sdk.1.7.0.js"></script>-->
     <script src="http://172.24.188.127:8081/dist/h5-bot-sdk.1.7.0.js?v=1"></script>
@@ -69,8 +69,6 @@
 <button id="applicate-link">LinkClicked</button>
 <button id="applicate-ship">requireShipping</button>
 <button id="applicate-age">实名认证</button>
-<button id="adv-banner">banner广告展示</button>
-<button id="adv-vertical">竖屏广告展示</button>
 <button id="adv-incentive">激励广告展示</button>
 <!-- <button id="link-realname">展示实名认证二维码</button> -->
 <div id="log"></div>
@@ -135,7 +133,7 @@
                 right: '130px',
                 bottom: '130px'
             },
-            _duerosDebugadIframeUrl: 'http://172.24.188.127:8080/iframe/ad-wrapper.html'
+            _duerosDebugadIframeUrl: 'http://172.24.188.127:8080/iframe/ad-wrapper.html?type=test'
         });
 
         botApp.onLinkAccountSuccess(function (data) {

@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "buildSingleFile": "webpack --config webpack.sdk.js -w",
     "buildModule": "babel ./src -d lib",
-    "build": "npm run buildSingleFile && npm run buildModule && npm run buildIframe",
+    "build": "npm run buildIframe",
     "dev": "webpack-dev-server --progress --colors --config webpack.iframe.dev.js",
     "buildIframe": "webpack --colors --config webpack.iframe.pro.js"
   },

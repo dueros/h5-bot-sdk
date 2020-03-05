@@ -5,7 +5,7 @@
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
 import {AdAction} from "./events";
-import {isSet, parseH5Url} from "./utils";
+import {isSet, parseH5UrlOrigin} from "./utils";
 
 
 /**
@@ -129,11 +129,7 @@ class BotApp {
                 });
             });
             this._showVersion = this._parseShowVersion();
-            if (this.config._duerosDebugadIframeUrl) {
-                this._adMsgTarget = parseH5Url(this.config._duerosDebugadIframeUrl);
-            } else {
-                this._adMsgTarget = 'https://xiaodu.baidu.com';
-            }
+
             window.addEventListener('message', (event) => {
                 if (event.origin === this._adMsgTarget) {
                     let data = event.data;
@@ -602,18 +598,19 @@ class BotApp {
      * @private
      */
     _renderAd(data) {
-        data = JSON.parse(data);
-        let serverAdIframeAddr = decodeURIComponent(data.props.htmlAddress);
-
-        console.log('ggggggg', this._adIframe1BaseUrl , serverAdIframeAddr);
-        if (data.status === 0) {
+        debugger;
+        let _data = JSON.parse(data);
+        let serverAdIframeAddr = decodeURIComponent(_data.props.htmlAddress);
+        if (_data.status === 0) {
             if (!this._adIframe1) {
                 this._adIframe1 = document.createElement('iframe');
-                let adIframeQuery = encodeURIComponent(parseH5Url(window.location.href));
+                let adIframeQuery = encodeURIComponent(parseH5UrlOrigin(window.location.href));
                 if (this.config._duerosDebugadIframeUrl) {
                     this._adIframe1BaseUrl = this.config._duerosDebugadIframeUrl;
+                    this._adMsgTarget = parseH5UrlOrigin(this.config._duerosDebugadIframeUrl);
                 } else {
                     this._adIframe1BaseUrl = serverAdIframeAddr;
+                    this._adMsgTarget = parseH5UrlOrigin(serverAdIframeAddr);
                 }
 
                 let adIframeUrl = '';
@@ -629,8 +626,9 @@ class BotApp {
                 this._adIframe1.allowTransparency = 'true';
                 document.body.appendChild(this._adIframe1);
                 this._adIframe1.style.cssText += `display: block; z-index: ${this.config.zIndex};position: fixed; background-color=transparent;`;
-            } else if (this._adIframe1BaseUrl !== serverAdIframeAddr) {
+            } else if (!this.config._duerosDebugadIframeUrl && this._adIframe1BaseUrl !== serverAdIframeAddr) {
                 document.body.removeChild(this._adIframe1);
+                this._adIframe1Loaded = false;
                 this._adIframe1 = null;
                 this._renderAd(data);
                 return;
@@ -640,7 +638,7 @@ class BotApp {
             let postData = {
                 type: 'ad_set_material',
                 data: {
-                    ...data,
+                    ..._data,
                     screenShapeType: this.config.screenShapeType,
                 }
             };
@@ -654,7 +652,7 @@ class BotApp {
                 }
             }
         } else {
-            console.error('Failed to get advertisement: ', data);
+            console.error('Failed to get advertisement: ', _data);
         }
     }
 
@@ -663,8 +661,15 @@ class BotApp {
      * @private
      */
     _requestCommonadMaterial() {
+        let url = ''
+        if (this.config.screenShapeType === 1) {
+            url = 'dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?adPlaceId=5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D&botId=3fa55179-6903-4094-57cf-8ae21d9a6123';
+        } else if (this.config.screenShapeType === 2) {
+            url = 'dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?adPlaceId=5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D&botId=3fa55179-6903-4094-57cf-8ae21d9a6123'
+        }
         this.uploadLinkClicked({
-            url: `dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?botId=${this.config.skillID}&adSlotId=y&adType=image`
+            // url: `dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?botId=${this.config.skillID}&adSlotId=y&adType=image`
+            url
         });
     }
 
