@@ -761,7 +761,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 * 参数
 
     callback(*Function*)：回调中会传入一个布尔值，告知是否还能回退浏览器历史记录，schema示例如下
-    
+
     ```javascript
         {{Boolean}}
     ```
@@ -769,7 +769,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 * 示例
 
     ```javascript
-     botApp.canGoBack(function(state) {  
+     botApp.canGoBack(function(state) {
          console.log(state);
          // 打印如下
          true // 也有可能是false

@@ -469,7 +469,8 @@ class BotApp {
         if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 bridge.registerHandler('onDialogStateChanged',  function (state, callback) {
-                    cb(null, state);
+                    let payload = JSON.parse(state);
+                    cb(null, payload.data);
                     callback(true); // 告知处理是否成功
                 });
             });

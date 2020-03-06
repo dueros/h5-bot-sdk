@@ -7,7 +7,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
     <script src="//cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>
-    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.6.0.js"></script>
+    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.6.1.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -58,6 +58,7 @@
     var $log = document.getElementById('log');
 
     function log(data) {
+        let type = typeof data;
         if (typeof data === 'object') {
             try {
                 data = JSON.stringify(data);
@@ -70,7 +71,7 @@
         var minu = now.getMinutes();
         var sec = now.getSeconds();
         var dateStr = '<br>[' + hour + ':' + minu + ':' + sec + ']';
-        $log.innerHTML += dateStr + data;
+        $log.innerHTML += dateStr + type + ' ' + data;
     }
     window.addEventListener('load', function () {
         var botApp = new BotApp({
