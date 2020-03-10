@@ -1,4 +1,4 @@
-# BOT APP JS SDK *(v1.5.2)*
+# BOT APP JS SDK *(v1.7.0)*
 
 ## 本文档规范
 
@@ -33,7 +33,7 @@
 * 通过script标签引入(支持https)
 
 ```html
-<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.6.0.js"></script>
+<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.7.0.js"></script>
 ```
 即可在全局环境下获取到`BotApp`对象
 > 使用webpack进行打包的模块化的开发形式参考webpack配置文件中的 [externals配置](https://webpack.js.org/configuration/externals/#externals)
@@ -47,6 +47,24 @@ const botApp = new BotApp({
     random2: 'dc468c70fb574ebd07287b38d0d0676d', // 随机字符串，长度不限，由开发者自己生成
     signature2: '61dc2b99967e0b326e82e80b05571d22', // 将(random2 + appkey)的字符串拼接后做MD5运算得出
     skillID: '699e74f5-b879-1926-1e11-51998f05ea68' // 必填字段，技能ID。填写本字段后SDK会在初始化阶段调用BotApp.requireShipping(小度有屏音箱环境)方法。
+    zIndex: 9999, // 1.7+ 选填，默认值：9999，广告等浮层的层级，
+    adDisable: false, // 1.7+ 选填，默认值：false，是否禁用广告
+    screenShapeType: 1, // 1.7+ 当adDisable为false时必填，游戏的屏幕类型，1 => 竖屏，2 => 全屏
+    adDisplayStrategy: 1, // 1.7+ 选填，广告展示策略，1 => 用户关闭后不再填充广告， 2 => 用户关闭后再填充一次
+    adDisplayCallback: function (err, data) { // 1.7+ 选填，广告状态发生改变时的回调
+       if (data.action === 'CLICK') {
+           console.log('用户点击了广告');
+       } else if (data.action === 'CLOSE') {
+           console.log('用户关闭了广告');
+       } else if (data.action === 'SHOW') {
+           console.log('广告展示成功');
+       }
+   }, 
+    adFirstShowTime: 10, // 1.7+ 选填，单位秒，广告第一次展示在游戏打开后多久
+    adBannerPos: { // 1.7+ 选填，调整banner广告在游戏页面中的位置。值为CSS中的left、top、right、bottom。
+        right: '30px',
+        bottom: '30px'
+    }
 });
 ```
 
@@ -177,7 +195,7 @@ H5应用可通过本方法获取用户的实名认证信息，如果用户没有
     err:
     ```javascript
     {
-        code: {{number}}
+        code: {{number}} // 错误码，详细对照见附表
         msg: {{string}}
     }
     ```
@@ -490,7 +508,7 @@ H5应用可通过本方法发起收款，当用户支付成功后会：如果是
     ```
 
 ## BotApp.speak(data, [,callback]) `SHOW ONLY`
-播报一段文本，播报完毕之后回调callback
+成功调起播放后回调callback
 > 本方法仅支持在小度有屏音箱上调用
 
 * 参数
@@ -730,7 +748,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 
 * 参数
 
-    callback(*Function*)：当用户与设备对话状态改变时，本回调会被调用，详细状态定义如下：
+    callback(*Function(err, status))*)：当用户与设备对话状态改变时，本回调会被调用，详细状态定义如下：
 
     |状态名称 | 状态值 |
     |---|---|
@@ -740,7 +758,16 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     |正在进行TTS播报 | SPEAKING |
 
     callback参数scheme如下：
-
+    
+    err:
+    ```javascript
+    {
+        code: {{number}} // 错误码，详细对照见附表
+        msg: {{string}}
+    }
+    ```
+    
+    status
     ```javascript
     {{string}}
     ```
@@ -748,7 +775,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 * 示例
 
     ```javascript
-    botApp.onDialogStateChanged(function (status) {
+    botApp.onDialogStateChanged(function (err, status) {
         console.log(status);
         // 打印如下：
         LISTENING
@@ -760,16 +787,25 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 
 * 参数
 
-    callback(*Function*)：回调中会传入一个布尔值，告知是否还能回退浏览器历史记录，schema示例如下
+    callback(*Function(err, status)*)：回调中会传入第一个参数是可能的报错信息，第二个参数是一个布尔值，告知是否还能回退浏览器历史记录，schema示例如下:
     
+    err:
     ```javascript
-        {{Boolean}}
+    {
+        code: {{number}} // 错误码，详细对照见附表
+        msg: {{string}}
+    }
+    ```
+    
+    status:
+    ```javascript
+    {{Boolean}}
     ```
 
 * 示例
 
     ```javascript
-     botApp.canGoBack(function(state) {  
+     botApp.canGoBack(function(err, state) {  
          console.log(state);
          // 打印如下
          true // 也有可能是false
@@ -777,6 +813,14 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     ```
 
 ## 附表
+
+### 内建错误信息
+
+|错误名称 | code | msg | 描述
+|---|---|---|---|
+|LowVersionErrorMsg|1001|Device version too low|设备版本过低错误|    
+|ServiceError|1002|Service error, {{msg}}|接口请求报错|    
+
 
 ### 系统内建类型
 

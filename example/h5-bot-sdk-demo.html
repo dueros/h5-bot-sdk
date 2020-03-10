@@ -32,15 +32,10 @@
 <button id="applicate-link">LinkClicked</button>
 <button id="applicate-ship">requireShipping</button>
 <button id="applicate-age">实名认证</button>
-<<<<<<< HEAD
 <button id="adv-banner">banner广告展示</button>
 <button id="adv-vertical">竖屏广告展示</button>
 <button id="adv-incentive">激励广告展示</button>
-=======
 <button id="applicate-cangoback">canGoBack</button>
-<!--<button id="applicate-historypush">增加浏览器历史记录</button>-->
-<!--<button id="applicate-historypop">浏览器历史记录回退</button>-->
->>>>>>> origin/master
 <!-- <button id="link-realname">展示实名认证二维码</button> -->
 <div id="log"></div>
 <script>
@@ -58,14 +53,11 @@
     // var $btnBuy = document.getElementById('applicate-buy');
     var $btnAge = document.getElementById('applicate-age');
     // var $btnRealName = document.getElementById('link-realname');
-<<<<<<< HEAD
     var $btnAdvBanner = document.getElementById('adv-banner');
     var $btnAdvVertical = document.getElementById('adv-vertical');
     var $btnAdvIncentive = document.getElementById('adv-incentive');
-=======
     var $btnCanGoBack = document.getElementById('applicate-cangoback');
     // var $btnHistoryPush = document.getElementById('applicate-historypush');
->>>>>>> origin/master
 
     var $log = document.getElementById('log');
 
@@ -294,7 +286,6 @@
         //     botApp.uploadLinkClicked(data);
         // }
 
-<<<<<<< HEAD
         $btnAdvBanner.onclick = function () {
             log('尝试展示banner广告');
             botApp.showBannerAdv(function (err, data) {
@@ -328,7 +319,7 @@
             log('尝试展示激励广告');
             botApp.showIncentiveAdv();
         }
-=======
+
         $btnCanGoBack.onclick = function () {
             log('调用canGoBack，结果如下');
             botApp.canGoBack(function (err, state) {
@@ -336,19 +327,6 @@
                 log(state);
             });
         }
-
-        // $btnHistoryPush.onclick = function () {
-        //     log('浏览器历史记录push')
-        //     history.pushState({
-        //         test: "aa"
-        //     }, "page new", Date.now() + ".html")
-        // }
-        //
-        // document.getElementById('applicate-historypop').onclick = function () {
-        //     log('浏览器历史记录back')
-        //     history.back();
-        // }
->>>>>>> origin/master
     });
 
 </script>
