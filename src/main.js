@@ -27,27 +27,10 @@ class BotApp {
      * @param {string} config.random2 //  必填，随机字符串，长度不限，由开发者自己生成
      * @param {string} config.signature2 // 必填，将(random2 + appkey)的字符串拼接后做MD5运算得出
      * @param {string} config.skillID // 必填，技能ID
-     * @param {number} config.zIndex // 选填，默认值：9999，广告等浮层的层级，
-     * @param {boolean} config.adDisable // 选填，默认值：false，是否禁用广告
-     * @param {number} config.screenShapeType // 当adDisable为false时必填，游戏的屏幕类型，1 => 竖屏，2 => 全屏
-     * @param {number} config.adDisplayStrategy // 选填，广告展示策略，1 => 用户关闭后不再填充广告， 2 => 用户关闭后再填充一次
-     * @param {Function} config.adDisplayCallback // 选填，广告状态发生改变时的回调
-     * @param {number} config.adFirstShowTime // 选填，单位秒，广告第一次展示在游戏打开后多久
-     * @param {Object} config.adBannerPos // 选填，调整banner广告在游戏页面中的位置。值为CSS中的left、top、right、bottom，例如：adBannerPos: {left: '20px', top: '20px'}
-     * @param {string} config._duerosDebugadIframeUrl // 选填，内部使用，设置广告iframe的URL地址
      */
     constructor (config = {}) {
         this.config = {
-            zIndex: 9999,
-            adDisable: false,
-            screenShapeType: 1, // 1 => 竖屏， 2 => 全屏
-            adDisplayStrategy: 1, // 1 => 用户关闭后不再填充广告， 2 => 用户关闭后再填充一次
-            adDisplayCallback: function (err, data) {},
-            adFirstShowTime: 10,
-            adBannerPos: {
-                right: '30px',
-                bottom: '30px'
-            },
+            adDisable: true,
             ...config,
         };
         this._init();
@@ -63,6 +46,8 @@ class BotApp {
 
         // 广告iframe baseUrl
         this._adIframe1BaseUrl = '';
+
+        this._isAdInit = false;
     }
 
     static AdAction = AdAction;
@@ -75,7 +60,8 @@ class BotApp {
             signature2: this.config.signature2
         });
 
-        this._isCommonAdClosed = false;
+        this._isCommonAdSwitchOff = false; // 是否手动关闭广告
+        this._isCommonAdDisplaying = false; // 广告是否正在展示
         this._gameWrapperMsgTarget = 'http://xiaodu.baidu.com';
 
         if (this.isInApp()) {
@@ -135,27 +121,41 @@ class BotApp {
                     let data = event.data;
                     console.log('receive msg from iframe: ', data);
                     if (data.type === 'ad_load_material') {
-                        // todo ... 告知开发者广告打开情况
-                        this._adDisplayCallback(null, {
-                            action: 'SHOW'
-                        });
-                        this._execLinkClick(data.data.linkClickUrl);
+                        if (!this._isCommonAdDisplaying) {
+                            this.config.adDisplayCallback();
+                        } else {
+                            this.config.adSwitchCallback();
+                        }
+                        this._isCommonAdDisplaying = true;
+                        this._execLinkClick(data.data.linkClickUrl.map(url => {
+                            return {
+                                url: url,
+                                initiator: {
+                                    type: 'AUTO_TRIGGER'
+                                }
+                            }
+                        }));
                     } else if (data.type === 'ad_click') {
-                        this._adDisplayCallback(null, {
-                            action: 'CLICK'
-                        });
-                        this._execLinkClick(data.data.linkClickUrl);
+                        this.config.adClickCallback();
+                        this._execLinkClick(data.data.linkClickUrl.map(url => {
+                            return {
+                                url
+                            }
+                        }));
+                        window.addEventListener('touchstart', this.screenTouched, true);
+                        this._pauseCommonAd();
                     } else if (data.type === 'ad_close') {
-                        this._adDisplayCallback(null, {
-                            action: 'CLOSE'
-                        });
-                        this._execLinkClick(data.data.linkClickUrl);
-
+                        this.config.adCloseCallback();
+                        this._execLinkClick(data.data.linkClickUrl.map(url => {
+                            return {
+                                url
+                            }
+                        }));
                         this._closeCommonAd();
 
                         // 如果开发者选择广告策略 2
                         // 则在某一时间之后再次打开
-                        if (this.config.adDisplayStrategy === 2) {
+                        if (this.config.adDisplayStrategy === 'twice') {
                             // 如果广告打开次数还有剩余
                             if (this._commonAdShowTimes > 0) {
                                 this._commonAdShowTimes--;
@@ -175,23 +175,6 @@ class BotApp {
                     }
                 }
             });
-        }
-
-        this._adDisplayCallback = this.config.adDisplayCallback
-            ? this.config.adDisplayCallback
-            : function () {};
-
-        if (!this.config.adDisable) {
-            // 校验是否是数字，随后在某一时间开始弹出广告
-            if (/\d+/.test(this.config.adFirstShowTime)) {
-                clearTimeout(this._adFirstShowTimer);
-                this._adFirstShowTimer = setTimeout(() => {
-                    this._startCommonAdSwitch(true);
-                    this._commonAdShowTimes--;
-                }, this.config.adFirstShowTime * 1000);
-            } else {
-                throw new Error('adFirstShowTime must be a number, please check configuration');
-            }
         }
     }
 
@@ -213,21 +196,69 @@ class BotApp {
 
     /**
      * 执行LinkClick
-     * @param {Array|string} linkClickUrl 要执行的LinkClickUrl，可能为数组
+     * @param {Array|string} linkClickData 要执行的LinkClickUrl，可能为数组
      * @private
      */
-    _execLinkClick(linkClickUrl) {
-        if (Array.isArray(linkClickUrl)) {
-            linkClickUrl.forEach((url) => {
-                this.uploadLinkClicked({
-                    url
-                });
+    _execLinkClick(linkClickData) {
+        if (Array.isArray(linkClickData)) {
+            linkClickData.forEach((data) => {
+                this.uploadLinkClicked(data);
             });
         } else {
-            this.uploadLinkClicked({
-                url: linkClickUrl
-            });
+            this.uploadLinkClicked(linkClickData);
         }
+    }
+
+    /**
+     * 初始化广告
+     * @param {Object} config 广告配置
+     * @param {number} config.adZIndex 选填，默认值：9999，广告等浮层的层级，
+     * @param {boolean} config.adDisable 选填，默认值：false，是否禁用广告
+     * @param {number} config.screenOrientation 选填，默认值：portrait，枚举值，游戏的屏幕类型，portrait => 竖屏，landscape => 全屏
+     * @param {number} config.displayStrategy 选填，默认值：twice，广告展示策略，once => 用户关闭后不再填充广告， twice => 用户关闭后再填充一次
+     * @param {number} config.firstDisplayTime 选填，单位秒，广告第一次展示在游戏打开后多久
+     * @param {Object} config.bannerPosition 选填，调整banner广告在游戏页面中的位置。值为CSS中的left、top、right、bottom，例如：bannerPosition: {left: '20px', top: '20px'}
+     * @param {Function} config.clickCallback 选填，广告点击时的回调函数
+     * @param {Function} config.closeCallback 选填，广告关闭时的回调函数
+     * @param {Function} config.displayCallback 选填，广告展示时的回调函数
+     * @param {Function} config.switchCallback 选填，广告切换时的回调函数
+     * @param {string} config._duerosDebugadIframeUrl 选填，内部使用，设置广告iframe的URL地址
+     */
+    initAd(config = {}) {
+        if (this._isAdInit) {
+            throw new Error('`initAd` can only be called once ');
+        }
+        this.config = {
+            ...this.config,
+            adZIndex: config.zIndex || 9999,
+            screenOrientation: config.screenOrientation || 'portrait',
+            adDisplayStrategy: config.displayStrategy || 'twice',
+            adClickCallback: config.clickCallback || function() {},
+            adCloseCallback: config.closeCallback || function() {},
+            adDisplayCallback: config.displayCallback || function() {},
+            adSwitchCallback: config.switchCallback || function() {},
+            adFirstDisplayTime: typeof config.firstDisplayTime === 'undefined' ? 10 : config.firstDisplayTime,
+            adBannerPosition: config.bannerPosition || {
+                right: '30px',
+                bottom: '30px'
+            },
+            _duerosDebugadIframeUrl: config._duerosDebugadIframeUrl,
+            adDisable: false,
+        };
+
+        if (!this.config.adDisable) {
+            // 校验是否是数字，随后在某一时间开始弹出广告
+            if (/\d+/.test(this.config.adFirstDisplayTime)) {
+                clearTimeout(this._adFirstShowTimer);
+                this._adFirstShowTimer = setTimeout(() => {
+                    this._startCommonAdSwitch(true);
+                    this._commonAdShowTimes--;
+                }, this.config.adFirstDisplayTime * 1000);
+            } else {
+                throw new Error('firstDisplayTime must be a number, please check configuration');
+            }
+        }
+        this._isAdInit = true;
     }
 
     // 判断APP的类型
@@ -317,7 +348,10 @@ class BotApp {
                             if (payload.status !== 0 || Number(payload.data.is_auth) === 0) {
                                 let link = `dueros://${this.config.skillID}/certification?action=realName`;
                                 this.uploadLinkClicked({
-                                    url: link
+                                    url: link,
+                                    initiator: {
+                                        type: 'AUTO_TRIGGER'
+                                    }
                                 });
                             }
                         });
@@ -335,7 +369,10 @@ class BotApp {
         if (this.config.skillID) {
             let link = `dueros://${this.config.skillID}/readyForShipping`;
             this.uploadLinkClicked({
-                url: link
+                url: link,
+                initiator: {
+                    type: 'AUTO_TRIGGER'
+                }
             });
         } else {
             throw new Error('Missing `skillID`, please configure `skillID` when initializes the `BotApp`');
@@ -477,7 +514,7 @@ class BotApp {
                     // _isCommonAdClosed是个开关。因为广告物料的返回是异步的，且有时间间隔
                     // 如果刚好在网络请求期间用户点击了关闭，然后物料返回
                     // 了，这时就又会渲染广告，造成关不掉的现象
-                    if (!this.config.adDisable && !this._isCommonAdClosed) {
+                    if (!this.config.adDisable && !this._isCommonAdSwitchOff) {
                         if (payload.customData) {
                             this._renderAd(JSON.parse(payload.customData).jsonData);
                         }
@@ -668,7 +705,7 @@ class BotApp {
                 this._adIframe1.frameBorder = 0;
                 this._adIframe1.allowTransparency = 'true';
                 document.body.appendChild(this._adIframe1);
-                this._adIframe1.style.cssText += `display: block; z-index: ${this.config.zIndex};position: fixed; background-color=transparent;`;
+                this._adIframe1.style.cssText += `display: block; z-index: ${this.config.adZIndex};position: fixed; background-color=transparent;`;
             } else if (!this.config._duerosDebugadIframeUrl && this._adIframe1BaseUrl !== serverAdIframeAddr) {
                 document.body.removeChild(this._adIframe1);
                 this._adIframe1Loaded = false;
@@ -682,7 +719,7 @@ class BotApp {
                 type: 'ad_set_material',
                 data: {
                     ..._data,
-                    screenShapeType: this.config.screenShapeType,
+                    screenOrientation: this.config.screenOrientation,
                 }
             };
 
@@ -704,21 +741,23 @@ class BotApp {
      * @private
      */
     _requestCommonadMaterial() {
-        // todo ... test
-        let url = `dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?adPlaceId=5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D&botId=${this.config.skillID}`;
-        // if (this.config.screenShapeType === 1) {
-        //     url = 'dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?adPlaceId=5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D&botId=3fa55179-6903-4094-57cf-8ae21d9a6123';
-        // } else if (this.config.screenShapeType === 2) {
-        //     url = 'dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?adPlaceId=5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D&botId=3fa55179-6903-4094-57cf-8ae21d9a6123'
-        // }
+        let url = '';
+        if (this.config.screenOrientation === 'portrait') {
+            url = `dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?adPlaceId=5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D&botId=${this.config.skillID}`;
+        } else if (this.config.screenOrientation === 'landscape') {
+            url = `dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?adPlaceId=5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0djtD6FVFxlJOQpWze3Tt6Lkop9T6niQuPFPWCZ%2BpOIZhg%3D&botId=${this.config.skillID}`
+        }
         this.uploadLinkClicked({
-            url
+            url,
+            initiator: {
+                type: 'AUTO_TRIGGER'
+            }
         });
     }
 
     _setAdPosition() {
         // 如果是竖屏游戏
-        if (this.config.screenShapeType === 1) {
+        if (this.config.screenOrientation === 'portrait') {
             this._adIframe1.style.cssText += 'width: 242px; height: 214px;bottom: 30px;';
             if (this._lastVerticalAdDisplayIsLeft) {
                 this._adIframe1.style.left = '';
@@ -728,19 +767,19 @@ class BotApp {
                 this._adIframe1.style.right = '';
             }
         // 如果是全屏游戏
-        } else if (this.config.screenShapeType === 2) {
+        } else if (this.config.screenOrientation === 'landscape') {
             this._adIframe1.style.cssText += 'width: 446px; height: 118px;';
-            if (isSet(this.config.adBannerPos.top)) {
-                this._adIframe1.style.top = this.config.adBannerPos.top;
+            if (isSet(this.config.adBannerPosition.top)) {
+                this._adIframe1.style.top = this.config.adBannerPosition.top;
             }
-            if (isSet(this.config.adBannerPos.right)) {
-                this._adIframe1.style.right = this.config.adBannerPos.right;
+            if (isSet(this.config.adBannerPosition.right)) {
+                this._adIframe1.style.right = this.config.adBannerPosition.right;
             }
-            if (isSet(this.config.adBannerPos.bottom)) {
-                this._adIframe1.style.bottom = this.config.adBannerPos.bottom;
+            if (isSet(this.config.adBannerPosition.bottom)) {
+                this._adIframe1.style.bottom = this.config.adBannerPosition.bottom;
             }
-            if (isSet(this.config.adBannerPos.left)) {
-                this._adIframe1.style.left = this.config.adBannerPos.left;
+            if (isSet(this.config.adBannerPosition.left)) {
+                this._adIframe1.style.left = this.config.adBannerPosition.left;
             }
         }
     }
@@ -751,7 +790,7 @@ class BotApp {
      * @private
      */
     _startCommonAdSwitch(fireImmediately) {
-        this._isCommonAdClosed = false;
+        this._isCommonAdSwitchOff = false;
         if (fireImmediately) {
             // 请求到素材后，会在onHandleIntent里处理
             this._requestCommonadMaterial();
@@ -763,18 +802,26 @@ class BotApp {
         }, this._commonadSwitchInterval);
     }
 
-    /**
-     * 停止广告轮换
-     * @private
-     */
-    _stopCommonAdSwitch() {
-        clearInterval(this._commonAdSwitchTimer);
-    }
 
     _closeCommonAd() {
-        this._stopCommonAdSwitch();
-        this._isCommonAdClosed = true;
+        clearInterval(this._commonAdSwitchTimer);
+        this._isCommonAdSwitchOff = true;
         this._adIframe1.style.display = 'none';
+        this._isCommonAdDisplaying = false;
+    }
+
+    /**
+     * 暂停广告轮换
+     * @private
+     */
+    _pauseCommonAd() {
+        clearInterval(this._commonAdSwitchTimer);
+        this._isCommonAdSwitchOff = true;
+    }
+
+    screenTouched = () => {
+        window.removeEventListener('touchstart', this.screenTouched, true);
+        this._startCommonAdSwitch(true);
     }
 }
 

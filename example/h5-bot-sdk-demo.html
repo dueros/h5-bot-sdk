@@ -85,9 +85,9 @@
             skillID: '699e74f5-b879-1926-1e11-51998f05ea68',
             zIndex: 9999,
             adv: {
-                screenShapeType: 1,
-                displayStrategy: 1,
-                firstShowTime: 10,
+                screenOrientation: 'portrait',
+                displayStrategy: 'once',
+                firstDisplayTime: 10,
                 displayCallback: function (err, data) {
                     if (data.action === BotApp.AdvEvent.CLICK) {
                         log('用户点击了广告');

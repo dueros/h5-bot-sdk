@@ -43,28 +43,10 @@
 // 初始化botApp对象
 const botApp = new BotApp({
     random1: '3691308f2a4c2f6983f2880d32e29c84', // 随机字符串，长度不限，由开发者自己生成
-    signature1: 'd85f5cfffe5450fe7855fec1fcfe0b16', // 将(random1 + appkey)的字符串拼接后做MD5运算得出
+    signature1: 'd85f5cfffe5450fe7855fec1fcfe0b16', // 将(random1 + 签名Key)的字符串拼接后做MD5运算得出
     random2: 'dc468c70fb574ebd07287b38d0d0676d', // 随机字符串，长度不限，由开发者自己生成
-    signature2: '61dc2b99967e0b326e82e80b05571d22', // 将(random2 + appkey)的字符串拼接后做MD5运算得出
+    signature2: '61dc2b99967e0b326e82e80b05571d22', // 将(random2 + 签名Key)的字符串拼接后做MD5运算得出
     skillID: '699e74f5-b879-1926-1e11-51998f05ea68' // 必填字段，技能ID。填写本字段后SDK会在初始化阶段调用BotApp.requireShipping(小度有屏音箱环境)方法。
-    zIndex: 9999, // 1.7+ 选填，默认值：9999，广告等浮层的层级，
-    adDisable: false, // 1.7+ 选填，默认值：false，是否禁用广告
-    screenShapeType: 1, // 1.7+ 当adDisable为false时必填，游戏的屏幕类型，1 => 竖屏，2 => 全屏
-    adDisplayStrategy: 1, // 1.7+ 选填，广告展示策略，1 => 用户关闭后不再填充广告， 2 => 用户关闭后再填充一次
-    adDisplayCallback: function (err, data) { // 1.7+ 选填，广告状态发生改变时的回调
-       if (data.action === 'CLICK') {
-           console.log('用户点击了广告');
-       } else if (data.action === 'CLOSE') {
-           console.log('用户关闭了广告');
-       } else if (data.action === 'SHOW') {
-           console.log('广告展示成功');
-       }
-   }, 
-    adFirstShowTime: 10, // 1.7+ 选填，单位秒，广告第一次展示在游戏打开后多久
-    adBannerPos: { // 1.7+ 选填，调整banner广告在游戏页面中的位置。值为CSS中的left、top、right、bottom。
-        right: '30px',
-        bottom: '30px'
-    }
 });
 ```
 
@@ -72,8 +54,8 @@ const botApp = new BotApp({
 > ```bash
 > md5 -s "string"
 > ```
-> * AppKey不能明文暴露，以免造成不必要的风险。
-> AppKey在DBP平台(<https:/ros.baidu.com/dbp>)技能的基础信息页面
+> * 签名Key不能明文暴露，以免造成不必要的风险。
+> * 签名Key在DBP平台(<https:/ros.baidu.com/dbp>)技能的基础信息页面
 
 ## BotApp.isInApp() *1.4+*
 判断当前H5运行环境是否是在小度APP或者小度音箱APP中，以此区分有屏音箱端和手机App端。开发者需以此来判断并使用相应的SDK方法。
@@ -125,6 +107,7 @@ const botApp = new BotApp({
   ```javascript
    botApp.requireLinkAccount();
    ```
+
 
 ## BotApp.onLinkAccountSuccess(callback) `SHOW ONLY`
 获取oauth授权结果。此方法会监听oauth授权成功后的结果。
@@ -805,12 +788,58 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 * 示例
 
     ```javascript
-     botApp.canGoBack(function(err, state) {  
-         console.log(state);
+     botApp.canGoBack(function(err, status) {  
+         console.log(status);
          // 打印如下
          true // 也有可能是false
     });
     ```
+    
+## BotApp.initAd([,config]) `SHOW ONLY`
+初始化广告。
+
+* 参数
+    config(*Object*): 广告相关配置，其schema如下 
+    ```javascript
+    {
+        screenOrientation: {{enum}}, // 选填，默认值：portrait，游戏的屏幕类型，portrait => 竖屏游戏，landscape => 横屏(全屏)游戏，SDK根据不同屏幕类型展示不同形式的广告
+        zIndex: {{number}}, // 选填，默认值：9999，广告等浮层的层级，
+        displayStrategy: {{enum}}, // 选填，默认值：twice。广告展示策略，once => 用户关闭后不再填充广告， twice => 用户关闭60s后再填充一次 
+        firstDisplayTime: {{number}}, // 选填，单位秒，默认值：10，广告第一次展示的时间
+        bannerPosition: { // 选填，默认值：{right: '30px', bottom: '30px'}，调整banner广告在游戏页面中的位置。值为CSS中的left、top、right、bottom。
+            right: '{{string}}',
+            bottom: '{{string}}'
+        },
+        clickCallback: {{Function}}, // 选填，广告点击回调
+        closeCallback: {{Function}}, // 选填，广告关闭回调
+        displayCallback: {{Function}}, // 选填， 广告展示回调
+        switchCallback: {{Function}} // 选填，广告切换回调
+    }
+    ```
+
+* 示例
+    ```javascript
+    botApp.initAd({
+       screenOrientation: 'portrait',
+       zIndex: 9999,
+       displayStrategy: 'once', 
+       firstDisplayTime: 10,
+       bannerPosition: {
+           right: '30px',
+           bottom: '30px'
+       },
+       clickCallback: function() {
+          console.log('用户点击了广告');  
+       },
+       closeCallback: function() {
+         console.log('用户关闭了广告');
+       },
+       displayCallback: function() {
+          console.log('广告展示成功');
+       }
+    })
+    ```
+
 
 ## 附表
 
