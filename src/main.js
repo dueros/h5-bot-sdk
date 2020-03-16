@@ -214,8 +214,8 @@ class BotApp {
      * @param {Object} config 广告配置
      * @param {number} config.adZIndex 选填，默认值：9999，广告等浮层的层级，
      * @param {boolean} config.adDisable 选填，默认值：false，是否禁用广告
-     * @param {number} config.screenOrientation 选填，默认值：portrait，枚举值，游戏的屏幕类型，portrait => 竖屏，landscape => 全屏
-     * @param {number} config.displayStrategy 选填，默认值：twice，广告展示策略，once => 用户关闭后不再填充广告， twice => 用户关闭后再填充一次
+     * @param {enum} config.screenOrientation 选填，默认值：portrait，枚举值，游戏的屏幕类型，portrait => 竖屏，landscape => 全屏
+     * @param {enum} config.displayStrategy 选填，默认值：twice，广告展示策略，once => 用户关闭后不再填充广告， twice => 用户关闭后再填充一次
      * @param {number} config.firstDisplayTime 选填，单位秒，广告第一次展示在游戏打开后多久
      * @param {Object} config.bannerPosition 选填，调整banner广告在游戏页面中的位置。值为CSS中的left、top、right、bottom，例如：bannerPosition: {left: '20px', top: '20px'}
      * @param {Function} config.clickCallback 选填，广告点击时的回调函数
