@@ -32,9 +32,10 @@
 <button id="applicate-link">LinkClicked</button>
 <button id="applicate-ship">requireShipping</button>
 <button id="applicate-age">实名认证</button>
+<button id="adv-banner">banner广告展示</button>
+<button id="adv-vertical">竖屏广告展示</button>
+<button id="adv-incentive">激励广告展示</button>
 <button id="applicate-cangoback">canGoBack</button>
-<!--<button id="applicate-historypush">增加浏览器历史记录</button>-->
-<!--<button id="applicate-historypop">浏览器历史记录回退</button>-->
 <!-- <button id="link-realname">展示实名认证二维码</button> -->
 <div id="log"></div>
 <script>
@@ -52,6 +53,9 @@
     // var $btnBuy = document.getElementById('applicate-buy');
     var $btnAge = document.getElementById('applicate-age');
     // var $btnRealName = document.getElementById('link-realname');
+    var $btnAdvBanner = document.getElementById('adv-banner');
+    var $btnAdvVertical = document.getElementById('adv-vertical');
+    var $btnAdvIncentive = document.getElementById('adv-incentive');
     var $btnCanGoBack = document.getElementById('applicate-cangoback');
     // var $btnHistoryPush = document.getElementById('applicate-historypush');
 
@@ -79,7 +83,22 @@
             signature1: 'e6f8041f11824ec2fed7b11e27f6588a',
             random2: '4a983fd442144eaec73c3ca35ae78aa0',
             signature2: '1ea04b2c23877a9a221aace7384dc2d0',
-            skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
+            skillID: '699e74f5-b879-1926-1e11-51998f05ea68',
+            zIndex: 9999,
+            adv: {
+                screenOrientation: 'portrait',
+                displayStrategy: 'once',
+                firstDisplayTime: 10,
+                displayCallback: function (err, data) {
+                    if (data.action === BotApp.AdvEvent.CLICK) {
+                        log('用户点击了广告');
+                    } else if (data.action === BotApp.AdvEvent.CLOSE) {
+                        log('用户关闭了广告');
+                    } else if (data.action === BotApp.AdvEvent.SHOW) {
+                        log('广告展示成功');
+                    }
+                }
+            },
         });
 
         botApp.onLinkAccountSuccess(function (data) {
@@ -268,6 +287,40 @@
         //     botApp.uploadLinkClicked(data);
         // }
 
+        $btnAdvBanner.onclick = function () {
+            log('尝试展示banner广告');
+            botApp.showBannerAdv(function (err, data) {
+                if (err) {
+                    log('广告展示失败');
+                    log(err);
+                } else {
+                    if (data.action === botApp.AdvEvent.CLICK) {
+                        log('用户点击了广告');
+                    } else if (data.action === botApp.AdvEvent.CLOSE) {
+                        log('用户关闭了广告');
+                    } else if (data.action === botApp.AdvEvent.SHOW) {
+                        log('广告展示成功');
+                    }
+                }
+            });
+        }
+        $btnAdvVertical.onclick = function () {
+            log('尝试展示竖屏广告');
+            botApp.showVerticalAdv(function (err, data) {
+                if (data.action === botApp.AdvEvent.CLICK) {
+                    log('用户点击了广告');
+                } else if (data.action === botApp.AdvEvent.CLOSE) {
+                    log('用户关闭了广告');
+                } else if (data.action === botApp.AdvEvent.SHOW) {
+                    log('广告展示成功');
+                }
+            });
+        }
+        $btnAdvIncentive.onclick = function () {
+            log('尝试展示激励广告');
+            botApp.showIncentiveAdv();
+        }
+
         $btnCanGoBack.onclick = function () {
             log('调用canGoBack，结果如下');
             botApp.canGoBack(function (err, state) {
@@ -275,18 +328,6 @@
                 log(state);
             });
         }
-
-        // $btnHistoryPush.onclick = function () {
-        //     log('浏览器历史记录push')
-        //     history.pushState({
-        //         test: "aa"
-        //     }, "page new", Date.now() + ".html")
-        // }
-        //
-        // document.getElementById('applicate-historypop').onclick = function () {
-        //     log('浏览器历史记录back')
-        //     history.back();
-        // }
     });
 
 </script>

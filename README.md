@@ -1,4 +1,4 @@
-# BOT APP JS SDK *(v1.5.2)*
+# BOT APP JS SDK *(v1.7.0)*
 
 ## 本文档规范
 
@@ -33,7 +33,7 @@
 * 通过script标签引入(支持https)
 
 ```html
-<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.6.0.js"></script>
+<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.7.0.js"></script>
 ```
 即可在全局环境下获取到`BotApp`对象
 > 使用webpack进行打包的模块化的开发形式参考webpack配置文件中的 [externals配置](https://webpack.js.org/configuration/externals/#externals)
@@ -43,9 +43,9 @@
 // 初始化botApp对象
 const botApp = new BotApp({
     random1: '3691308f2a4c2f6983f2880d32e29c84', // 随机字符串，长度不限，由开发者自己生成
-    signature1: 'd85f5cfffe5450fe7855fec1fcfe0b16', // 将(random1 + appkey)的字符串拼接后做MD5运算得出
+    signature1: 'd85f5cfffe5450fe7855fec1fcfe0b16', // 将(random1 + 签名Key)的字符串拼接后做MD5运算得出
     random2: 'dc468c70fb574ebd07287b38d0d0676d', // 随机字符串，长度不限，由开发者自己生成
-    signature2: '61dc2b99967e0b326e82e80b05571d22', // 将(random2 + appkey)的字符串拼接后做MD5运算得出
+    signature2: '61dc2b99967e0b326e82e80b05571d22', // 将(random2 + 签名Key)的字符串拼接后做MD5运算得出
     skillID: '699e74f5-b879-1926-1e11-51998f05ea68' // 必填字段，技能ID。填写本字段后SDK会在初始化阶段调用BotApp.requireShipping(小度有屏音箱环境)方法。
 });
 ```
@@ -54,8 +54,8 @@ const botApp = new BotApp({
 > ```bash
 > md5 -s "string"
 > ```
-> * AppKey不能明文暴露，以免造成不必要的风险。
-> AppKey在DBP平台(<https:/ros.baidu.com/dbp>)技能的基础信息页面
+> * 签名Key不能明文暴露，以免造成不必要的风险。
+> * 签名Key在DBP平台(<https:/ros.baidu.com/dbp>)技能的基础信息页面
 
 ## BotApp.isInApp() *1.4+*
 判断当前H5运行环境是否是在小度APP或者小度音箱APP中，以此区分有屏音箱端和手机App端。开发者需以此来判断并使用相应的SDK方法。
@@ -107,6 +107,7 @@ const botApp = new BotApp({
   ```javascript
    botApp.requireLinkAccount();
    ```
+
 
 ## BotApp.onLinkAccountSuccess(callback) `SHOW ONLY`
 获取oauth授权结果。此方法会监听oauth授权成功后的结果。
@@ -177,7 +178,7 @@ H5应用可通过本方法获取用户的实名认证信息，如果用户没有
     err:
     ```javascript
     {
-        code: {{number}}
+        code: {{number}} // 错误码，详细对照见附表
         msg: {{string}}
     }
     ```
@@ -490,7 +491,7 @@ H5应用可通过本方法发起收款，当用户支付成功后会：如果是
     ```
 
 ## BotApp.speak(data, [,callback]) `SHOW ONLY`
-播报一段文本，播报完毕之后回调callback
+成功调起播放后回调callback
 > 本方法仅支持在小度有屏音箱上调用
 
 * 参数
@@ -730,7 +731,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 
 * 参数
 
-    callback(*Function*)：当用户与设备对话状态改变时，本回调会被调用，详细状态定义如下：
+    callback(*Function(err, status))*)：当用户与设备对话状态改变时，本回调会被调用，详细状态定义如下：
 
     |状态名称 | 状态值 |
     |---|---|
@@ -741,6 +742,15 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 
     callback参数scheme如下：
 
+    err:
+    ```javascript
+    {
+        code: {{number}} // 错误码，详细对照见附表
+        msg: {{string}}
+    }
+    ```
+
+    status
     ```javascript
     {{string}}
     ```
@@ -748,7 +758,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 * 示例
 
     ```javascript
-    botApp.onDialogStateChanged(function (status) {
+    botApp.onDialogStateChanged(function (err, status) {
         console.log(status);
         // 打印如下：
         LISTENING
@@ -760,23 +770,86 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 
 * 参数
 
-    callback(*Function*)：回调中会传入一个布尔值，告知是否还能回退浏览器历史记录，schema示例如下
+    callback(*Function(err, status)*)：回调中会传入第一个参数是可能的报错信息，第二个参数是一个布尔值，告知是否还能回退浏览器历史记录，schema示例如下:
 
+    err:
     ```javascript
-        {{Boolean}}
+    {
+        code: {{number}} // 错误码，详细对照见附表
+        msg: {{string}}
+    }
+    ```
+
+    status:
+    ```javascript
+    {{Boolean}}
     ```
 
 * 示例
 
     ```javascript
-     botApp.canGoBack(function(state) {
-         console.log(state);
+     botApp.canGoBack(function(err, status) {
+         console.log(status);
          // 打印如下
          true // 也有可能是false
     });
     ```
 
+## BotApp.initAd([,config]) `SHOW ONLY`
+初始化广告。
+
+* 参数
+    config(*Object*): 广告相关配置，其schema如下
+    ```javascript
+    {
+        screenOrientation: {{enum}}, // 选填，默认值：portrait，游戏的屏幕类型，portrait => 竖屏游戏，landscape => 横屏(全屏)游戏，SDK根据不同屏幕类型展示不同形式的广告
+        zIndex: {{number}}, // 选填，默认值：9999，广告等浮层的层级，
+        displayStrategy: {{enum}}, // 选填，默认值：twice。广告展示策略，once => 用户关闭后不再填充广告， twice => 用户关闭60s后再填充一次
+        firstDisplayTime: {{number}}, // 选填，单位秒，默认值：10，广告第一次展示的时间
+        bannerPosition: { // 选填，默认值：{right: '30px', bottom: '30px'}，调整banner广告在游戏页面中的位置。值为CSS中的left、top、right、bottom。
+            right: '{{string}}',
+            bottom: '{{string}}'
+        },
+        clickCallback: {{Function}}, // 选填，广告点击回调
+        closeCallback: {{Function}}, // 选填，广告关闭回调
+        displayCallback: {{Function}}, // 选填， 广告展示回调
+        switchCallback: {{Function}} // 选填，广告切换回调
+    }
+    ```
+
+* 示例
+    ```javascript
+    botApp.initAd({
+       screenOrientation: 'portrait',
+       zIndex: 9999,
+       displayStrategy: 'once',
+       firstDisplayTime: 10,
+       bannerPosition: {
+           right: '30px',
+           bottom: '30px'
+       },
+       clickCallback: function() {
+          console.log('用户点击了广告');
+       },
+       closeCallback: function() {
+         console.log('用户关闭了广告');
+       },
+       displayCallback: function() {
+          console.log('广告展示成功');
+       }
+    })
+    ```
+
+
 ## 附表
+
+### 内建错误信息
+
+|错误名称 | code | msg | 描述
+|---|---|---|---|
+|LowVersionErrorMsg|1001|Device version too low|设备版本过低错误|
+|ServiceError|1002|Service error, {{msg}}|接口请求报错|
+
 
 ### 系统内建类型
 
