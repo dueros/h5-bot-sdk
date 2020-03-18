@@ -795,7 +795,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     });
     ```
 
-## BotApp.initAd([,config]) `SHOW ONLY`
+## BotApp.initAd([,config]) *1.7+* `SHOW ONLY`
 初始化广告。
 
 * 参数
