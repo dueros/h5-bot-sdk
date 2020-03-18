@@ -4,7 +4,6 @@
  */
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
-import {AdAction} from "./events";
 import {isSet, parseH5UrlOrigin} from "./utils";
 
 
@@ -49,8 +48,6 @@ class BotApp {
 
         this._isAdInit = false;
     }
-
-    static AdAction = AdAction;
 
     _init() {
         const registerConfig = JSON.stringify({
