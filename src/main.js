@@ -110,6 +110,23 @@ class BotApp {
                         this.requireShipping();
                     }
                 });
+
+                bridge.registerHandler('onHandleIntent',  (payload, callback) => {
+                    payload = JSON.parse(payload);
+                    if (payload.intent.name === 'RenderAdvertisement') {
+                        // _isCommonAdClosed是个开关。因为广告物料的返回是异步的，且有时间间隔
+                        // 如果刚好在网络请求期间用户点击了关闭，然后物料返回
+                        // 了，这时就又会渲染广告，造成关不掉的现象
+                        if (!this.config.adDisable && !this._isCommonAdSwitchOff) {
+                            if (payload.customData) {
+                                this._renderAd(JSON.parse(payload.customData).jsonData);
+                            }
+                        }
+                    } else {
+                        this.onHandleIntentCb && this.onHandleIntentCb(payload);
+                    }
+                    callback('js 回调');
+                });
             });
             this._showVersion = this._parseShowVersion();
 
@@ -506,24 +523,7 @@ class BotApp {
      */
     onHandleIntent(cb) {
         this._validateCallback('onHandleIntent', cb);
-        this._getJSBridge(bridge => {
-            bridge.registerHandler('onHandleIntent',  (payload, callback) => {
-                payload = JSON.parse(payload);
-                if (payload.intent.name === 'RenderAdvertisement') {
-                    // _isCommonAdClosed是个开关。因为广告物料的返回是异步的，且有时间间隔
-                    // 如果刚好在网络请求期间用户点击了关闭，然后物料返回
-                    // 了，这时就又会渲染广告，造成关不掉的现象
-                    if (!this.config.adDisable && !this._isCommonAdSwitchOff) {
-                        if (payload.customData) {
-                            this._renderAd(JSON.parse(payload.customData).jsonData);
-                        }
-                    }
-                } else {
-                    cb(payload);
-                }
-                callback('js 回调');
-            });
-        });
+        this.onHandleIntentCb = cb;
     }
 
     /**
