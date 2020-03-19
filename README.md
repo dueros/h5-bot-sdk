@@ -806,10 +806,11 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
         zIndex: {{number}}, // 选填，默认值：9999，广告等浮层的层级，
         displayStrategy: {{enum}}, // 选填，默认值：twice。广告展示策略，once => 用户关闭后不再填充广告， twice => 用户关闭60s后再填充一次
         firstDisplayTime: {{number}}, // 选填，单位秒，默认值：10，广告第一次展示的时间
-        bannerPosition: { // 选填，默认值：{right: '30px', bottom: '30px'}，调整banner广告在游戏页面中的位置。值为CSS中的left、top、right、bottom。
+        bannerPosition: { // 选填，默认值：{right: '30px', bottom: '30px'}，调整banner广告（横屏游戏中的广告）在游戏页面中的位置。值为CSS中的left、top、right、bottom。
             right: '{{string}}',
             bottom: '{{string}}'
         },
+        placeId: '{{string}}' // 广告位ID，必填，联系DuerOS接口人申请。
         clickCallback: {{Function}}, // 选填，广告点击回调
         closeCallback: {{Function}}, // 选填，广告关闭回调
         displayCallback: {{Function}}, // 选填， 广告展示回调
@@ -822,12 +823,13 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     botApp.initAd({
        screenOrientation: 'portrait',
        zIndex: 9999,
-       displayStrategy: 'once',
+       displayStrategy: 'twice',
        firstDisplayTime: 10,
        bannerPosition: {
            right: '30px',
            bottom: '30px'
        },
+       placeId: '5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D',
        clickCallback: function() {
           console.log('用户点击了广告');
        },
@@ -836,6 +838,9 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
        },
        displayCallback: function() {
           console.log('广告展示成功');
+       },
+       switchCallback: function() {
+           console.log('广告切换成功');
        }
     })
     ```
