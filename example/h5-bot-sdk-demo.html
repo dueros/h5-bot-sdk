@@ -7,7 +7,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
     <script src="//cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>
-    <script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.6.1.js"></script>
+    <script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.7.2.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -32,9 +32,6 @@
 <button id="applicate-link">LinkClicked</button>
 <button id="applicate-ship">requireShipping</button>
 <button id="applicate-age">实名认证</button>
-<button id="adv-banner">banner广告展示</button>
-<button id="adv-vertical">竖屏广告展示</button>
-<button id="adv-incentive">激励广告展示</button>
 <button id="applicate-cangoback">canGoBack</button>
 <!-- <button id="link-realname">展示实名认证二维码</button> -->
 <div id="log"></div>
@@ -53,9 +50,6 @@
     // var $btnBuy = document.getElementById('applicate-buy');
     var $btnAge = document.getElementById('applicate-age');
     // var $btnRealName = document.getElementById('link-realname');
-    var $btnAdvBanner = document.getElementById('adv-banner');
-    var $btnAdvVertical = document.getElementById('adv-vertical');
-    var $btnAdvIncentive = document.getElementById('adv-incentive');
     var $btnCanGoBack = document.getElementById('applicate-cangoback');
     // var $btnHistoryPush = document.getElementById('applicate-historypush');
 
@@ -83,23 +77,32 @@
             signature1: 'e6f8041f11824ec2fed7b11e27f6588a',
             random2: '4a983fd442144eaec73c3ca35ae78aa0',
             signature2: '1ea04b2c23877a9a221aace7384dc2d0',
-            skillID: '699e74f5-b879-1926-1e11-51998f05ea68',
-            zIndex: 9999,
-            adv: {
-                screenOrientation: 'portrait',
-                displayStrategy: 'once',
-                firstDisplayTime: 10,
-                displayCallback: function (err, data) {
-                    if (data.action === BotApp.AdvEvent.CLICK) {
-                        log('用户点击了广告');
-                    } else if (data.action === BotApp.AdvEvent.CLOSE) {
-                        log('用户关闭了广告');
-                    } else if (data.action === BotApp.AdvEvent.SHOW) {
-                        log('广告展示成功');
-                    }
-                }
-            },
+            skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
         });
+
+        botApp.initAd({
+            screenOrientation: 'portrait',
+            displayStrategy: 'twice',
+            clickCallback: function (err, data) {
+                log('用户点击了广告');
+            },
+            displayCallback: function() {
+                log('广告展示成功');
+            },
+            closeCallback: function() {
+                log('用户关闭了广告');
+            },
+            switchCallback: function() {
+                log('广告切换成功');
+            },
+            firstDisplayTime: 10,
+            bannerPosition: {
+                right: '230px',
+                bottom: '130px'
+            },
+            placeId: 'xxxxx',
+        });
+
 
         botApp.onLinkAccountSuccess(function (data) {
             log('收到 onLinkAccountSuccess 调用');
@@ -286,40 +289,6 @@
         //     log(data);
         //     botApp.uploadLinkClicked(data);
         // }
-
-        $btnAdvBanner.onclick = function () {
-            log('尝试展示banner广告');
-            botApp.showBannerAdv(function (err, data) {
-                if (err) {
-                    log('广告展示失败');
-                    log(err);
-                } else {
-                    if (data.action === botApp.AdvEvent.CLICK) {
-                        log('用户点击了广告');
-                    } else if (data.action === botApp.AdvEvent.CLOSE) {
-                        log('用户关闭了广告');
-                    } else if (data.action === botApp.AdvEvent.SHOW) {
-                        log('广告展示成功');
-                    }
-                }
-            });
-        }
-        $btnAdvVertical.onclick = function () {
-            log('尝试展示竖屏广告');
-            botApp.showVerticalAdv(function (err, data) {
-                if (data.action === botApp.AdvEvent.CLICK) {
-                    log('用户点击了广告');
-                } else if (data.action === botApp.AdvEvent.CLOSE) {
-                    log('用户关闭了广告');
-                } else if (data.action === botApp.AdvEvent.SHOW) {
-                    log('广告展示成功');
-                }
-            });
-        }
-        $btnAdvIncentive.onclick = function () {
-            log('尝试展示激励广告');
-            botApp.showIncentiveAdv();
-        }
 
         $btnCanGoBack.onclick = function () {
             log('调用canGoBack，结果如下');
