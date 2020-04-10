@@ -80,6 +80,7 @@ const botApp = new BotApp({
 |callback|**只会**在小度App/小度音箱App上被调用，参数为授权结果|Function(data: Object)|仅小度/小度音箱 App 中必填|无|
 
 callback参数
+
 |参数|说明|类型|
 |----|----|----|
 |data|授权结果|Object|
@@ -120,6 +121,7 @@ botApp.requireLinkAccount();
 |callback|SDK收到授权成功的通知后会调用此函数|Function(payload: Object)|是|无|
 
 callback参数
+
 |参数|说明|类型|
 |----|----|----|
 |payload|授权结果|Object|
@@ -168,6 +170,7 @@ botApp.getRegisterResult(function (data) {
 |callback|本回调会传入用户的实名认证结果|Function(err: Object, data: Object)|必填|是|
 
 err参数
+
 |参数|说明|类型|
 |----|----|----|
 |err|SDK内建错误信息，见附录|Object|
@@ -175,6 +178,7 @@ err参数
 |err.msg|错误信息，详细对照见附表|string|
 
 data参数
+
 |参数|说明|类型|
 |----|----|----|
 |data|实名认证信息|Object|
@@ -305,6 +309,7 @@ callback**只会**在小度App/小度音箱App中被回调，传入的参数见�
 |callback|获取购买结果，传入的参数见下表|Function|是|无|
 
 callback传入的参数
+
 |参数|说明|类型|
 |----|----|----|
 |err|错误信息|Any|
@@ -356,6 +361,7 @@ callback传入的参数
 > 仅当在小度有屏音箱上使用`requireCharge()`发起支付动作时本方法中的回调才会被调用
 
 callback传入的参数
+
 |参数|说明|类型|
 |----|----|----|
 |payload|本次交易的扣款信息|Object|
@@ -404,6 +410,7 @@ callback传入的参数
 > 本方法仅支持在小度有屏音箱上调用
 
 callback传入的参数
+
 |参数|说明|类型|
 |----|----|----|
 |payload|意图解析结果|Object|
@@ -564,6 +571,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 |callback|云端下发ClickLinke指令后本函数会被调用|Function|是|无|
 
 callback参数
+
 |参数|说明|类型|
 |----|----|----|
 |payload|云端下发的指令内容，一般是`updateUiContext()`中传入的`hyperUtterances`中的内容|Object|
@@ -696,6 +704,7 @@ LinkClick是DuerOS系统中定义的事件上报的一种。DuerOS根据其携�
 |callback|用户对话状态变化通知|Function(err: Object, status: string)|是|无|
 
 callback参数
+
 |参数|说明|类型|
 |----|----|----|
 |err|内建错误类型，见附表|Object|
@@ -731,6 +740,7 @@ callback参数
 |callback|获取设备浏览器历史记记录是否还能后退|Function(err: Object, canGoBack: boolean)|是|无|
 
 callback参数
+
 |参数|说明|类型|
 |----|----|----|
 |err|内建错误类型，见附表|Object|
