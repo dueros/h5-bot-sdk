@@ -1,4 +1,4 @@
-# BOT APP JS SDK *(v1.7.2)*
+# H5-BOT-SDK *(v1.7.2)*
 
 ## 本文档规范
 
@@ -16,8 +16,8 @@
 
 * 创建一个技能，<https://dueros.baidu.com/dbp/bot/index#/addbot/0>，选择“自定义”，输入后“确定”，将技能ID发给度秘对接技术
 * 集成本SDK，详见下方**BotApp的引入**
-* 如果开发者有登录的需求，账号关联流程详见**BotApp.requireLinkAccount**
-* 如果开发者有支付的需求，详见**BotApp.requireCharge**
+* 如果开发者有登录的需求，账号关联流程详见`requireLinkAccount()`
+* 如果开发者有支付的需求，详见`requireCharge()`
 
 ### H5游戏想要运行在小度App/小度音箱App上？需要如下工作：
 
@@ -50,206 +50,201 @@ const botApp = new BotApp({
 });
 ```
 
-> * 正式上线时上述随机字符串和签名需要开发者通过后端接口生成。在开发调试阶段可采用如下方式快速生成MD5：
+> 正式上线时上述随机字符串和签名需要开发者通过后端接口生成。在开发调试阶段可采用如下方式快速生成MD5：
 > ```bash
 > md5 -s "string"
 > ```
-> * 签名Key不能明文暴露，以免造成不必要的风险。
-> * 签名Key在DBP平台(<https:/ros.baidu.com/dbp>)技能的基础信息页面
+> 签名Key不能明文暴露，以免造成不必要的风险。
+> 签名Key在DBP平台(<https:/ros.baidu.com/dbp>)技能的基础信息页面
 
-## BotApp.isInApp() *1.4+*
+## isInApp() *1.4+*
 判断当前H5运行环境是否是在小度APP或者小度音箱APP中，以此区分有屏音箱端和手机App端。开发者需以此来判断并使用相应的SDK方法。
 
-## BotApp.requireLinkAccount([,callback])
-接入度秘的H5应用，如有登录需要，必须和百度的账号体系进行绑定，此接口用来在度秘上发起账号绑定流程。**1.4+**版本以后在**小度App/小度音箱App运行环境**中支持传入一个回调函数接收授权结果。小度有屏音箱端需要调用`getRegisterResult()`来获取授权结果。
+## requireLinkAccount([,callback])
+接入度秘的H5应用，如有登录需要，必须和百度的账号体系进行绑定，此接口用来发起账号绑定流程。
+
+> **1.4+**版本以后在**小度App/小度音箱App运行环境**中支持传入一个回调函数接收授权结果。小度有屏音箱端需要调用`getRegisterResult()`来获取授权结果。
 
 目前支持2种方案：
 
 1. 沿用百度账号体系oauth的授权流程，开发者需在<http://developer.baidu.com/wiki/index.php?title=docs/oauth>申请一个新的应用，并将oauth应用的相关信息提供给度秘。绑定成功后，会回调给开发者提供的callback H5地址。后续度秘请求的所有H5和接口回调，都会带上accessToken参数。开发者可以通过accessToken参数请求百度oauth的接口，再换取用户的具体信息。
 
-2. 开发者自己实现标准的oauth协议，并将oauth协议相关接口信息在度秘dbp平台上进行配置。授权成功后可在`onLinkAccountSucceeded(fn)`的回调函数中获取到accessToken。
+2. 开发者自己实现标准的oauth协议，并将oauth协议相关接口信息在度秘dbp平台上进行配置。授权成功后可在`onLinkAccountSucceeded(callback)`的回调函数中获取到accessToken。
 
 > 建议第三方开发者使用方案1，产品交互相对简单，用户只需要在设备上确认授权，即可自动登录
 
-本方法在小度APP/小度音箱App和小度有屏音箱上都能调起授权。在小度APP/小度音箱App上，开发者需要传入一个回调函数来获取授权结果。小度有屏音箱上，开发者需要使用`getRegisterResult()`来获取结果
+本方法在小度APP/小度音箱App和小度有屏音箱上都能调起授权。在小度APP/小度音箱App上，开发者需要传入一个回调函数来获取授权结果。小度有屏音箱上，开发者需要使用`getRegisterResult()`来获取结果。
 
-* 参数
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|**只会**在小度App/小度音箱App上被调用，参数为授权结果|Function(data: Object)|仅小度/小度音箱 App 中必填|无|
 
-    callback(*Function*)：本回调函数**只会**在小度App/小度音箱App上被触发，且当运行在小度App/小度音箱App时，本参数是必填参数，本回调函数会携带一个授权结果数据，其Scheme如下：
+callback参数
+|参数|说明|类型|
+|----|----|----|
+|data|授权结果|Object|
+|data.type|授权结果状态码|enum {"authorized_success", "authorized_fail"}|
+|data.data.accessToken|oauth accessToken|string|
 
-    ```javascript
+
+* 示例1(在App中)
+
+```javascript
+botApp.requireLinkAccount(function (data) {
+     console.log(data);
+     // 注意，本函数仅会在App环境下触发。小度有屏音箱上运行的应用请使用`getRegisterResult()`获取注册结果
+     // 打印如下：
     {
-        "type":"{{string}}",
+        "type":"authorized_success", // 授权被拒绝时的值：authorized_fail
         "data":{
-            "accessToken":"{{string}}"
+            "accessToken":"28.10b09eb18b9dcc3806vda3920199a6fd.2592000.1575546362.4114435386-16962311"
         }
     }
-    ```
+});
+```
 
-* 示例1
+* 示例2(在SHOW中)
 
-  ```javascript
-  botApp.requireLinkAccount(function (data) {
-        console.log(data);
-        // 注意，本函数仅会在App环境下触发。小度有屏音箱上运行的应用请使用`getRegisterResult()`获取注册结果
-        // 打印如下：
-       {
-           "type":"authorized_success", // 授权被拒绝时的值：authorized_fail
-           "data":{
-               "accessToken":"28.10b09eb18b9dcc3806vda3920199a6fd.2592000.1575546362.4114435386-16962311"
-           }
-       }
-   });
-   ```
-
-* 示例2
-
-  ```javascript
-   botApp.requireLinkAccount();
-   ```
+```javascript
+botApp.requireLinkAccount();
+```
 
 
-## BotApp.onLinkAccountSuccess(callback) `SHOW ONLY`
+## onLinkAccountSuccess(callback) `SHOW ONLY`
 获取oauth授权结果。此方法会监听oauth授权成功后的结果。
 
 > 注意：仅当开发者选中上方的第二种授权方案且在有屏音箱上使用时才会触发本函数中的回调
 
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|SDK收到授权成功的通知后会调用此函数|Function(payload: Object)|是|无|
 
-* 参数
-
-    callback(*Function*)：此函数接收一个参数，SDK收到授权成功的通知后会调用此函数下发accessToken等相关数据。其数据schema如下：
-
-    ```javascript
-    {
-        "token": "{{STRING}}", // 标识本次返回，可能没有
-        "app":{
-            "accessToken": "{{STRING}}" // 第三方平台的授权accessToken（非DuerOS使用的百度access_token）
-        }
-    }
-    ```
+callback参数
+|参数|说明|类型|
+|----|----|----|
+|payload|授权结果|Object|
+|payload.token|标识本次返回，一般没用|string|
+|payload.app.accessToken|第三方平台的授权accessToken（非DuerOS使用的百度access token）|string|
 
 * 示例
-    ```javascript
-    botApp.onLinkAccountSuccess(function (payload) {
-        console.log(payload);
-        // 结果如下：
-        {
-            token: '13782f3d-05cd-802d-f0a9-92bb0ac572c8',
-            app:{
-                accessToken: '21.15a2c2cd345816f2e51f9eae6e3d1f03.2592000.1566035530.2050908969-9943593'
-            }
-        }
-    })
-    ```
-
-## BotApp.getRegisterResult(callback)
-BotApp SDK初始化之后，SDK内部会进行身份校验、注册等操作，开发者可使用本方法来获取注册结果，如果已经绑定过百度账号，则能获取到oauth授权后的accessToken。
-
-* 参数
-
-    callback(*Function*)：SDK获取到注册结果之后会调用此回调函数，此回调函数接收一个参数接收注册结果。其schema如下：
-
-    ```javascript
+```javascript
+botApp.onLinkAccountSuccess(function (payload) {
+    console.log(payload);
+    // 结果如下：
     {
-        "accessToken": "{{string}}"
-    }
-    ```
-
-* 示例
-
-    ```javascript
-    botApp.getRegisterResult(function (data) {
-         console.log(data);
-        // 打印结果如下：
-        {
+        token: '13782f3d-05cd-802d-f0a9-92bb0ac572c8',
+        app:{
             accessToken: '21.15a2c2cd345816f2e51f9eae6e3d1f03.2592000.1566035530.2050908969-9943593'
         }
-    })
-    ```
-
-## BotApp.requireUserAgeInfo(callback) *1.5+* `SHOW ONLY`
-
-H5应用可通过本方法获取用户的实名认证信息，如果用户没有实名认证小度在家上会自动弹出实名认证的二维码。
-
-* 参数
-
-    callback(*Function(err, data)*): 本回调会传入用户的实名认证结果，其schema如下
-
-    err:
-    ```javascript
-    {
-        code: {{number}} // 错误码，详细对照见附表
-        msg: {{string}}
     }
-    ```
-    data:
-    ```javascript
-    {
-        "is_auth": "{{STRING}}", // 用户是否实名认证，1是、0否
-        "age_group": "{{STRING}}" // 用户年龄段，16岁-18岁为1，18岁以上为2，16岁以下为3
-    }
-    ```
+})
+```
+
+## getRegisterResult(callback)
+BotApp SDK初始化之后，SDK内部会进行身份校验、注册等操作，开发者可使用本方法来获取注册结果，如果已经绑定过百度账号，则能获取到授权后的 oauth access token。
+
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|SDK获取到注册结果之后调用此函数|Function({accessToken: string})|是|无|
 
 * 示例
 
-     正常返回：
-    ```javascript
-    botApp.requireUserAgeInfo(function (err, data) {
-        console.log(err, data);
-        // 打印如下：
-        null
-        {
-            "is_auth": "1",
-            "age_group": "2"
-        }
-    });
-    ```
-    设备版本过低返回：
-    ```javascript
-    botApp.requireUserAgeInfo(function (err, data) {
-        console.log(err, data);
-        // 打印如下：
-        {
-            code: 1001,
-            msg: 'Device version too low'
-        }
-        null
-    });
-    ```
-
-
-## BotApp.requireCharge(data, [,callback])
-H5应用可通过本方法发起收款，当用户支付成功后会：如果是在有屏音箱端，回调本SDK中`onChargeStatusChange(callback)`中的`callback`函数，如果是在小度App/小度音箱App中，会回调传入的`callback`函数
-
-对于用户支付成功的订单，会有服务端的订单通知接口，开发者应以该接口的订单支付成功通知为最终数据。
-
-
-* 参数
-
-    data(*Object*)：其schema如下：
-    ```javascript
+```javascript
+botApp.getRegisterResult(function (data) {
+     console.log(data);
+    // 打印结果如下：
     {
-        "token": "{{STRING}}", // 可选，本次事件的token，开发者可自己生成
-        "chargeBaiduPay": {
-            "authorizeAttributes": {
-                "authorizationAmount": {
-                    "amount": "{{STRING}}", // 价格
-                    "currencyCode": "CNY" // 币种，目前仅支持 CNY
-                },
-                "sellerAuthorizationNote": "{{STRING}}" // 商家授权信息备注
-            },
-            "sellerOrderAttributes": {
-                "sellerOrderId": "{{STRING}}", // 此笔交易，在商家这边的订单ID。当用户付款成功后，会带有此ID通知技能
-                "productName": "{{STRING}}", // 商品名称
-                "productId": "{{STRING}}", // 商品id
-                "description": "{{STRING}}", // 商品描述信息。对商品的简单介绍
-                "sellerNote": "{{STRING}}" // 商品的备注信息
-            }
-        }
+        accessToken: '21.15a2c2cd345816f2e51f9eae6e3d1f03.2592000.1566035530.2050908969-9943593'
     }
-    ```
+})
+```
 
-	callback(*Function*)：本函数**只会**在小度App/小度音箱App中被回调，小度有屏音箱设备请使用`onChargeStatusChange`接收购买结果。调用可能会有明显延迟(当获取购买结果失败后SDK内部会重新请求2次，每次间隔1秒)。
+## requireUserAgeInfo(callback) *1.5+* `SHOW ONLY`
+
+本方法获取用户的实名认证信息，如果用户没有实名认证则会在小度在家上自动弹出实名认证的二维码。
+
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|本回调会传入用户的实名认证结果|Function(err: Object, data: Object)|必填|是|
+
+err参数
+|参数|说明|类型|
+|----|----|----|
+|err|SDK内建错误信息，见附录|Object|
+|err.code|错误码，详细对照见附表|number|
+|err.msg|错误信息，详细对照见附表|string|
+
+data参数
+|参数|说明|类型|
+|----|----|----|
+|data|实名认证信息|Object|
+|data.is_auth|用户是否完成实名认证，1：已完成，2：未完成|enum {"1", "2"}|
+|data.age_group|用户年龄段，16岁-18岁为1，18岁以上为2，16岁以下为3|enum {"1", "2", "3"}|
+
+
+* 正常返回示例
+
+```javascript
+botApp.requireUserAgeInfo(function (err, data) {
+    console.log(err, data);
+    // 打印如下：
+    null
+    {
+        "is_auth": "1",
+        "age_group": "2"
+    }
+});
+```
+
+* 设备版本过低返回：
+
+```javascript
+botApp.requireUserAgeInfo(function (err, data) {
+    console.log(err, data);
+    // 打印如下：
+    {
+        code: 1001,
+        msg: 'Device version too low'
+    }
+    null
+});
+```
+
+
+## requireCharge(data, [,callback(err, payload)])
+本方法会发起收款，当用户支付成功后，如果是在 SHOW 端设备中，通过`onChargeStatusChange(callback)`接收付款结果通知，如果是在 App 中，会调用传入的`callback`函数。
+
+> 对于用户支付成功的订单，会有服务端的订单通知接口，开发者应以该接口的订单支付成功通知为最终数据。
+
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|data|订单参数|Object|必填|无|
+|data.token|本次事件的token，开发者自己提供|Object|否|无|
+|data.chargeBaiduPay.authorizeAttributes.sellerAuthorizationNote|商家授权信息备注|string|是|无|
+|data.chargeBaiduPay.authorizeAttributes.authorizationAmount.amount|价格，单位元|string|是|无|
+|data.chargeBaiduPay.authorizeAttributes.authorizationAmount.currencyCode|币种，目前仅支持 CNY|enum {"CNY"}|是|无|
+|data.chargeBaiduPay.sellerOrderAttributes.sellerOrderId|此笔交易在商家这边的订单ID。当用户付款成功后，会带有此ID通知技能|string|是|无|
+|data.chargeBaiduPay.sellerOrderAttributes.productName|商品名称|string|是|无|
+|data.chargeBaiduPay.sellerOrderAttributes.productId|商品ID|string|是|无|
+|data.chargeBaiduPay.sellerOrderAttributes.description|商品描述信息。对商品的简单介绍|string|是|无|
+|data.chargeBaiduPay.sellerOrderAttributes.sellerNote|商品的备注信息|string|是|无|
+|callback|本函数**只会**在 App 中被调用，SHOW设备请使用`onChargeStatusChange`接收购买结果。|Function|否(App环境下必填)|无|
+
+callback**只会**在小度App/小度音箱App中被回调，传入的参数见下表。小度有屏音箱设备请使用`onChargeStatusChange`接收购买结果
+
+|参数|说明|类型|
+|----|----|----|
+|err|错误信息|Error\|string|
+|payload|本次交易的扣款信息|Object|
+|payload.authorizationDetails.authorizationAmount.amount|扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元|string|
+|payload.authorizationDetails.authorizationAmount.currencyCode|目前只能为CNY|enum {"CNY"}|
+|payload.authorizationDetails.capturedAmount.amount|实际百度扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元|string|
+|payload.authorizationDetails.capturedAmount.currencyCode|枚举类型。目前只能为CNY|enum {"CNY"}|
+|payload.authorizationDetails.creationTimestamp|订单创建时间。时间戳，单位毫秒|string|
+|payload.baiduOrderReferenceId|此次交易百度生成的订单ID|string|
+|payload.sellerOrderId|对应支付的订单ID|string|
+|payload.purchaseResult|此次支付结果。 选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误|enum {"SUCCESS", "ERROR"}|
+|payload.message|支付状态对应的消息|string|
 
 * 示例
 
@@ -274,10 +269,10 @@ H5应用可通过本方法发起收款，当用户支付成功后会：如果是
         }
     }
     botApp.requireCharge(data, function (err, data) {
-		if (!err) {
-			console.log(data);
-			// 结果如下
-			{
+        if (!err) {
+            console.log(data);
+            // 结果如下
+            {
                 authorizationDetails: {
                     authorizationAmount: {
                         amount: "1.99",
@@ -294,47 +289,35 @@ H5应用可通过本方法发起收款，当用户支付成功后会：如果是
                 purchaseResult: 'SUCCESS',
                 message: '支付成功'
             }
-		}
-	});
+        }
+    });
     ```
 
-## <del>BotApp.requireBuy(data, callback) *1.4+* `App ONLY`<del>
+## <del>requireBuy(data, callback) *1.4+* `App ONLY`</del>
 
-本方法不同于`requireCharge`，需要事先在度秘的商品库里注册`productId`，然后将其传入被方法的参数中。`callback`函数会在返回游戏页面后调用，调用可能会有明显延迟(当获取购买结果失败后SDK内部会重新请求2次，每次间隔1秒)。
+本方法不同于`requireCharge`，需要事先在度秘的商品库里注册`productId`。`callback`函数会在返回游戏页面后调用，调用可能会有明显延迟。
 
-* 参数
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|data|商品信息|Object|是|无|
+|data.productId|商品ID|string|是|无|
+|data.sellerOrderId|接入方自己的订单ID|string|是|无|
+|callback|获取购买结果，传入的参数见下表|Function|是|无|
 
-    data(*Object*)：其schema如下：
-    ```javascript
-    {
-        productId: '{{string}}', // 商品ID，
-        sellerOrderId: '{{string}}' // 接入方自己的订单ID
-    }
-    ```
-    callback(Function)：本回调会传入错误信息和购买结果，其数据Scheme如下
-
-    ```javascript
-    参数一，错误信息：
-    {{Any}}
-    二，购买结果
-    {
-        "authorizationDetails": {
-            "authorizationAmount": { //
-                "amount": "{{STRING}}", // 扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元
-                "currencyCode": "CNY" // 枚举类型。目前只能为CNY
-            },
-            "capturedAmount": {
-                "amount": "{{STRING}}", // 实际百度扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元
-                "currencyCode": "CNY" // 枚举类型。目前只能为CNY
-            },
-            "creationTimestamp": "{{INT32}}" // 订单创建时间。时间戳，单位毫秒
-        },
-        "baiduOrderReferenceId": "{{STRING}}", // 此次交易百度生成的订单ID
-        "sellerOrderId":"{{STRING}}", // 对应支付的订单ID
-        "purchaseResult":"{{ENUM}}", // 此次支付结果。 -枚举值，选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误
-        "message":"{{STRING}}" // 支付状态对应的消息
-    }
-    ```
+callback传入的参数
+|参数|说明|类型|
+|----|----|----|
+|err|错误信息|Any|
+|payload|本次交易的扣款信息|Object|
+|payload.authorizationDetails.authorizationAmount.amount|扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元|string|
+|payload.authorizationDetails.authorizationAmount.currencyCode|目前只能为CNY|enum {"CNY"}|
+|payload.authorizationDetails.capturedAmount.amount|实际百度扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元|string|
+|payload.authorizationDetails.capturedAmount.currencyCode|枚举类型。目前只能为CNY|enum {"CNY"}|
+|payload.authorizationDetails.creationTimestamp|订单创建时间。时间戳，单位毫秒|string|
+|payload.baiduOrderReferenceId|此次交易百度生成的订单ID|string|
+|payload.sellerOrderId|对应支付的订单ID|string|
+|payload.purchaseResult|此次支付结果。 选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误|enum {"SUCCESS", "ERROR"}|
+|payload.message|支付状态对应的消息|string|
 
 * 示例
 
@@ -370,31 +353,23 @@ H5应用可通过本方法发起收款，当用户支付成功后会：如果是
 ## BotApp.onChargeStatusChange(callback) `SHOW ONLY`
 通知支付结果。该指令只是一个前端的通知，第三方开发者可以用此回调做页面的刷新。
 
-> 仅当在小度有屏音箱上使用`requireCharge()`发起支付动作时本方法中的回调函数才会被回调
+> 仅当在小度有屏音箱上使用`requireCharge()`发起支付动作时本方法中的回调才会被调用
 
-* 参数
+callback传入的参数
+|参数|说明|类型|
+|----|----|----|
+|payload|本次交易的扣款信息|Object|
+|payload.authorizationDetails.authorizationAmount.amount|扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元|string|
+|payload.authorizationDetails.authorizationAmount.currencyCode|目前只能为CNY|enum {"CNY"}|
+|payload.authorizationDetails.capturedAmount.amount|实际百度扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元|string|
+|payload.authorizationDetails.capturedAmount.currencyCode|枚举类型。目前只能为CNY|enum {"CNY"}|
+|payload.authorizationDetails.creationTimestamp|订单创建时间。时间戳，单位毫秒|string|
+|payload.baiduOrderReferenceId|此次交易百度生成的订单ID|string|
+|payload.sellerOrderId|对应支付的订单ID|string|
+|payload.purchaseResult|此次支付结果。 选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误|enum {"SUCCESS", "ERROR"}|
+|payload.message|支付状态对应的消息|string|
+|payload.token|标识本次返回，可能没有|string|
 
-    callback(*Function*)：当DuerOS支付结果返回时，SDK会调用此函数。此函数有一个参数，其schema如下：
-    ```javascript
-    {
-        "token": "{{STRING}}", // 标识本次返回，可能没有
-        "authorizationDetails": {
-            "authorizationAmount": { //
-                "amount": "{{STRING}}", // 扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元
-                "currencyCode": "CNY" // 枚举类型。目前只能为CNY
-            },
-            "capturedAmount": {
-                "amount": "{{STRING}}", // 实际百度扣款金额。比如：1.09，数字字符串。系统取小数点后两位，单位：元
-                "currencyCode": "CNY" // 枚举类型。目前只能为CNY
-            },
-            "creationTimestamp": "{{INT32}}" // 订单创建时间。时间戳，单位毫秒
-        },
-        "baiduOrderReferenceId": "{{STRING}}", // 此次交易百度生成的订单ID
-        "sellerOrderId":"{{STRING}}", // 对应支付的订单ID
-        "purchaseResult":"{{ENUM}}", // 此次支付结果。 -枚举值，选值范围： - SUCCESS 支付成功 - ERROR 支付发生错误
-        "message":"{{STRING}}" // 支付状态对应的消息
-    }
-    ```
 
 * 示例
     ```javascript
@@ -422,11 +397,20 @@ H5应用可通过本方法发起收款，当用户支付成功后会：如果是
     })
     ```
 
-## BotApp.onHandleIntent(callback) `SHOW ONLY`
-意图下发。开发者在DBP平台上面开发的意图，在匹配到对应用户query之后,会封装对应意图成为Intent下发下来。
-可通过回调函数参数中的`intent.name`来确定意图名称，之后开发对应的逻辑。同时还可以通过`intent.slots`解析参数。
+## onHandleIntent(callback) `SHOW ONLY`
+意图下发。开发者在DBP平台上面开发的意图，在匹配到用户对话之后会封装对应意图成为Intent下发下来。
+
 > DBP开放平台：<https://dueros.baidu.com/dbp>
 > 本方法仅支持在小度有屏音箱上调用
+
+callback传入的参数
+|参数|说明|类型|
+|----|----|----|
+|payload|意图解析结果|Object|
+|payload.intent.name|DuerOS解析出来的意图名称|string|
+|payload.intent.slots[].name|槽位名|string|
+|payload.intent.slots[].value|槽位值|string|
+|payload.intent.customData.jsonData|额外的信息，JSON规范的字符串，一般用不上|string|
 
 * 参数
 
@@ -434,10 +418,6 @@ H5应用可通过本方法发起收款，当用户支付成功后会：如果是
 
     ```javascript
     {
-        "token":"{{STRING}}",
-        "app":{
-            "accessToken":"{{STRING}}"
-        },
         "intent":{
             "name":"{{STRING}}", // 意图名
             "slots":[
@@ -473,32 +453,27 @@ H5应用可通过本方法发起收款，当用户支付成功后会：如果是
     });
     ```
 
-## BotApp.listen([,callback]) `SHOW ONLY`
+## listen() `SHOW ONLY`
+
 开启聆听。设备会进入语音交互状态。
+
 > 本方法仅支持在小度有屏音箱上调用
-
-* 参数
-
-    callback(*Function*)：可选参数，该函数会接收一个Boolean，标识是否发起聆听成功。
 
 * 示例
     ```javascript
-    botApp.listen(function (result) {
-        console.log(result);
-        // 打印结果：
-        true
-    });
+    botApp.listen();
     ```
 
-## BotApp.speak(data, [,callback]) `SHOW ONLY`
-成功调起播放后回调callback
+## speak(data) `SHOW ONLY`
+
+将文字转换为语音播报出来，播报进度可通过`onDialogStateChanged`获取
+
 > 本方法仅支持在小度有屏音箱上调用
 
-* 参数
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|data|要语音播报的文字|string|是|无|
 
-    data(*string*)：要进行播报的TTS文字。
-
-    callback(*Function*)：TTS播放完毕后回调此函数，本函数没有参数。
 
 * 示例
 
@@ -506,16 +481,14 @@ H5应用可通过本方法发起收款，当用户支付成功后会：如果是
     /**
     data: 要播报的TTS的文字内容
     */
-    botApp.speak(data, function () {
-        console.log('播报完毕');
-        // 打印结果
-        // 播报完毕
-    }))
+    botApp.speak('欢迎使用');
     ```
 
-## BotApp.requestClose() *1.1+* `SHOW ONLY`
+## requestClose() *1.1+* `SHOW ONLY`
+
 > 本方法仅支持在小度有屏音箱上调用
-请求关闭浏览器。调用此方法后，小度有屏音箱上正在运行的H5会退出。
+
+请求退出。调用此方法后，小度有屏音箱上正在运行的H5会退出。
 
 * 示例
 
@@ -523,43 +496,37 @@ H5应用可通过本方法发起收款，当用户支付成功后会：如果是
     botApp.requestClose();
     ```
 
-## BotApp.updateUiContext(data, [,callback]) `SHOW ONLY`
+## updateUiContext(data) `SHOW ONLY`
 本接口定义通用的自定义用户交互能力，设备端可以自主实现所希望的交互过程。
 
-正常情况下交互都是由服务端决定的，比如问“西藏天气怎么样”则小度反问“西藏哪个城市的？不同城市的天气差别还是挺大的。”，但存在一些场景服务端因为信息缺乏，不能完全确定交互过程，需要由设备端配合来驱动用户交互过程。例如，在抽奖游戏中，H5页面上展示了2个宝箱，用户说“选择第一个”，服务端无法可能无法确定“第一个”或者“第二个”分别对应哪个宝箱，因此需要调用本方法来定义。
+正常情况下交互都是由服务端决定的，比如问“西藏天气怎么样”则小度反问“西藏哪个城市的？不同城市的天气差别还是挺大的。”，但存在一些场景服务端因为信息缺乏，不能完全确定交互过程，需要由设备端配合来驱动用户交互过程。例如，在抽奖游戏中，H5页面上展示了2个宝箱，用户说“我选左边的”，服务端无法可能无法确定“我选左边的”或者“我选右边的”分别对应哪个宝箱，因此需要调用本方法来定义。
 
 使用案例：抽奖游戏<br>
 H5：展示两个宝箱<br>
+H5：调用updateUiContext([(utterances="我选左边的", url="box_left"), (utterances="我选右边的", url="box_right")])<br>
 H5：调用`speak('你要打开哪一个宝箱')`<br>
 H5：调用`listen()`进入聆听态<br>
-H5：调用updateUiContext([(utterances="第一个", url="{url1}"), (utterances="第二个", url="{url2}")])<br>
-用户：“第二个”<br>
-服务端：...后续逻辑
+用户：“我选左边的”<br>
+服务端：下发ClickLink<br>
+H5：在onClickLink(callback)中接收ClickLink携带的结果<br>
+H5：判断ClickLink回调函数中传入的URL是box_left还是box_right<br>
+H5：进入处理逻辑<br>
+
 > 本方法仅支持在小度有屏音箱上调用
 
-* 参数
-
-    data(*Object*)：要上传的端状态数据，其schema如下
-    ```javascript
-    {
-        "enableGeneralUtterances": "{{Boolean}}",
-        "hyperUtterances": [
-            {
-                "url": "{{string}}", // 用于确定用户query的url
-                "utterances": "{[{{string}}]}", // 支持的用户话术集合
-                "type": "{{ENM}}", // 枚举类型，自定义类型为link,系统还提供内建类型 input,select等等，具体见下方附表
-                "params: {} // 携带的参数
-            }
-        ]
-    }
-    ```
-
-    callback(*Function*)：可选参数，当本事件上报发起后本函数会被回调，接收一个参数，表示是否成功发起请求
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|data|要上传的端状态数据|Object|是|无|
+|data.enableGeneralUtterances|是否由系统自动处理未匹配上updateUIContext中设置的用户对话|boolean|是|无|
+|data.hyperUtterances[].utterances|需要处理的用户话术集合|Array|是|无|
+|data.hyperUtterances[].url|用于确定用户query的url|boolean|是|无|
+|data.hyperUtterances[].type|自定义类型为link,系统还提供内建类型 input,select等等，具体见下方附表|enum|是|无|
+|data.hyperUtterances[].params|携带的参数，参数根据type的不同而不同，具体参加下方附表|Any|是|无|
 
 * 示例
     ```javascript
     const data = {
-        enableGeneralUtterances: true,
+        enableGeneralUtterances: true, // 如果为false,当用户的表达与下方注册的常用表达都不匹配时设备不会有任何处理
         hyperUtterances: [
             {
                 url: 'https://www.apple.com', // 当用户的语音对话内容与utterances匹配时，SDK会调用onClickLink中的回调函数，并将本URL当做参数。
@@ -581,25 +548,53 @@ H5：调用updateUiContext([(utterances="第一个", url="{url1}"), (utterances=
             }
         ]
     };
-    botApp.updateUiContext(data, function (result) {
-        console.log(result);
-        // 返回结果如下
-        true
+    botApp.updateUiContext(data);
+    ```
+
+## onClickLink(callback) `SHOW ONLY`
+ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交互(`updateUiContext())`之后，云端会解析用户定义的交互，通过此方法下发上面定义的url。
+
+如果用户引用*系统内建自定义类型*，用户query中可以包含参数，例如"*输入北京*"，这个query中*北京*可以被解析成参数，放到后面`params`中下发。
+
+> 系统内建类型参考：见下方附表
+> 本方法仅支持在小度有屏音箱上调用
+
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|云端下发ClickLinke指令后本函数会被调用|Function|是|无|
+
+callback参数
+|参数|说明|类型|
+|----|----|----|
+|payload|云端下发的指令内容，一般是`updateUiContext()`中传入的`hyperUtterances`中的内容|Object|
+|payload.url|用户对话内容与`updateUiContext()`中`hyperUtterances`定义的对话内容匹配时相对应的url|string|
+|payload.params|同`updateUiContext()`|Object|
+
+
+* 示例
+
+    如果使用`updateUiContext`的示例数据来自定义交互能力，则表现如下<br>
+    用户：小度小度，草莓<br>
+
+    ```javascript
+    botApp.onClickLink(function (payload) {
+        console.log(payload);
+        // 打印如下
+        {
+            url: 'https://www.straberry.com',
+            params: {}
+        }
     });
     ```
 
-## botApp.onHandleUnknowUtterance(callback) *1.6+* `SHOW ONLY`
-必须先调用`updateUiContext`，同时将`enableGeneralUtterances`设置为`false`。当用户的对话内容不在`updateUiContext`设置的范围内时，开发者可使用本能力获取用户语音对话的语音识别文字结果。
+## onHandleUnknowUtterance(callback) *1.6+* `SHOW ONLY`
+当用户的对话内容不在`updateUiContext`设置的用户表达范围时，开发者可使用本能力获取用户对话的语音识别(ASR)文字结果。
 
-* 参数
+> 必须先调用`updateUiContext()`，同时将`enableGeneralUtterances`设置为`false`。
 
-    callback(*Function*)：回调函数的参数是用户对话的内容，其schema如下：
-
-    ```javascript
-    {
-        "query": "{string}"
-    }
-    ```
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|语音识别结果会通过本函数传入|Function({query: string})|是|无|
 
 * 示例
 
@@ -618,58 +613,24 @@ H5：调用updateUiContext([(utterances="第一个", url="{url1}"), (utterances=
 
     botApp.onHandleUnknowUtterance(function (data) {
         console.log(data);
-        // 当用户对话：小度小度，苹果
+        // 当用户对话：小度小度，哈密瓜
         // 打印结果如下：
         {
-            query: "苹果"
+            query: "哈密瓜"
         }
     });
     ```
 
-## BotApp.onClickLink(callback) `SHOW ONLY`
-ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交互(`updateUiContext()`之后，云端会解析用户定义的交互，下发对应的指令。例如通过`botApp.updateUiContext(data)`新增自定义交互之后DuerOS会通过此接口下发上面定义的url。
 
-如果用户引用*系统内建自定义类型*，用户query中可以包含参数，例如"*输入北京*"，这个query中*北京*可以被解析成参数，放到后面`params`中下发。
->系统内建类型参考：见下方附表
+## uploadLinkClicked(data) *1.2+* `SHOW ONLY`
+LinkClick是DuerOS系统中定义的事件上报的一种。DuerOS根据其携带的参数下发不同的指令，也可能什么指令也不下发。
+
 > 本方法仅支持在小度有屏音箱上调用
 
-* 参数
-
-    callback(*Function*)：SDK收到DuerOS返回的结果后回调此函数，此函数的参数schema如下：
-
-    ```javascript
-    {
-        "url": "{{STRING}}",
-        "params":{
-          "{{STRING}}": "{{string}}"
-        }
-    }
-    ```
-
-* 示例
-
-    如果使用上方updateUiContext的示例数据来自定义交互能力，则表现如下<br>
-    用户：小度小度，草莓<br>
-    SDK：本方法中注册的回调函数获得的数据结果如下
-
-    ```javascript
-    botApp.onClickLink(function (payload) {
-        console.log(payload);
-        // 打印如下
-        {
-            url: 'https://www.straberry.com',
-            params: {}
-        }
-    });
-    ```
-
-## BotApp.uploadLinkClicked(data) *1.2+* `SHOW ONLY`
-当用户点击了屏幕上的某个链接时可通过本方法进行上报。DuerOS根据其携带的参数下发不同的指令，也可能什么指令也不下发。
-> 本方法仅支持在小度有屏音箱上调用
-
-* 参数
-
-    data(*Object*): data.url 要上报的Link地址
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|data|要上报的事件内容|Object|是|无|
+|data.url|要上报的LinkUrl|string|是|无|
 
 * 示例
 
@@ -679,28 +640,28 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     });
     ```
 
-## BotApp.onHandleScreenNavigatorEvent(callback) `SHOW ONLY`
+## onHandleScreenNavigatorEvent(callback) `SHOW ONLY`
+
 屏幕导航事件。当用户发起语音请求，要求滚动屏幕时，本事件会被调用。
+
 > 本方法仅支持在小度有屏音箱上调用
 
-* 参数
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|获取屏幕导航参数|Function({data: number})|是|无|
 
-    callback(*Function*)：当收到SDK收到DuerOS下发的屏幕导航事件时，本函数会被调用，参数schema如下：
+滚动方向说明
 
-    ```javascript
-    {
-        "data": "{{INT}}"
-    }
-    ```
-
-    1: 向左滚动<br>
-    2: 向右滚动<br>
-    3: 向上滚动<br>
-    4: 向下滚动<br>
-    5: 下一页<br>
-    6: 上一页<br>
-    7: history go back<br>
-    8: 回到Home页<br>
+|滚动方向|值|类型|
+|----|----|----|
+|向左滚动|1|number|
+|向右滚动|2|number|
+|向上滚动|3|number|
+|向下滚动|4|number|
+|下一页|5|number|
+|上一页|6|number|
+|history go back|7|number|
+|回到Home页|8|number|
 
 * 示例
 
@@ -716,8 +677,9 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     })
     ```
 
-## BotApp.requireShipping *1.3+* `SHOW ONLY`
-请求发货信息。开发者可在`BotApp.onHandleIntent`注册的回调函数中获取商品信息。要调用本方法则必须在BotApp初始化时填写`skillID`。本方法会在初始化阶段自动调用一次，开发者也可手动调用本方法。
+## requireShipping *1.3+* `SHOW ONLY`
+请求发货信息。要调用本方法则必须在BotApp初始化时填写`skillID`，并同时使用`onHandleIntent()`来获取发货信息。本方法会在初始化阶段自动调用一次，开发者也可手动调用本方法。
+
 > 本方法仅支持在小度有屏音箱上调用
 
 * 示例
@@ -726,64 +688,53 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     botApp.requireShipping();
     ```
 
-## BotApp.onDialogStateChanged(callback) *1.6+* `SHOW ONLY`
-用户对话状态变化通知，用户唤醒设备，发起语音指令，TTS播报，进入空闲状态都会受收到回调通知。
+## onDialogStateChanged(callback) *1.6+* `SHOW ONLY`
+用户对话状态变化通知，用户唤醒设备，发起语音指令，TTS播报，进入空闲状态都会收到回调通知。
 
-* 参数
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|用户对话状态变化通知|Function(err: Object, status: string)|是|无|
 
-    callback(*Function(err, status))*)：当用户与设备对话状态改变时，本回调会被调用，详细状态定义如下：
+callback参数
+|参数|说明|类型|
+|----|----|----|
+|err|内建错误类型，见附表|Object|
+|status|用户对话状态，具体见下方表格|string|
 
-    |状态名称 | 状态值 |
-    |---|---|
-    | 空闲状态| IDLE |
-    |正在语音输入| LISTENING |
-    |语音输入完成，等待后端返回 | THINKING |
-    |正在进行TTS播报 | SPEAKING |
+用户对话状态
+|状态名称 | 状态值 |
+|---|---|
+| 空闲状态| IDLE |
+|正在语音输入| LISTENING |
+|语音输入完成，等待后端返回 | THINKING |
+|正在进行TTS播报 | SPEAKING |
+|开始TTS播报 | TTS_START |
+|TTS播报正常结束 | TTS_FINISH |
+|TTS播报中途被打断 | TTS_INTERRUPT |
 
-    callback参数scheme如下：
-
-    err:
-    ```javascript
-    {
-        code: {{number}} // 错误码，详细对照见附表
-        msg: {{string}}
-    }
-    ```
-
-    status
-    ```javascript
-    {{string}}
-    ```
 
 * 示例
 
     ```javascript
     botApp.onDialogStateChanged(function (err, status) {
         console.log(status);
-        // 打印如下：
+        //唤醒设备后，打印如下：
         LISTENING
     })
     ```
 
-## BotApp.canGoBack(callback) *1.6+* `SHOW ONLY`
+## canGoBack(callback) *1.6+* `SHOW ONLY`
 获取设备浏览器历史记记录是否还能后退
 
-* 参数
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|获取设备浏览器历史记记录是否还能后退|Function(err: Object, canGoBack: boolean)|是|无|
 
-    callback(*Function(err, status)*)：回调中会传入第一个参数是可能的报错信息，第二个参数是一个布尔值，告知是否还能回退浏览器历史记录，schema示例如下:
-
-    err:
-    ```javascript
-    {
-        code: {{number}} // 错误码，详细对照见附表
-        msg: {{string}}
-    }
-    ```
-
-    status:
-    ```javascript
-    {{Boolean}}
-    ```
+callback参数
+|参数|说明|类型|
+|----|----|----|
+|err|内建错误类型，见附表|Object|
+|canGoBack|浏览器历史记录是否还能回退|boolean|
 
 * 示例
 
@@ -795,32 +746,27 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
     });
     ```
 
-## BotApp.initAd([,config]) *1.7+* `SHOW ONLY`
+## initAd(config) *1.7+* `SHOW ONLY`
 初始化广告。
 
-* 参数
-    config(*Object*): 广告相关配置，其schema如下
-    ```javascript
-    {
-        screenOrientation: {{enum}}, // 选填，默认值：portrait，游戏的屏幕类型，portrait => 竖屏游戏，landscape => 横屏(全屏)游戏，SDK根据不同屏幕类型展示不同形式的广告
-        zIndex: {{number}}, // 选填，默认值：9999，广告等浮层的层级，
-        displayStrategy: {{enum}}, // 选填，默认值：twice。广告展示策略，once => 用户关闭后不再填充广告， twice => 用户关闭60s后再填充一次
-        firstDisplayTime: {{number}}, // 选填，单位秒，默认值：10，广告第一次展示的时间
-        bannerPosition: { // 选填，默认值：{right: '30px', bottom: '30px'}，调整banner广告（横屏游戏中的广告）在游戏页面中的位置。值为CSS中的left、top、right、bottom。
-            right: '{{string}}',
-            bottom: '{{string}}'
-        },
-        placeId: '{{string}}' // 广告位ID，必填，联系DuerOS接口人申请。
-        clickCallback: {{Function}}, // 选填，广告点击回调
-        closeCallback: {{Function}}, // 选填，广告关闭回调
-        displayCallback: {{Function}}, // 选填， 广告展示回调
-        switchCallback: {{Function}} // 选填，广告切换回调
-    }
-    ```
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|config|广告相关参数配置|Object|是|无|
+|config.placeId|广告位ID，联系DuerOS接口人申请|string|是|无|
+|config.screenOrientation|游戏的屏幕类型，portrait => 竖屏游戏，landscape => 横屏（全屏）游戏，SDK根据不同屏幕类型展示不同形式的广告|enum {"portrait", "landscape"}|否|portrait|
+|config.zIndex|广告浮层的层级|number|否|9999|
+|config.displayStrategy|广告展示策略，once => 用户关闭后不再填充广告， twice => 用户关闭60s后再填充一次|enum {"once", "twice"}|否|twice|
+|config.firstDisplayTime|广告第一次展示在本方法调用多久后，单位秒|number|否|10|
+|config.bannerPosition|配置banner广告（横屏游戏中的广告）在游戏页面中的位置，值为CSS中的left、top、right、bottom|Object|否|{right: "30px", bottom: "30px"}|
+|config.clickCallback|广告被点击时的回调|Function|否|无|
+|config.closeCallback|广告关闭回调|Function|否|无|
+|config.displayCallback|广告展示回调|Function|否|无|
+|config.switchCallback|广告切换回调|Function|否|无|
 
 * 示例
     ```javascript
     botApp.initAd({
+       placeId: '5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D',
        screenOrientation: 'portrait',
        zIndex: 9999,
        displayStrategy: 'twice',
@@ -829,7 +775,6 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
            right: '30px',
            bottom: '30px'
        },
-       placeId: '5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D',
        clickCallback: function() {
           console.log('用户点击了广告');
        },
@@ -856,7 +801,7 @@ ClickLink事件下发。ClickLink是一种Directive，用户新增自定义交�
 |ServiceError|1002|Service error, {{msg}}|接口请求报错|
 
 
-### 系统内建类型
+### updateUIContext 系统内建类型
 
 <table style="border-collapse: collapse; min-width: 100%;">
     <colgroup>
