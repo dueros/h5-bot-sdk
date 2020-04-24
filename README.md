@@ -419,25 +419,6 @@ callback传入的参数
 |payload.intent.slots[].value|槽位值|string|
 |payload.intent.customData.jsonData|额外的信息，JSON规范的字符串，一般用不上|string|
 
-* 参数
-
-    callback(Function)：SDK收到DuerOS解析的意图后会回调此函数，开发者可使用解析结果开发相关逻辑。callback函数接收一个参数，其schema如下：
-
-    ```javascript
-    {
-        "intent":{
-            "name":"{{STRING}}", // 意图名
-            "slots":[
-                {
-                    "name":"{{STRING}}", // 槽位的槽位名
-                    "value":"{{STRING}}" // 槽位的值
-                }
-            ]
-        },
-        "customData":{} // 自定义数据
-    }
-    ```
-
 * 示例：
 
     ```javascript

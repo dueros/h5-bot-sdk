@@ -32,7 +32,6 @@ class BotApp {
             adDisable: true,
             ...config,
         };
-        this._init();
 
         // session期间最多弹出广告2次
         this._commonAdShowTimes = 2;
@@ -47,6 +46,8 @@ class BotApp {
         this._adIframe1BaseUrl = '';
 
         this._isAdInit = false;
+
+        this._init();
     }
 
     _init() {
@@ -126,6 +127,17 @@ class BotApp {
                         this.onHandleIntentCb && this.onHandleIntentCb(payload);
                     }
                     callback('js 回调');
+                });
+
+                bridge.registerHandler('onClickLink', (payload, callback) => {
+                    payload = JSON.parse(payload);
+                    if (payload.url === 'http://sdk.bot.dueros.ai?action=unknown_utterance') {
+                        this._handleUnknowUtteranceCb && this._handleUnknowUtteranceCb(null, JSON.parse(payload.params));
+                    } else {
+                        this._onClickLinkCb && this._onClickLinkCb(payload);
+                    }
+                    // 告知app是否处理成功
+                    callback(true);
                 });
             });
             this._showVersion = this._parseShowVersion();
@@ -569,7 +581,6 @@ class BotApp {
         }
         this._getJSBridge(bridge => {
             bridge.callHandler('speak', data, function () {
-                // TTS 播报完毕后调用此函数
                 cb && cb();
             });
         });
@@ -598,18 +609,7 @@ class BotApp {
      */
     onClickLink(cb) {
         this._validateCallback('onClickLink', cb);
-        this._getJSBridge(bridge => {
-            bridge.registerHandler('onClickLink', (payload, callback) => {
-                payload = JSON.parse(payload);
-                if (payload.url === 'http://sdk.bot.dueros.ai?action=unknown_utterance') {
-                    this._handleUnknowUtteranceCb && this._handleUnknowUtteranceCb(null, JSON.parse(payload.params));
-                } else {
-                    cb(payload);
-                }
-                // 告知app是否处理成功
-                callback(true);
-            })
-        });
+        this._onClickLinkCb = cb;
     }
 
     /**
@@ -820,4 +820,4 @@ class BotApp {
     }
 }
 
-module.exports = BotApp;
+export default BotApp;

@@ -24,7 +24,7 @@ export function getQuery(query) {
     return params;
 }
 
-export function encodeQueryData(data) {
+export function encodeObjectDataToUrlData(data) {
     if (data) {
         return Object.keys(data).map(k => {
             return `${k}=${encodeURIComponent(data[k])}`;
