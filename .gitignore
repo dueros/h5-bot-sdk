@@ -73,6 +73,7 @@ Thumbs.db
 # build assets
 /output
 /dll
+/lib
 
 fis-conf.js
 .npmrc

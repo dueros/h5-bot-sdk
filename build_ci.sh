@@ -12,8 +12,9 @@ export LANGUAGE=en_US.UTF-8
 export PATH=$NODEJS_BIN_LATEST:$PATH
 
 echo '**** CI begin ****'
-# npm install
-# npm run buildSingleFile
+npm install
+npm run buildSingleFile
+npm run buildModule
 mkdir output
 mkdir output/sdk
 mkdir output/html
