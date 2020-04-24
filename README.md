@@ -413,6 +413,7 @@ callback传入的参数
 
 |参数|说明|类型|
 |----|----|----|
+|err|错误信息|Any|
 |payload|意图解析结果|Object|
 |payload.intent.name|DuerOS解析出来的意图名称|string|
 |payload.intent.slots[].name|槽位名|string|
@@ -581,9 +582,10 @@ callback参数
 
 > 必须先调用`updateUiContext()`，同时将`enableGeneralUtterances`设置为`false`。
 
+
 |参数|说明|类型|必填|默认值|
 |----|----|----|----|----|
-|callback|语音识别结果会通过本函数传入|Function({query: string})|是|无|
+|callback|语音识别结果会通过本函数传入|Function(err: Any, {query: string})|是|无|
 
 * 示例
 
@@ -600,7 +602,7 @@ callback参数
         ]
     });
 
-    botApp.onHandleUnknowUtterance(function (data) {
+    botApp.onHandleUnknowUtterance(function (err, data) {
         console.log(data);
         // 当用户对话：小度小度，哈密瓜
         // 打印结果如下：
@@ -666,7 +668,7 @@ LinkClick是DuerOS系统中定义的事件上报的一种。DuerOS根据其携�
     })
     ```
 
-## requireShipping *1.3+* `SHOW ONLY`
+## requireShipping() *1.3+* `SHOW ONLY`
 请求发货信息。要调用本方法则必须在BotApp初始化时填写`skillID`，并同时使用`onHandleIntent()`来获取发货信息。本方法会在初始化阶段自动调用一次，开发者也可手动调用本方法。
 
 > 本方法仅支持在小度有屏音箱上调用
