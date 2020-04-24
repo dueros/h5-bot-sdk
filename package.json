@@ -4,7 +4,7 @@
   "description": "DuerOS H5 BOT JS SDK",
   "main": "lib/main.js",
   "scripts": {
-    "test": "jest --color",
+    "test": "jest --color --coverage",
     "buildSingleFile": "webpack --config webpack.sdk.js",
     "buildModule": "babel ./src -d lib",
     "build": "npm run buildSingleFile && npm run buildModule"

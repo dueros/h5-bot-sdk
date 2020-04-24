@@ -352,13 +352,13 @@ describe('测试SHOW端BotApp功能', () => {
             registerHandler: (name, cb) => {
                 if (name === 'onHandleIntent') {
                     mockRegisterOnHandleIntent(name, cb);
-                    setTimeout(() => {
+                    setInterval(() => {
                         cb(JSON.stringify(intentData), () => {});
                     }, 100);
                 } else if (name === 'onClickLink') {
                     mockRegisterOnClickLink(name, cb);
                     // 测试onClickLink调用
-                    setTimeout(() => {
+                    setInterval(() => {
                         cb(JSON.stringify({
                             url: 'https://www.straberry.com',
                             params: {}
@@ -366,12 +366,12 @@ describe('测试SHOW端BotApp功能', () => {
                     }, 100);
 
                     // 测试onHandleUnknowUtterance调用
-                    setTimeout(() => {
+                    setInterval(() => {
                         cb(JSON.stringify({
                             url: 'http://sdk.bot.dueros.ai?action=unknown_utterance',
                             params: JSON.stringify({query: '哈密瓜'})
                         }), () => {});
-                    }, 200);
+                    }, 100);
                 }
             }
         };
