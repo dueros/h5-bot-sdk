@@ -413,7 +413,6 @@ callback传入的参数
 
 |参数|说明|类型|
 |----|----|----|
-|err|错误信息|Any|
 |payload|意图解析结果|Object|
 |payload.intent.name|DuerOS解析出来的意图名称|string|
 |payload.intent.slots[].name|槽位名|string|
