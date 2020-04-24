@@ -309,6 +309,19 @@ describe('测试SHOW端BotApp功能', () => {
             botApp.canGoBack(callback);
             expect(window.WebViewJavascriptBridge.callHandler).toHaveBeenCalledWith('canGoBack', null, expect.any(Function));
         })
+
+        test('_parseShowVersion', () => {
+            expect(botApp._parseShowVersion()).toBe('1.36.0.0');
+        });
+
+        test('_compareShowVersion', () => {
+            expect(botApp._compareShowVersion('1.36.0.0', '1.36.0.1')).toBe(-1);
+            expect(botApp._compareShowVersion('1.36.0.1', '1.36.0.0')).toBe(1);
+            expect(botApp._compareShowVersion('1.36.0.0', '1.36.0.0')).toBe(0);
+            expect(botApp._compareShowVersion('1.36.1.0', '1.36.0.0')).toBe(1);
+            expect(botApp._compareShowVersion('1.36.1.0', '1.37.0.0')).toBe(-1);
+            expect(botApp._compareShowVersion('2.3.0.0', '1.90.0.0')).toBe(1);
+        })
     });
 
     describe('实例化阶段被调用的API', () => {

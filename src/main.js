@@ -338,14 +338,24 @@ class BotApp {
     _compareShowVersion(a, b) {
         let [a1, a2, a3, a4] = String(a).split('.');
         let [b1, b2, b3, b4] = String(b).split('.');
-        let aSize = Number(a1) * 1000 + Number(a2) * 100 + Number(a3) * 10 + Number(a4);
-        let bSize = Number(b1) * 1000 + Number(b2) * 100 + Number(b3) * 10 + Number(b4);
-        if (aSize === bSize) {
-            return 0;
-        } else if (aSize > bSize) {
+        if (a1 > b1) {
             return 1;
-        } else {
+        } else if (a1 < b1) {
             return -1;
+        } else if (a2 > b2) {
+            return 1;
+        } else if (a2 < b2) {
+            return -1;
+        } else if (a3> b3) {
+            return 1;
+        } else if (a3 < b3) {
+            return -1;
+        } else if (a4 > b4) {
+            return 1;
+        } else if (a4 < b4) {
+            return -1;
+        } else {
+            return 0;
         }
     }
 
