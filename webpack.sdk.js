@@ -12,7 +12,7 @@ module.exports = {
     mode: 'production',
     entry: './src/main.js',
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname, 'output'),
         filename: 'h5-bot-sdk.js',
         library: 'BotApp', // 暴露到全局变量中的名字，具体配置参考：https://webpack.docschina.org/guides/author-libraries
         libraryTarget: 'var', // 模块暴露方式：全局变量

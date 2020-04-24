@@ -346,7 +346,7 @@ class BotApp {
             return 1;
         } else if (a2 < b2) {
             return -1;
-        } else if (a3> b3) {
+        } else if (a3 > b3) {
             return 1;
         } else if (a3 < b3) {
             return -1;

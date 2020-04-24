@@ -39,7 +39,9 @@ describe('测试SHOW端BotApp功能', () => {
                 signature2: '61dc2b99967e0b326e82e80b05571d22',
                 skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
             };
+            /* eslint-disable no-new */
             new BotApp(data);
+            /* eslint-enable no-new */
             expect(mockInitHandler).toHaveBeenCalled();
             expect(mockCallHandler).toHaveBeenCalledWith('register', JSON.stringify({
                     random1: '3691308f2a4c2f6983f2880d32e29c84',
