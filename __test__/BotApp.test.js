@@ -43,26 +43,29 @@ describe('测试SHOW端BotApp功能', () => {
     });
 
     describe('普通API调用', () => {
-        window.WebViewJavascriptBridge = {
-            init: () => {},
-            callHandler: (name, data, cb) => {
-                if (name === 'register') {
-                    setTimeout(() => {
-                        cb(JSON.stringify({accessToken: '21.15a2c2cd345816f2e51f9eae6e3d1f03.2592000.1566035530.2050908969-9943593'}))
-                    }, 0);
-                }
-            },
-            registerHandler: () => {}
-        };
+        let data, botApp;
+        beforeAll(() => {
+            window.WebViewJavascriptBridge = {
+                init: () => {},
+                callHandler: (name, data, cb) => {
+                    if (name === 'register') {
+                        setTimeout(() => {
+                            cb(JSON.stringify({accessToken: '21.15a2c2cd345816f2e51f9eae6e3d1f03.2592000.1566035530.2050908969-9943593'}))
+                        }, 0);
+                    }
+                },
+                registerHandler: () => {}
+            };
+            const data = {
+                random1: '3691308f2a4c2f6983f2880d32e29c84',
+                signature1: 'd85f5cfffe5450fe7855fec1fcfe0b16',
+                random2: 'dc468c70fb574ebd07287b38d0d0676d',
+                signature2: '61dc2b99967e0b326e82e80b05571d22',
+                skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
+            };
+            botApp = new BotApp(data);
+        });
 
-        const data = {
-            random1: '3691308f2a4c2f6983f2880d32e29c84',
-            signature1: 'd85f5cfffe5450fe7855fec1fcfe0b16',
-            random2: 'dc468c70fb574ebd07287b38d0d0676d',
-            signature2: '61dc2b99967e0b326e82e80b05571d22',
-            skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
-        };
-        const botApp = new BotApp(data);
 
         beforeEach(() => {
             window.WebViewJavascriptBridge = {
@@ -319,6 +322,7 @@ describe('测试SHOW端BotApp功能', () => {
     });
 
     describe('实例化阶段被调用的API', () => {
+        let data, botApp;
         const mockRegisterOnHandleIntent = jest.fn();
         const mockRegisterOnClickLink = jest.fn();
         const mockCallUploadLinkClickedHandler = jest.fn();
@@ -345,69 +349,91 @@ describe('测试SHOW端BotApp功能', () => {
                 }]
             }
         };
-        window.WebViewJavascriptBridge = {
-            init: () => {},
-            callHandler: (name, data, cb) => {
-                console.log('callhandler name', name, window.WebViewJavascriptBridge.__uuid);
-                if (name === 'uploadLinkClicked') {
-                    console.log('111111');
-                    mockCallUploadLinkClickedHandler(name, data);
-                    mockCallUploadLinkClickedHandler.__doneCb();
+        beforeAll(() => {
+            window.WebViewJavascriptBridge = {
+                init: () => {},
+                callHandler: (name, data, cb) => {
+                    if (name === 'uploadLinkClicked') {
+                        mockCallUploadLinkClickedHandler(name, data);
+                        mockCallUploadLinkClickedHandler.__doneCb();
 
-                    let parsedData = JSON.parse(data);
-                    console.log(parsedData);
-                    if (parsedData.url.indexOf('dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources') === 0 && window.WebViewJavascriptBridge._onHandleIntent) {
-                        setTimeout(() => {
-                            mockAdFirstShowInterval();
-                            mockAdFirstShowInterval.__doneCb();
-                            window.WebViewJavascriptBridge._onHandleIntent(JSON.stringify({
-                                "intent": {
-                                    "name": "RenderAdvertisement"
-                                },
-                                "customData": JSON.stringify({
-                                    "jsonData": "{\"status\":0,\"materials\":[{\"type\":\"IMAGE_LEFT\",\"assets\":{\"image\":{\"url\":\"https:\\\/\\\/lupic.cdn.bcebos.com\\\/20191130\\\/8021544%2320.jpg\"},\"title\":\"别家宴会厅这么有档次，原来是用的全息投影\",\"content\":\"\"},\"monitors\":{\"exposure\":[\"dueros:\\\/\\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NNMGdocmtoN0JTekh5MVJWYXE5QUpPRUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnVUdld3d6emFreTVGS1d3MzQ0dERHREhwSnBaQUc1Z1g0ZkpnK1wvUnFvVWZ1dlhkemlIMFhMWkJKNGR3QkN3WWx1UFlPZ3dxOFdIazNUa2hpXC9ZMGpoV3FlNWg4YnIyeDNidGhFbWkwb0Q5QTU0SjdPTVJDYVBxYmQxWks5VmdtZG5TdWxpYlhhZDFpS3pMUSs3aDJVZDZOWlpDQ3pNUER2ZUVJOXVUWTlZOFFseTJxZWRYNjh4TkVuN0NybHJNOWFpc3lYdXhVUmN3Ylp3ZisweFkzZjFHS09XOXhQcnVcL3Q2RERHb0dyRzVtTktVaGl4bnQzV3VGbkowTzlBV0YzVHJ6NVwvaWZzVUNKNWFPdlgwbVNaRlQ2eFdtcFp1bDZTSHZiV0FEMGloR1ZvPSIsImFkU2xvdCI6IjEyMDAwMCIsInRlbXBsYXRlSWQiOiJJTUFHRSIsImV2ZW50IjoiRVhQT1NVUkUiLCJhZF90ZW1wbGF0ZSI6IklNQUdFIiwiYWRfbWF0ZXJpYWxfaWQiOiJtc3NwLTI3MDQ4NTEyMzIifQ%3D%3D\"],\"click\":[\"dueros:\\\/\\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NNMGdocmtoN0JTekh5MVJWYXE5QUpPRUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnVUdld3d6emFreTVGS1d3MzQ0dERHREhwSnBaQUc1Z1g0ZkpnK1wvUnFvVWZ1dlhkemlIMFhMWkJKNGR3QkN3WWx1UFlPZ3dxOFdIazNUa2hpXC9ZMGpoV3FlNWg4YnIyeDNidGhFbWkwb0Q5QTU0SjdPTVJDYVBxYmQxWks5VmdtZG5TdWxpYlhhZDFpS3pMUSs3aDJVZDZOWlpDQ3pNUER2ZUVJOXVUWTlZOFFseTJxZWRYNjh4TkVuN0NybHJNOWFpc3lYdXhVUmN3Ylp3ZisweFkzZjFHS09XOXhQcnVcL3Q2RERHb0dyRzVtTktVaGl4bnQzV3VGbkowTzlBV0YzVHJ6NVwvaWZzVUNKNWFPdlgwbVNaRlQ2eFdtcFp1bDZTSHZiV0FEMGloR1ZvPSIsImFkU2xvdCI6IjEyMDAwMCIsInRlbXBsYXRlSWQiOiJJTUFHRSIsImV2ZW50IjoiQ0xJQ0siLCJhZF90ZW1wbGF0ZSI6IklNQUdFIiwiYWRfbWF0ZXJpYWxfaWQiOiJtc3NwLTI3MDQ4NTEyMzIifQ%3D%3D&clickUrl=http%3A%2F%2Fcpro.baidu.com%2Fcpro%2Fui%2Fuijs.php%3Fen%3DmywWUA71T1Yknzu9TZKxpyfqn1T3P16vn101rau9TZKxTv-b5yRkm1m1nvu-FhPC5H0huAbqPHcYnW63Fh-VuybqrjmsP1R3njf1rHbzPWbYFh-Vuy-xmL0qnauGTdq9TZ0qniuJp1YYrHF-PWF9uhDkPjcsn17hFh_qFRnLFRFDFRPjFRRdFRFaFRDdFRcvFR7AFRPDFRcvFRf1FRcsFRnYFRnYFRFjFRfzFRFKFRn1FhkdpvbqniuVmLKV5HRzn10hULnqmy4bThqGuauk5yRkm1m1nvu-gvPsTBuzmWYkFMF15HDhTvwogLmqPau1uAVxIhNzTv-EUWYdQWm8nau1uyk_ugFxpyfqnBu1pyfqnymsn1fzmH79uWmznhRYriu1IA-b5HmsnjDhIjdYTAP_pyPouyf1gvdEm-q9TLKxnzuYUgnqnHR3n1f3nH6drauYIHYvrHnzPWDkFMRqpZwYTaR1fiRzwBRzwWwBuAcYmiRzwaRzwARkm1m1nvu-FHF7mvqVFMNGUy-b5HcYP1b1PW6vrjbhIWYzFhbqmyRdnhfLPjD%26adx%3D1%26besl%3D0%26br%3D0%26c%3Dnews%26cf%3D1%26cp%3Dfc_middle_page_app%26cvrq%3D371295%26ds%3Dfmp%26fr%3D1%26fv%3D0%26h%3D600%26haacp%3D107%26iif%3D1%26img_typ%3D22630%26itm%3D0%26lu_idc%3Dtc%26lukid%3D1%26lus%3D1f0342a1af622e49%26lust%3D5e620402%26mscf%3D0%26mtids%3D8021544%26n%3D10%26nttp%3D3%26oi%3D25%26p%3Dbaidu%26sce%3D5%26sh%3D600%26sr%3D0%26ssp2%3D0%26sw%3D1024%26swi%3D1%26tpl%3Dtemplate_inlay_all_mobile_lu_native_ad_app_feed_rect%26tsf%3Ddtp%3A2%26tt_sign%3D%25B1%25F0%25BC%25D2%25D1%25E7%25BB%25E1%25CC%25FC%25D5%25E2%25C3%25B4%25D3%25D0%25B5%25B5%25B4%25CE%25A3%25AC%25D4%25AD%25C0%25B4%25CA%25C7%25D3%25C3%25B5%25C4%25C8%25AB%25CF%25A2%25CD%25B6%25D3%25B0%26tt_src%3D16384%26u%3D%26uicf%3Dlurecv%26urlid%3D0%26w%3D1024%26wi%3D4%26eot%3D1\"],\"close\":[\"dueros:\\\/\\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NNMGdocmtoN0JTekh5MVJWYXE5QUpPRUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnVUdld3d6emFreTVGS1d3MzQ0dERHREhwSnBaQUc1Z1g0ZkpnK1wvUnFvVWZ1dlhkemlIMFhMWkJKNGR3QkN3WWx1UFlPZ3dxOFdIazNUa2hpXC9ZMGpoV3FlNWg4YnIyeDNidGhFbWkwb0Q5QTU0SjdPTVJDYVBxYmQxWks5VmdtZG5TdWxpYlhhZDFpS3pMUSs3aDJVZDZOWlpDQ3pNUER2ZUVJOXVUWTlZOFFseTJxZWRYNjh4TkVuN0NybHJNOWFpc3lYdXhVUmN3Ylp3ZisweFkzZjFHS09XOXhQcnVcL3Q2RERHb0dyRzVtTktVaGl4bnQzV3VGbkowTzlBV0YzVHJ6NVwvaWZzVUNKNWFPdlgwbVNaRlQ2eFdtcFp1bDZTSHZiV0FEMGloR1ZvPSIsImFkU2xvdCI6IjEyMDAwMCIsInRlbXBsYXRlSWQiOiJJTUFHRSIsImV2ZW50IjoiQ0xPU0UiLCJhZF90ZW1wbGF0ZSI6IklNQUdFIiwiYWRfbWF0ZXJpYWxfaWQiOiJtc3NwLTI3MDQ4NTEyMzIifQ%3D%3D\"]},\"props\":{\"autoSwitch\":true,\"duration\":10000}}],\"props\":{\"autoSwitch\":true,\"duration\":10000,\"htmlAddress\":\"https%3A%2F%2Fxiaodu.baidu.com%2Fsaiya%2Fsdk%2Fiframe%2Fad-wrapper.html\"}}"
-                                })
-                            }),  () => {});
+                        let parsedData = JSON.parse(data);
+                        if (parsedData.url.indexOf('dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources') === 0 && window.WebViewJavascriptBridge._onHandleIntent) {
+                            setTimeout(() => {
+                                mockAdFirstShowInterval();
+                                mockAdFirstShowInterval.__doneCb();
+                                window.WebViewJavascriptBridge._onHandleIntent(JSON.stringify({
+                                    "intent": {
+                                        "name": "RenderAdvertisement"
+                                    },
+                                    "customData": JSON.stringify({
+                                        "jsonData": "{\"status\":0,\"materials\":[{\"type\":\"IMAGE_LEFT\",\"assets\":{\"image\":{\"url\":\"https:\\\/\\\/lupic.cdn.bcebos.com\\\/20191130\\\/8021544%2320.jpg\"},\"title\":\"别家宴会厅这么有档次，原来是用的全息投影\",\"content\":\"\"},\"monitors\":{\"exposure\":[\"dueros:\\\/\\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NNMGdocmtoN0JTekh5MVJWYXE5QUpPRUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnVUdld3d6emFreTVGS1d3MzQ0dERHREhwSnBaQUc1Z1g0ZkpnK1wvUnFvVWZ1dlhkemlIMFhMWkJKNGR3QkN3WWx1UFlPZ3dxOFdIazNUa2hpXC9ZMGpoV3FlNWg4YnIyeDNidGhFbWkwb0Q5QTU0SjdPTVJDYVBxYmQxWks5VmdtZG5TdWxpYlhhZDFpS3pMUSs3aDJVZDZOWlpDQ3pNUER2ZUVJOXVUWTlZOFFseTJxZWRYNjh4TkVuN0NybHJNOWFpc3lYdXhVUmN3Ylp3ZisweFkzZjFHS09XOXhQcnVcL3Q2RERHb0dyRzVtTktVaGl4bnQzV3VGbkowTzlBV0YzVHJ6NVwvaWZzVUNKNWFPdlgwbVNaRlQ2eFdtcFp1bDZTSHZiV0FEMGloR1ZvPSIsImFkU2xvdCI6IjEyMDAwMCIsInRlbXBsYXRlSWQiOiJJTUFHRSIsImV2ZW50IjoiRVhQT1NVUkUiLCJhZF90ZW1wbGF0ZSI6IklNQUdFIiwiYWRfbWF0ZXJpYWxfaWQiOiJtc3NwLTI3MDQ4NTEyMzIifQ%3D%3D\"],\"click\":[\"dueros:\\\/\\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NNMGdocmtoN0JTekh5MVJWYXE5QUpPRUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnVUdld3d6emFreTVGS1d3MzQ0dERHREhwSnBaQUc1Z1g0ZkpnK1wvUnFvVWZ1dlhkemlIMFhMWkJKNGR3QkN3WWx1UFlPZ3dxOFdIazNUa2hpXC9ZMGpoV3FlNWg4YnIyeDNidGhFbWkwb0Q5QTU0SjdPTVJDYVBxYmQxWks5VmdtZG5TdWxpYlhhZDFpS3pMUSs3aDJVZDZOWlpDQ3pNUER2ZUVJOXVUWTlZOFFseTJxZWRYNjh4TkVuN0NybHJNOWFpc3lYdXhVUmN3Ylp3ZisweFkzZjFHS09XOXhQcnVcL3Q2RERHb0dyRzVtTktVaGl4bnQzV3VGbkowTzlBV0YzVHJ6NVwvaWZzVUNKNWFPdlgwbVNaRlQ2eFdtcFp1bDZTSHZiV0FEMGloR1ZvPSIsImFkU2xvdCI6IjEyMDAwMCIsInRlbXBsYXRlSWQiOiJJTUFHRSIsImV2ZW50IjoiQ0xJQ0siLCJhZF90ZW1wbGF0ZSI6IklNQUdFIiwiYWRfbWF0ZXJpYWxfaWQiOiJtc3NwLTI3MDQ4NTEyMzIifQ%3D%3D&clickUrl=http%3A%2F%2Fcpro.baidu.com%2Fcpro%2Fui%2Fuijs.php%3Fen%3DmywWUA71T1Yknzu9TZKxpyfqn1T3P16vn101rau9TZKxTv-b5yRkm1m1nvu-FhPC5H0huAbqPHcYnW63Fh-VuybqrjmsP1R3njf1rHbzPWbYFh-Vuy-xmL0qnauGTdq9TZ0qniuJp1YYrHF-PWF9uhDkPjcsn17hFh_qFRnLFRFDFRPjFRRdFRFaFRDdFRcvFR7AFRPDFRcvFRf1FRcsFRnYFRnYFRFjFRfzFRFKFRn1FhkdpvbqniuVmLKV5HRzn10hULnqmy4bThqGuauk5yRkm1m1nvu-gvPsTBuzmWYkFMF15HDhTvwogLmqPau1uAVxIhNzTv-EUWYdQWm8nau1uyk_ugFxpyfqnBu1pyfqnymsn1fzmH79uWmznhRYriu1IA-b5HmsnjDhIjdYTAP_pyPouyf1gvdEm-q9TLKxnzuYUgnqnHR3n1f3nH6drauYIHYvrHnzPWDkFMRqpZwYTaR1fiRzwBRzwWwBuAcYmiRzwaRzwARkm1m1nvu-FHF7mvqVFMNGUy-b5HcYP1b1PW6vrjbhIWYzFhbqmyRdnhfLPjD%26adx%3D1%26besl%3D0%26br%3D0%26c%3Dnews%26cf%3D1%26cp%3Dfc_middle_page_app%26cvrq%3D371295%26ds%3Dfmp%26fr%3D1%26fv%3D0%26h%3D600%26haacp%3D107%26iif%3D1%26img_typ%3D22630%26itm%3D0%26lu_idc%3Dtc%26lukid%3D1%26lus%3D1f0342a1af622e49%26lust%3D5e620402%26mscf%3D0%26mtids%3D8021544%26n%3D10%26nttp%3D3%26oi%3D25%26p%3Dbaidu%26sce%3D5%26sh%3D600%26sr%3D0%26ssp2%3D0%26sw%3D1024%26swi%3D1%26tpl%3Dtemplate_inlay_all_mobile_lu_native_ad_app_feed_rect%26tsf%3Ddtp%3A2%26tt_sign%3D%25B1%25F0%25BC%25D2%25D1%25E7%25BB%25E1%25CC%25FC%25D5%25E2%25C3%25B4%25D3%25D0%25B5%25B5%25B4%25CE%25A3%25AC%25D4%25AD%25C0%25B4%25CA%25C7%25D3%25C3%25B5%25C4%25C8%25AB%25CF%25A2%25CD%25B6%25D3%25B0%26tt_src%3D16384%26u%3D%26uicf%3Dlurecv%26urlid%3D0%26w%3D1024%26wi%3D4%26eot%3D1\"],\"close\":[\"dueros:\\\/\\\/f34646bc-37b4-a9db-361f-48fe7ca8831d\\\/eventHandle?token=eyJpZCI6IjFFdG5XYkhqSnN0T3EwaHNHODM4V2lNYmdpUFdYbThNOTFRbTdlYjNkeDgrcE84enlCaXdMSFdHOE9pNkZiU1NNMGdocmtoN0JTekh5MVJWYXE5QUpPRUxxd0NkNTc4RDlPZmsyR1R0emxPalV6dE1QSjZlalBiYlllQkdzcVdnVUdld3d6emFreTVGS1d3MzQ0dERHREhwSnBaQUc1Z1g0ZkpnK1wvUnFvVWZ1dlhkemlIMFhMWkJKNGR3QkN3WWx1UFlPZ3dxOFdIazNUa2hpXC9ZMGpoV3FlNWg4YnIyeDNidGhFbWkwb0Q5QTU0SjdPTVJDYVBxYmQxWks5VmdtZG5TdWxpYlhhZDFpS3pMUSs3aDJVZDZOWlpDQ3pNUER2ZUVJOXVUWTlZOFFseTJxZWRYNjh4TkVuN0NybHJNOWFpc3lYdXhVUmN3Ylp3ZisweFkzZjFHS09XOXhQcnVcL3Q2RERHb0dyRzVtTktVaGl4bnQzV3VGbkowTzlBV0YzVHJ6NVwvaWZzVUNKNWFPdlgwbVNaRlQ2eFdtcFp1bDZTSHZiV0FEMGloR1ZvPSIsImFkU2xvdCI6IjEyMDAwMCIsInRlbXBsYXRlSWQiOiJJTUFHRSIsImV2ZW50IjoiQ0xPU0UiLCJhZF90ZW1wbGF0ZSI6IklNQUdFIiwiYWRfbWF0ZXJpYWxfaWQiOiJtc3NwLTI3MDQ4NTEyMzIifQ%3D%3D\"]},\"props\":{\"autoSwitch\":true,\"duration\":10000}}],\"props\":{\"autoSwitch\":true,\"duration\":10000,\"htmlAddress\":\"https%3A%2F%2Fxiaodu.baidu.com%2Fsaiya%2Fsdk%2Fiframe%2Fad-wrapper.html\"}}"
+                                    })
+                                }),  () => {});
+                            }, 100);
+                        }
+                    }
+                },
+                registerHandler: (name, cb) => {
+                    if (name === 'onHandleIntent') {
+                        mockRegisterOnHandleIntent(name, cb);
+                        setInterval(() => {
+                            cb(JSON.stringify(intentData), () => {});
+                        }, 100);
+                        window.WebViewJavascriptBridge._onHandleIntent = cb;
+                    } else if (name === 'onClickLink') {
+                        mockRegisterOnClickLink(name, cb);
+                        // 测试onClickLink调用
+                        setInterval(() => {
+                            cb(JSON.stringify({
+                                url: 'https://www.straberry.com',
+                                params: {}
+                            }), () => {});
+                        }, 100);
+
+                        // 测试onHandleUnknowUtterance调用
+                        setInterval(() => {
+                            cb(JSON.stringify({
+                                url: 'http://sdk.bot.dueros.ai?action=unknown_utterance',
+                                params: JSON.stringify({query: '哈密瓜'})
+                            }), () => {});
                         }, 100);
                     }
-                } else {
-                    console.log('2222222');
                 }
-            },
-            registerHandler: (name, cb) => {
-                if (name === 'onHandleIntent') {
-                    mockRegisterOnHandleIntent(name, cb);
-                    setInterval(() => {
-                        cb(JSON.stringify(intentData), () => {});
-                    }, 100);
-                    window.WebViewJavascriptBridge._onHandleIntent = cb;
-                } else if (name === 'onClickLink') {
-                    mockRegisterOnClickLink(name, cb);
-                    // 测试onClickLink调用
-                    setInterval(() => {
-                        cb(JSON.stringify({
-                            url: 'https://www.straberry.com',
-                            params: {}
-                        }), () => {});
-                    }, 100);
+            };
 
-                    // 测试onHandleUnknowUtterance调用
-                    setInterval(() => {
-                        cb(JSON.stringify({
-                            url: 'http://sdk.bot.dueros.ai?action=unknown_utterance',
-                            params: JSON.stringify({query: '哈密瓜'})
-                        }), () => {});
-                    }, 100);
+            data = {
+                ...appConfig,
+                skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
+            };
+
+            botApp = new BotApp(data);
+
+            // 测试广告模块的功能
+            botApp.initAd({
+                placeId: '5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D',
+                screenOrientation: 'portrait',
+                zIndex: 9999,
+                displayStrategy: 'twice',
+                firstDisplayTime: 3,
+                bannerPosition: {
+                    right: '30px',
+                    bottom: '30px'
+                },
+                clickCallback: function() {
+                    console.log('用户点击了广告');
+                },
+                closeCallback: function() {
+                    console.log('用户关闭了广告');
+                },
+                displayCallback: function() {
+                    console.log('广告展示成功');
+                },
+                switchCallback: function() {
+                    console.log('广告切换成功');
                 }
-            }
-        };
-
-        const data = {
-            ...appConfig,
-            skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
-        };
-
-        const botApp = new BotApp(data);
+            });
+        })
 
         test('onHandleIntent', (done) => {
             expect(mockRegisterOnHandleIntent).toHaveBeenCalledWith('onHandleIntent', expect.any(Function));
@@ -435,31 +461,6 @@ describe('测试SHOW端BotApp功能', () => {
         });
 
         const startAd = Date.now();
-
-        // 测试广告模块的功能
-        botApp.initAd({
-            placeId: '5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D',
-            screenOrientation: 'portrait',
-            zIndex: 9999,
-            displayStrategy: 'twice',
-            firstDisplayTime: 3,
-            bannerPosition: {
-                right: '30px',
-                bottom: '30px'
-            },
-            clickCallback: function() {
-                console.log('用户点击了广告');
-            },
-            closeCallback: function() {
-                console.log('用户关闭了广告');
-            },
-            displayCallback: function() {
-                console.log('广告展示成功');
-            },
-            switchCallback: function() {
-                console.log('广告切换成功');
-            }
-        });
 
         test('initAd', (done) => {
 
