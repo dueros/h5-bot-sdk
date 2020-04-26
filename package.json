@@ -4,7 +4,7 @@
   "description": "DuerOS H5 BOT JS SDK",
   "main": "lib/main.js",
   "scripts": {
-    "test": "jest --color --coverage",
+    "test": "jest --coverage",
     "buildSingleFile": "webpack --config webpack.sdk.js",
     "buildModule": "babel ./src -d lib",
     "build": "npm run buildSingleFile && npm run buildModule"
@@ -24,7 +24,5 @@
     "webpack-cli": "^3.3.6",
     "webpack-merge": "^4.2.2"
   },
-  "dependencies": {
-    "@baidu/duer.bridge-sdk": "^1.0.35"
-  }
+  "dependencies": {}
 }
