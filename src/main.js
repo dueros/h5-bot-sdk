@@ -830,4 +830,4 @@ class BotApp {
     }
 }
 
-export default BotApp;
+module.exports = BotApp;

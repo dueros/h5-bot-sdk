@@ -80,28 +80,40 @@
             skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
         });
 
-        botApp.initAd({
-            screenOrientation: 'portrait',
-            displayStrategy: 'twice',
-            clickCallback: function (err, data) {
-                log('用户点击了广告');
-            },
-            displayCallback: function() {
-                log('广告展示成功');
-            },
-            closeCallback: function() {
-                log('用户关闭了广告');
-            },
-            switchCallback: function() {
-                log('广告切换成功');
-            },
-            firstDisplayTime: 10,
-            bannerPosition: {
-                right: '230px',
-                bottom: '130px'
-            },
-            placeId: 'xxxxx',
-        });
+        if (!botApp.isInApp()) {
+            botApp.onDialogStateChanged(function (err, data) {
+                log('收到 onDialogStateChanged 调用');
+                log(err);
+                log(data);
+            });
+            botApp.onHandleUnknowUtterance(function (err, data) {
+                log('收到 onHandleUnknowUtterance 调用');
+                log(err);
+                log(data);
+            });
+            botApp.initAd({
+                screenOrientation: 'portrait',
+                displayStrategy: 'twice',
+                clickCallback: function (err, data) {
+                    log('用户点击了广告');
+                },
+                displayCallback: function() {
+                    log('广告展示成功');
+                },
+                closeCallback: function() {
+                    log('用户关闭了广告');
+                },
+                switchCallback: function() {
+                    log('广告切换成功');
+                },
+                firstDisplayTime: 10,
+                bannerPosition: {
+                    right: '230px',
+                    bottom: '130px'
+                },
+                placeId: 'xxxxx',
+            });
+        }
 
 
         botApp.onLinkAccountSuccess(function (data) {
@@ -130,18 +142,6 @@
         botApp.onHandleScreenNavigatorEvent(function (data) {
             log('收到 onHandleScreenNavigatorEvent 调用');
             console.log(data);
-            log(data);
-        });
-
-        botApp.onDialogStateChanged(function (err, data) {
-            log('收到 onDialogStateChanged 调用');
-            log(err);
-            log(data);
-        });
-
-        botApp.onHandleUnknowUtterance(function (err, data) {
-            log('收到 onHandleUnknowUtterance 调用');
-            log(err);
             log(data);
         });
 
