@@ -7,7 +7,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
     <script src="//cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>
-    <script src="http://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.7.2.js"></script>
+    <script src="https://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.8.0.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -34,6 +34,10 @@
 <button id="applicate-age">实名认证</button>
 <button id="applicate-cangoback">canGoBack</button>
 <!-- <button id="link-realname">展示实名认证二维码</button> -->
+<button id="register-gesture">注册ok/palm/left/right手势</button>
+<button id="interrupt-tts">打断TTS</button>
+<button id="camera-state">获取摄像头状态</button>
+<button id="send-event">sendEvent</button>
 <div id="log"></div>
 <script>
     var vConsole = new VConsole();// 初始化
@@ -52,6 +56,10 @@
     // var $btnRealName = document.getElementById('link-realname');
     var $btnCanGoBack = document.getElementById('applicate-cangoback');
     // var $btnHistoryPush = document.getElementById('applicate-historypush');
+    var $btnGesture = document.getElementById('register-gesture');
+    var $interruptTts = document.getElementById('interrupt-tts');
+    var $getCameraState = document.getElementById('camera-state');
+    var $sendEvent = document.getElementById('send-event');
 
     var $log = document.getElementById('log');
 
@@ -91,28 +99,28 @@
                 log(err);
                 log(data);
             });
-            botApp.initAd({
-                screenOrientation: 'portrait',
-                displayStrategy: 'twice',
-                clickCallback: function (err, data) {
-                    log('用户点击了广告');
-                },
-                displayCallback: function() {
-                    log('广告展示成功');
-                },
-                closeCallback: function() {
-                    log('用户关闭了广告');
-                },
-                switchCallback: function() {
-                    log('广告切换成功');
-                },
-                firstDisplayTime: 10,
-                bannerPosition: {
-                    right: '230px',
-                    bottom: '130px'
-                },
-                placeId: 'xxxxx',
-            });
+            // botApp.initAd({
+            //     screenOrientation: 'portrait',
+            //     displayStrategy: 'twice',
+            //     clickCallback: function (err, data) {
+            //         log('用户点击了广告');
+            //     },
+            //     displayCallback: function() {
+            //         log('广告展示成功');
+            //     },
+            //     closeCallback: function() {
+            //         log('用户关闭了广告');
+            //     },
+            //     switchCallback: function() {
+            //         log('广告切换成功');
+            //     },
+            //     firstDisplayTime: 10,
+            //     bannerPosition: {
+            //         right: '230px',
+            //         bottom: '130px'
+            //     },
+            //     placeId: 'xxxxx',
+            // });
         }
 
 
@@ -200,10 +208,16 @@
                 enableGeneralUtterances: false,
                 hyperUtterances: [
                     {
-                        url: 'https://www.apple.com',
-                        utterances: ['苹果'],
-                        type: 'link',
-                        params: {}
+                        "params":{
+                            "index":"",
+                            "name":"",
+                            "prefix":"确定"
+                        },
+                        "type":"button",
+                        "url":"http://sdk.bot.dueros.ai?packageName=com.baidu.duershow.h5container&url=3",
+                        "utterances":[
+
+                        ]
                     },
                     {
                         url: 'https://www.banana.com',
@@ -296,6 +310,52 @@
                 log(err);
                 log(state);
             });
+        }
+
+        $btnGesture.onclick = function () {
+            log('调用手势注册，注册上下左右');
+            botApp.registerGesture(['GESTURE_OK', 'GESTURE_PALM', 'GESTURE_LEFT', 'GESTURE_RIGHT'], (err, gesture) => {
+                log('收到手势识别结果，如下：');
+                if (err) {
+                    log(err);
+                } else {
+                    log(gesture);
+                }
+            });
+        }
+
+        $interruptTts.onclick = function () {
+            log('开始尝试打断TTS');
+            botApp.interruptTTS();
+        }
+
+        $getCameraState.onclick = function () {
+            log('开始获取Camera状态');
+            botApp.getCameraState((err, state) => {
+                log('获取到Camera状态，结果日下');
+                if (err) {
+                    log(err);
+                } else {
+                    log(state);
+                }
+            });
+        }
+
+        $sendEvent.onclick = function () {
+            log('开始上报事件，参数如下');
+            const data = {
+                namespace: "ai.dueros.device_interface.bot_app_sdk",
+                name: "TouchedDown",
+                 needDialogRequestId: false,
+                 payload: {
+                     position : {
+                          left: '20px',
+                          top: '40px',
+                     }
+                 }
+            };
+            log(data);
+            botApp.sendEvent(data);
         }
     });
 

@@ -7,7 +7,7 @@ import BotApp from '../src/main';
 
 Object.defineProperty(navigator, 'userAgent', {
     writable: true,
-    value: 'Mozilla/5.0 (Linux; Android  NV6001 Build/1.36.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;'
+    value: 'Mozilla/5.0 (Linux; Android  NV6001 Build/1.40.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;'
 });
 
 describe('测试SHOW端BotApp功能', () => {
@@ -305,7 +305,12 @@ describe('测试SHOW端BotApp功能', () => {
         })
 
         test('_parseShowVersion', () => {
-            expect(botApp._parseShowVersion()).toBe('1.36.0.0');
+            expect(botApp._parseShowVersion()).toBe('1.40.0.0');
+        });
+
+        test('_parseVersionNumber', () => {
+            expect(botApp._parseVersionNumber('Mozilla/5.0 (Linux; Android 8.1.0; NV6001 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Mobile Safari/537.36 ContainerVersion/1.40.0.0 (Android) DuerOS/Xiaodu;')).toBe('1.40.0.0');
+            expect(botApp._parseVersionNumber('Mozilla/5.0 (Linux; Android  NV6001 Build/1.36.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;')).toBe('1.36.0.0');
         });
 
         test('_compareShowVersion', () => {
@@ -319,6 +324,48 @@ describe('测试SHOW端BotApp功能', () => {
             expect(botApp._compareShowVersion('2.3.0.0', '1.90.0.0')).toBe(1);
             expect(botApp._compareShowVersion('1.3.0.0', '2.90.0.0')).toBe(-1);
         });
+
+        test('interruptTTS', () => {
+            window.WebViewJavascriptBridge.callHandler = jest.fn();
+            botApp.interruptTTS();
+            expect(window.WebViewJavascriptBridge.callHandler).toHaveBeenCalledWith('triggerDuerOSCapacity', JSON.stringify({
+                capacityName: 'AI_DUER_SHOW_INTERRPT_TTS',
+                params: null
+            }), expect.any(Function));
+        });
+
+        test('getCameraState', (done) => {
+            const callback = jest.fn();
+            window.WebViewJavascriptBridge.callHandler = jest.fn((name, data, cb) => {
+                setTimeout(() => {
+                    cb('ENABLED');
+                    expect(callback).toHaveBeenCalledWith(null, 'ENABLED');
+                    done();
+                });
+            });
+            botApp.getCameraState(callback);
+            expect(window.WebViewJavascriptBridge.callHandler).toHaveBeenCalledWith('triggerDuerOSCapacity', JSON.stringify({
+                capacityName: 'AI_DUER_SHOW_GET_CAMERA_STATE',
+                params: null
+            }), expect.any(Function));
+        });
+        test('sendEvent', () => {
+            const data = {
+                namespace: "ai.dueros.device_interface.bot_app_sdk",
+                name: "TouchedDown",
+                needDialogRequestId: false,
+                payload: {
+                    position : {
+                        left: '20px',
+                        top: '40px',
+                    }
+                }
+            };
+            window.WebViewJavascriptBridge.callHandler = jest.fn();
+            botApp.sendEvent(data);
+            expect(window.WebViewJavascriptBridge.callHandler).toHaveBeenCalledWith('sendEvent', JSON.stringify(data), expect.any(Function));
+        });
+
     });
 
     describe('实例化阶段被调用的API', () => {
@@ -329,6 +376,8 @@ describe('测试SHOW端BotApp功能', () => {
 
         // 测试广告间隔
         const mockAdFirstShowInterval = jest.fn();
+
+        const mockRegisterGestureHandler = jest.fn();
 
         const appConfig = {
             random1: '3691308f2a4c2f6983f2880d32e29c84',
@@ -488,6 +537,34 @@ describe('测试SHOW端BotApp功能', () => {
                 }
             }
         });
+
+        test('registerGesture', (done) => {
+            const callback = jest.fn((err, gesture) => {
+                expect(callback).toHaveBeenCalledWith(null, 'OK');
+                done();
+            });
+            window.WebViewJavascriptBridge.callHandler = jest.fn(() => {
+                setTimeout(() => {
+                    window.WebViewJavascriptBridge._onHandleIntent(JSON.stringify({
+                        app: {
+                            packageName: 'com.baidu.duer.test_botsdk'
+                        },
+                        intent: {
+                            name: 'AI_DUER_SHOW_GESTURE_RECOGNIZED',
+                            slots: [{
+                                name: 'recognizedGestureName',
+                                value: 'OK'
+                            }]
+                        }
+                    }), () => {});
+                }, 100);
+            });
+            const data = ['GESTURE_OK', 'GESTURE_PALM', 'GESTURE_LEFT', 'GESTURE_RIGHT'];
+
+            botApp.registerGesture(data, callback);
+            expect(window.WebViewJavascriptBridge.callHandler).toHaveBeenCalledWith('triggerDuerOSCapacity', JSON.stringify({"capacityName":"AI_DUER_SHOW_GESTURE_REGISTER","params":{"enabledGestures":["GESTURE_OK","GESTURE_PALM","GESTURE_LEFT","GESTURE_RIGHT"]}}), expect.any(Function));
+        });
+
     });
 });
 

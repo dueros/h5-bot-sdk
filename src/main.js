@@ -123,6 +123,12 @@ class BotApp {
                                 this._renderAd(JSON.parse(payload.customData).jsonData);
                             }
                         }
+                    } else if (payload.intent.name === 'AI_DUER_SHOW_GESTURE_RECOGNIZED' && this._registerGestureCb) {
+                        if (payload.intent.slots[0]) {
+                            this._registerGestureCb(null, payload.intent.slots[0].value);
+                        } else {
+                            this._registerGestureCb('Recognize gesture failed', null);
+                        }
                     } else {
                         this.onHandleIntentCb && this.onHandleIntentCb(payload);
                     }
@@ -168,7 +174,7 @@ class BotApp {
                                 url
                             }
                         }));
-                        window.addEventListener('touchstart', this.screenTouched, true);
+                        window.addEventListener('touchstart', this._screenTouched, true);
                         this._pauseCommonAd();
                     } else if (data.type === 'ad_close') {
                         this.config.adCloseCallback();
@@ -318,13 +324,33 @@ class BotApp {
             return this._showVersion;
         }
         let ua = navigator.userAgent;
-        let reg = /build\/([\d\.]+);/i;
-        let result = reg.exec(ua);
-        if (result) {
-            this._showVersion = result[1];
-            return result[1];
+        let version = this._parseVersionNumber(ua);
+        if (version) {
+            this._showVersion = version;
+            return version;
         } else {
             throw new Error('Device version number parsing failed: ' + ua);
+        }
+    }
+
+    /**
+     * 提取版本号
+     * @param str
+     * @returns {string|null}
+     * @private
+     */
+    _parseVersionNumber(str) {
+        let reg = null;
+        if (str.indexOf('ContainerVersion') > -1) {
+            reg = /ContainerVersion\/([\d\.]+)/i;
+        } else {
+            reg = /build\/([\d\.]+);/i;
+        }
+        let result = reg.exec(str);
+        if (result) {
+            return result[1];
+        } else {
+            return null;
         }
     }
 
@@ -684,6 +710,82 @@ class BotApp {
     }
 
     /**
+     * 注册手势识别
+     * @param {Array} data 注册需要支持的手势识别，例如 ["GESTURE_OK", "GESTURE_PALM", "GESTURE_LEFT", "GESTURE_RIGHT"]，具体见文档：http://agroup.baidu.com/dueros-bot-platform/md/article/1943708
+     * @param {requestCallback} cb 手势识别后的回调，例如 {"name": "recognizedGestureName", "value": "OK"}
+     */
+    registerGesture(data, cb) {
+        this._validateCallback('registerGesture', cb, 1);
+        if (!Array.isArray(data)) {
+            throw new Error('data must be a `Array`');
+        }
+        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+            this._getJSBridge(bridge => {
+                const stringData = JSON.stringify({
+                    capacityName: 'AI_DUER_SHOW_GESTURE_REGISTER',
+                    params: {
+                        enabledGestures: data
+                    }
+                });
+                bridge.callHandler('triggerDuerOSCapacity', stringData, () => {});
+                this._registerGestureCb = cb;
+            });
+        } else {
+            cb(new LowVersionErrorMsg(), null);
+        }
+    }
+
+    interruptTTS() {
+        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+            this._getJSBridge(bridge => {
+                const stringData = JSON.stringify({
+                    capacityName: 'AI_DUER_SHOW_INTERRPT_TTS',
+                    params: null
+                });
+                bridge.callHandler('triggerDuerOSCapacity', stringData, () => {});
+            });
+        } else {
+            console.error(new LowVersionErrorMsg());
+        }
+    }
+
+    /**
+     * 获取摄像头状态
+     * @param {requestCallback} cb 回调传入的参数是一个枚举值，ENABLED、DISABLED
+     */
+    getCameraState(cb) {
+        this._validateCallback('getCameraState', cb);
+        if (this._compareShowVersion(this._parseShowVersion(), '1.39.0.0') >= 0) {
+            this._getJSBridge(bridge => {
+                const stringData = JSON.stringify({
+                    capacityName: 'AI_DUER_SHOW_GET_CAMERA_STATE',
+                    params: null
+                });
+                bridge.callHandler('triggerDuerOSCapacity', stringData, (state) => {
+                    cb(null, state);
+                });
+            });
+        } else {
+            cb(new LowVersionErrorMsg(), null);
+        }
+    }
+
+    /**
+     * 上报DCS Event
+     * @param data
+     */
+    sendEvent(data) {
+        if (this._compareShowVersion(this._parseShowVersion(), '1.40.0.0') >= 0) {
+            this._getJSBridge(bridge => {
+                const stringData = JSON.stringify(data);
+                bridge.callHandler('sendEvent', stringData, () => {});
+            });
+        } else {
+            console.error(new LowVersionErrorMsg());
+        }
+    }
+
+    /**
      * 从意图槽位中解析广告物料并渲染广告
      * @param {string} data
      * @private
@@ -824,10 +926,12 @@ class BotApp {
         this._isCommonAdSwitchOff = true;
     }
 
-    screenTouched = () => {
-        window.removeEventListener('touchstart', this.screenTouched, true);
+    _screenTouched = () => {
+        window.removeEventListener('touchstart', this._screenTouched, true);
         this._startCommonAdSwitch(true);
     }
+
+
 }
 
 module.exports = BotApp;

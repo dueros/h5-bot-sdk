@@ -11,3 +11,6 @@ fis-conf.js
 push.sh
 .DS_Store
 Thumbs.db
+cookbook/
+coverage/
+output/

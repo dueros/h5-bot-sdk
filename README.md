@@ -783,6 +783,95 @@ callback参数
     })
     ```
 
+## registerGesture(config, callback) *1.8+* `SHOW ONLY`
+
+注册手势识别。注册后可在回调函数中接收到手势识别的结果。
+
+目前已经支持的手势类型
+
+|手势名称|值|
+|---|---|
+|OK|GESTURE_OK|
+|五指张开的手掌|GESTURE_PALM|
+|握拳，拇指竖起，拳头横向右边|GESTURE_LEFT|
+|握拳，拇指竖起，拳头横向左边|GESTURE_RIGHT|
+
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|config|需要注册的手势列表|Array|是|无|
+|callback|接收手势识别的回调函数|Function|是|无|
+
+callback参数
+
+|参数|说明|类型|
+|----|----|----|
+|err|内建错误类型，见附表|Object|
+|getture|手势识别结果|string|
+
+* 示例
+    ```javascript
+     botApp.registerGesture(['GESTURE_OK', 'GESTURE_PALM', 'GESTURE_LEFT', 'GESTURE_RIGHT'], (err, gesture) => {
+         if (!err) {
+             console.log(gesture);
+             // 如果是OK手势，则打印结果如下
+             // GESTURE_OK
+         }
+     });
+    ```
+
+## interruptTTS() *1.8+* `SHOW ONLY`
+
+打断正在播报的TTS
+
+* 示例
+    ```javascript
+     botApp.interruptTTS();
+    ```
+    
+## getCameraState(callback) *1.8+* `SHOW ONLY`
+获取设备摄像头状态
+
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|接收摄像头状态的回调|Function|是|无|
+
+callback参数
+
+|参数|说明|类型|
+|----|----|----|
+|err|内建错误类型，见附表|Object|
+|state|摄像头状态|enum {'ENABLED','DISABLED'}|
+
+## sendEvent(data) *1.8+* `SHOW ONLY`
+
+上报事件。第三方开发者一般用不到。
+
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|data|事件相关参数|Object|是|无|
+|data.namespace|事件命名空间|string|是|无|
+|data.name|事件名|string|是|无|
+|data.needDialogRequestId|是否需要dialogRequestId，由设备生成|boolean|是|无|
+|data.payload|事件携带的相关参数|Object\|null|是|无|
+
+* 示例
+    ```javascript
+     const data = {
+         namespace: 'ai.dueros.device_interface.bot_app_sdk',
+         name: 'TouchedDown',
+          needDialogRequestId: false,
+          payload: {
+              position : {
+                   left: '20px',
+                   top: '40px',
+              }
+          }
+     };
+     log(data);
+     botApp.sendEvent(data);
+    ```
+
+
 
 ## 附表
 
