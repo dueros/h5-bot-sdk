@@ -334,21 +334,6 @@ describe('测试SHOW端BotApp功能', () => {
             }), expect.any(Function));
         });
 
-        test('getCameraState', (done) => {
-            const callback = jest.fn();
-            window.WebViewJavascriptBridge.callHandler = jest.fn((name, data, cb) => {
-                setTimeout(() => {
-                    cb('ENABLED');
-                    expect(callback).toHaveBeenCalledWith(null, 'ENABLED');
-                    done();
-                });
-            });
-            botApp.getCameraState(callback);
-            expect(window.WebViewJavascriptBridge.callHandler).toHaveBeenCalledWith('triggerDuerOSCapacity', JSON.stringify({
-                capacityName: 'AI_DUER_SHOW_GET_CAMERA_STATE',
-                params: null
-            }), expect.any(Function));
-        });
         test('sendEvent', () => {
             const data = {
                 namespace: "ai.dueros.device_interface.bot_app_sdk",
@@ -563,6 +548,31 @@ describe('测试SHOW端BotApp功能', () => {
 
             botApp.registerGesture(data, callback);
             expect(window.WebViewJavascriptBridge.callHandler).toHaveBeenCalledWith('triggerDuerOSCapacity', JSON.stringify({"capacityName":"AI_DUER_SHOW_GESTURE_REGISTER","params":{"enabledGestures":["GESTURE_OK","GESTURE_PALM","GESTURE_LEFT","GESTURE_RIGHT"]}}), expect.any(Function));
+        });
+
+        test('getCameraState', (done) => {
+            const callback = jest.fn();
+            window.WebViewJavascriptBridge.callHandler = jest.fn((name, data, cb) => {
+                setTimeout(() => {
+                    setTimeout(() => {
+                        window.WebViewJavascriptBridge._onHandleIntent(JSON.stringify({
+                            app: {
+                                packageName: 'com.baidu.duershow.h5container'
+                            },
+                            customData: 'ENABLED',
+                            intent: {
+                                name: 'com.baidu.duer.cameraStateChanged'
+                            }
+                        }), () => {});
+                        done();
+                    }, 100);
+                });
+            });
+            botApp.getCameraState(callback);
+            expect(window.WebViewJavascriptBridge.callHandler).toHaveBeenCalledWith('triggerDuerOSCapacity', JSON.stringify({
+                capacityName: 'AI_DUER_SHOW_GET_CAMERA_STATE',
+                params: null
+            }), expect.any(Function));
         });
 
     });

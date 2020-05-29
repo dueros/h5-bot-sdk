@@ -129,6 +129,8 @@ class BotApp {
                         } else {
                             this._registerGestureCb('Recognize gesture failed', null);
                         }
+                    } else if (payload.intent.name === 'com.baidu.duer.cameraStateChanged' && this._getCameraStateCb) {
+                        this._getCameraStateCb(null, payload.customData);
                     } else {
                         this.onHandleIntentCb && this.onHandleIntentCb(payload);
                     }
@@ -761,9 +763,8 @@ class BotApp {
                     capacityName: 'AI_DUER_SHOW_GET_CAMERA_STATE',
                     params: null
                 });
-                bridge.callHandler('triggerDuerOSCapacity', stringData, (state) => {
-                    cb(null, state);
-                });
+                bridge.callHandler('triggerDuerOSCapacity', stringData, () => {});
+                this._getCameraStateCb = cb;
             });
         } else {
             cb(new LowVersionErrorMsg(), null);
