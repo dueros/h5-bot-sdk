@@ -209,6 +209,9 @@ class BotApp {
                     }
                 }
             });
+
+            // 绑定屏幕触摸打点事件
+            this._logTouch();
         }
     }
 
@@ -405,20 +408,19 @@ class BotApp {
                         bridge.callHandler('requestUserAgeInfo', null, (payload) => {
                             payload = JSON.parse(payload);
                             if (payload.status === 0) {
+                                if (Number(payload.data.is_auth) === 0) {
+                                    let link = `dueros://${this.config.skillID}/certification?action=realName`;
+                                    this.uploadLinkClicked({
+                                        url: link,
+                                        initiator: {
+                                            type: 'AUTO_TRIGGER'
+                                        }
+                                    });
+                                }
                                 cb && cb(null, payload.data);
                             } else {
                                 cb && cb(new ServiceError(`logid: ${payload.logid}, ${payload.msg}`), payload.data);
                                 console.error('requireUserAgeInfo has an error: ', payload.logid, payload.msg);
-                            }
-
-                            if (payload.status !== 0 || Number(payload.data.is_auth) === 0) {
-                                let link = `dueros://${this.config.skillID}/certification?action=realName`;
-                                this.uploadLinkClicked({
-                                    url: link,
-                                    initiator: {
-                                        type: 'AUTO_TRIGGER'
-                                    }
-                                });
                             }
                         });
                     });
@@ -932,7 +934,22 @@ class BotApp {
         this._startCommonAdSwitch(true);
     }
 
-
+    _logTouch() {
+        window.addEventListener('touchstart', (e) => {
+            const touchEv = e.touches[0];
+            this.sendEvent({
+                namespace: 'ai.dueros.device_interface.bot_app_sdk',
+                name: 'TouchedDown',
+                needDialogRequestId: false,
+                payload: {
+                    position : {
+                        left: parseInt(touchEv.pageX, 10),
+                        top: parseInt(touchEv.pageY, 10),
+                    },
+                }
+            });
+        }, true);
+    }
 }
 
 module.exports = BotApp;

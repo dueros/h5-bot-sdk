@@ -14,12 +14,12 @@
 
 ### 一个H5应用接入到度秘需要哪些步骤？
 
-* 创建一个技能，<https://dueros.baidu.com/dbp/bot/index#/addbot/0>，选择“自定义”，输入后“确定”，将技能ID发给度秘对接技术
-* 集成本SDK，详见下方**BotApp的引入**
+* 创建一个技能，<https://dueros.baidu.com/dbp/bot/index#/addbot/0>，选择“自定义”目录下的"H5技能"，填写相应参数，创建技能
+* 在你的H5里集成本SDK，详见下方**BotApp的引入**
 * 如果开发者有登录的需求，账号关联流程详见`requireLinkAccount()`
 * 如果开发者有支付的需求，详见`requireCharge()`
 
-### H5游戏想要运行在小度App/小度音箱App上？需要如下工作：
+### <del>H5游戏想要运行在小度App/小度音箱App上？需要如下工作</del>(本渠道已暂停开放)
 
 小度App/小度音箱App上运行的H5游戏需要额外调用以下几个方法才能实现小度有屏音箱上同样的功能：
 
@@ -33,7 +33,7 @@
 * 通过script标签引入(支持https)
 
 ```html
-<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.7.2.js"></script>
+<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.8.1.js"></script>
 ```
 即可在全局环境下获取到`BotApp`对象
 > 使用webpack进行打包的模块化的开发形式参考webpack配置文件中的 [externals配置](https://webpack.js.org/configuration/externals/#externals)
@@ -56,6 +56,7 @@ const botApp = new BotApp({
 > ```
 > 签名Key不能明文暴露，以免造成不必要的风险。
 > 签名Key在DBP平台(<https:/ros.baidu.com/dbp>)技能的基础信息页面
+> 签名必须填写正确，否则技能会在与用户交互时被强制退出
 
 ## isInApp() *1.4+*
 判断当前H5运行环境是否是在小度APP或者小度音箱APP中，以此区分有屏音箱端和手机App端。开发者需以此来判断并使用相应的SDK方法。
