@@ -14,7 +14,8 @@
 
 ### 一个H5应用接入到度秘需要哪些步骤？
 
-* 创建一个技能，<https://dueros.baidu.com/dbp/bot/index#/addbot/0>，选择“自定义”目录下的"H5技能"，填写相应参数，创建技能
+* AndroidApp类型技能尚处于内测阶段，需要进入到[如下页面](https://dueros.baidu.com/dbp/bot/index#/authorization)（若已激活，此步骤可跳过）激活，激活码: 8ea5dfe6-2b25-83d8-0f0b-8285ab6a7869-19c45ea4-6deb-a02d-fd36-410c8bb75e86。
+* 创建一个技能，<https://dueros.baidu.com/dbp/bot/index#/addbot/0>，选择“自定义”目录下的"H5技能"，填写相应参数，创建技能。
 * 在你的H5里集成本SDK，详见下方**BotApp的引入**
 * 如果开发者有登录的需求，账号关联流程详见`requireLinkAccount()`
 * 如果开发者有支付的需求，详见`requireCharge()`
@@ -828,7 +829,7 @@ callback参数
     ```javascript
      botApp.interruptTTS();
     ```
-    
+
 ## getCameraState(callback) *1.8+* `SHOW ONLY`
 获取设备摄像头状态
 
