@@ -1,4 +1,4 @@
-# H5-BOT-SDK *(v1.8.1)*
+# H5-BOT-SDK *(v1.8.2)*
 
 ## 本文档规范
 
@@ -14,7 +14,7 @@
 
 ### 一个H5应用接入到度秘需要哪些步骤？
 
-* AndroidApp类型技能尚处于内测阶段，需要进入到[如下页面](https://dueros.baidu.com/dbp/bot/index#/authorization)（若已激活，此步骤可跳过）激活，激活码: 8ea5dfe6-2b25-83d8-0f0b-8285ab6a7869-19c45ea4-6deb-a02d-fd36-410c8bb75e86。
+* H5类型技能尚处于内测阶段，需要进入到[如下页面](https://dueros.baidu.com/dbp/bot/index#/authorization)（若已激活，此步骤可跳过）激活，激活码: 8ea5dfe6-2b25-83d8-0f0b-8285ab6a7869-19c45ea4-6deb-a02d-fd36-410c8bb75e86。
 * 创建一个技能，<https://dueros.baidu.com/dbp/bot/index#/addbot/0>，选择“自定义”目录下的"H5技能"，填写相应参数，创建技能。
 * 在你的H5里集成本SDK，详见下方**BotApp的引入**
 * 如果开发者有登录的需求，账号关联流程详见`requireLinkAccount()`
@@ -34,7 +34,7 @@
 * 通过script标签引入(支持https)
 
 ```html
-<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.8.1.js"></script>
+<script src="//duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.8.2.js"></script>
 ```
 即可在全局环境下获取到`BotApp`对象
 > 使用webpack进行打包的模块化的开发形式参考webpack配置文件中的 [externals配置](https://webpack.js.org/configuration/externals/#externals)
