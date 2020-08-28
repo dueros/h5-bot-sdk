@@ -26,6 +26,7 @@ tar -zcf html.tar.gz html
 rm -rf html sdk
 
 cd ../
+rm -rf dist
 mkdir dist
 mv output/* dist/
 # ----------分割线
