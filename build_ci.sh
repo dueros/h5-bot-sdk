@@ -20,12 +20,12 @@ mkdir output/sdk
 mkdir output/html
 cp -rf dist/* output/sdk
 cp example/*.html output/html/
-cd output
-tar -zcf sdk.tar.gz sdk
-tar -zcf html.tar.gz html
-rm -rf html sdk
+# cd output
+# tar -zcf sdk.tar.gz sdk
+# tar -zcf html.tar.gz html
+# rm -rf html sdk
 
-cd ../
+# cd ../
 rm -rf dist
 mkdir dist
 mv output/* dist/
