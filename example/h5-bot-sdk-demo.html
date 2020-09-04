@@ -6,8 +6,9 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
-    <script src="//cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>
-    <script src="https://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.8.2.js"></script>
+    <!-- <script src="//cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script> -->
+    <!--<script src="https://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.8.2.js"></script>-->
+    <script src="http://cp01-dengxuening.epc.baidu.com:8080/static/sdk/h5-bot-sdk.1.8.3.js"></script>
     <style>
         button {
             min-width: 120px;
@@ -38,9 +39,12 @@
 <button id="interrupt-tts">打断TTS</button>
 <button id="camera-state">获取摄像头状态</button>
 <button id="send-event">sendEvent</button>
+<button id="p1-speech">开启P1级别语音识别</button>
+<button id="p2-speech">开启P2级别语音识别</button>
 <div id="log"></div>
+<div id="p1-speech-result"></div>
 <script>
-    var vConsole = new VConsole();// 初始化
+    // var vConsole = new VConsole();// 初始化
     var $btnAccount = document.getElementById('applicate-account');
     var $btnPay = document.getElementById('applicate-pay');
     var $btnListen = document.getElementById('applicate-listen');
@@ -60,6 +64,9 @@
     var $interruptTts = document.getElementById('interrupt-tts');
     var $getCameraState = document.getElementById('camera-state');
     var $sendEvent = document.getElementById('send-event');
+    var $p1Speech = document.getElementById('p1-speech');
+    var $p2Speech = document.getElementById('p2-speech');
+    var $p1SpeechResult = document.getElementById('p1-speech-result')
 
     var $log = document.getElementById('log');
 
@@ -76,7 +83,9 @@
         var hour = now.getHours();
         var minu = now.getMinutes();
         var sec = now.getSeconds();
-        var dateStr = '<br>[' + hour + ':' + minu + ':' + sec + ']';
+        var milSec = now.getMilliseconds();
+        var dateStr = '<br>[' + hour + ':' + minu + ':' + sec + '.' + milSec +'] ';
+        // var dateStr = '<br>[' + formatTime(Date.now()) + ']';
         $log.innerHTML += dateStr + type + ' ' + data;
     }
     window.addEventListener('load', function () {
@@ -193,6 +202,7 @@
         $btnListen.onclick = function () {
             log('开始激活聆听');
             botApp.listen();
+
         }
 
         $btnSpeak.onclick = function () {
@@ -350,6 +360,22 @@
             };
             log(data);
             botApp.sendEvent(data);
+        }
+
+        $p1Speech.onclick = function () {
+            log('开始P1级别的语音识别');
+            botApp.onHandleP1SpeechResult(function (err, state) {
+                // log(state);
+                $p1SpeechResult.innerText = 'ennergy: ' + state.energy + ', freq: ' + state.freq;
+            });
+        }
+
+        $p2Speech.onclick = function () {
+            log('开始P2级别语音识别');
+            botApp.onHandleP2SpeechResult(function (err, state) {
+                console.log(state);
+                log(state);
+            });
         }
     });
 

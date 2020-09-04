@@ -7,9 +7,9 @@
  * SHOW设备版本低时的错误
  */
 export class LowVersionErrorMsg {
-    constructor() {
+    constructor(caller) {
         this.code = 1001;
-        this.msg = 'Device version too low';
+        this.msg = `An error occurred while calling the '${caller}': device version too low`;
     }
 }
 
