@@ -20,10 +20,14 @@ mkdir output/sdk
 mkdir output/html
 cp -rf dist/* output/sdk
 cp example/*.html output/html/
-# cd output
-# tar -zcf sdk.tar.gz sdk
-# tar -zcf html.tar.gz html
+
+cd output
+tar -zcf sdk.tar.gz sdk
+tar -zcf html.tar.gz html
 # rm -rf html sdk
+cd ../
+mkdir compatibale_for_orp
+mv output/*.tar.gz compatibale_for_orp/
 
 # cd ../
 rm -rf dist
@@ -43,5 +47,7 @@ cp -r $DIR/dist/* $OPERA_MODULE_DIR/package
 # 打成指定包opera-module.tgz
 tar zcvf $DIR/output/opera-module.tgz -C $OPERA_MODULE_DIR . --exclude build.sh --exclude output --exclude README.md --exclude BCLOUD
 rm -rf $OUTPUT_WORKSPACE_DIR
+mv $DIR/compatibale_for_orp/* $DIR/output/
+rm -rf $DIR/compatibale_for_orp
 rm  -rf ./dist
 echo '**** CI finish ****'
