@@ -1171,21 +1171,19 @@ class BotApp {
     _cancelGameProcessBeatReport() {
         clearInterval(this._gameBeatReportTimer);
     }
-
-
 }
 
 module.exports = BotApp;
 
-// // 专门为游戏试玩开发
-// window.addEventListener('load', function () {
-//     const params = getQuery();
-//     const {random1, signature1, random2, signature2, skillID} = params;
-//     new BotApp({
-//         random1,
-//         signature1,
-//         random2,
-//         signature2,
-//         skillID
-//     })
-// });
+// 专门为游戏开发
+window.addEventListener('load', function () {
+    const params = getQuery();
+    const {random1, signature1, random2, signature2, skillID} = params;
+    new BotApp({
+        random1,
+        signature1,
+        random2,
+        signature2,
+        skillID
+    })
+});
