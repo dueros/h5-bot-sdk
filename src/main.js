@@ -4,7 +4,7 @@
  */
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
-import {isSet, parseH5UrlOrigin} from "./utils";
+import {isSet, parseH5UrlOrigin, getQuery} from "./utils";
 
 
 /**
@@ -26,11 +26,13 @@ class BotApp {
      * @param {string} config.random2 //  必填，随机字符串，长度不限，由开发者自己生成
      * @param {string} config.signature2 // 必填，将(random2 + appkey)的字符串拼接后做MD5运算得出
      * @param {string} config.skillID // 必填，技能ID
+     * @param {string} config.orderZIndex // 选填，H5试玩游戏的订单浮层的zIndex
      */
     constructor (config = {}) {
         this.config = {
             adDisable: true,
             ...config,
+            orderZIndex: config.orderZIndex || 9999
         };
 
         // session期间最多弹出广告2次
@@ -47,6 +49,25 @@ class BotApp {
 
         this._isAdInit = false;
 
+        // 是否手动关闭广告
+        this._isCommonAdSwitchOff = false;
+
+        // 广告是否正在展示
+        this._isCommonAdDisplaying = false;
+        // 有些游戏是http协议的，有些游戏是https协议的
+        this._gameWrapperMsgTarget = 'http://xiaodu.baidu.com';
+        this._gameWrapperHttpsMsgTarget = 'https://xiaodu.baidu.com';
+
+        // 游戏进度心跳定时器
+        this._gameBeatReportTimer = null;
+
+        // 游戏试玩支付iframe
+        this._trialGameOrderIframe = null;
+
+        // 游戏试玩付费弹窗的iframe地址
+        // URL参数需要额外传递
+        this._trialGameOrderIframeUrl = 'https://xiaodu.baidu.com/saiya/sdk/iframe/trial-game-order.html';
+
         this._init();
     }
 
@@ -58,160 +79,289 @@ class BotApp {
             signature2: this.config.signature2
         });
 
-        this._isCommonAdSwitchOff = false; // 是否手动关闭广告
-        this._isCommonAdDisplaying = false; // 广告是否正在展示
-        this._gameWrapperMsgTarget = 'http://xiaodu.baidu.com';
-
         if (this.isInApp()) {
-            window.addEventListener('message', event => {
-                let data = event.data;
-                if (data.type === 'wrapper_location_protocal') {
-                    // 如果检测到父页面是https协议的，则升级为https
-                    if (data.data.indexOf('https') > -1) {
-                        this._gameWrapperMsgTarget = 'https://xiaodu.baidu.com';
-                    }
-                    // 确认链接是否是https之后开始注册
-                    window.parent.postMessage({
-                        type: 'register',
-                        data: this.config
-                    }, this._gameWrapperMsgTarget);
-                }
-
-                if (event.origin === this._gameWrapperMsgTarget) {
-                    console.log('receive h5game-wrapper\'s message ', data);
-                    if (data.type === 'authorized_success' || data.type === 'authorized_fail') {
-                        this._linkAccountResultCb(data);
-                    } else if (data.type === 'bot_info') {
-                        this.registerResult = data.data;
-                        this.registerCallback && this.registerCallback(this.registerResult);
-                        this.registerCallback = null;
-                    } else if (data.type === 'ship') {
-                        this._getShipPayResult && this._getShipPayResult(data.err, data.data);
-                    }
-                }
-            });
+            this._initInXiaoduApp(registerConfig);
         } else {
-            this._getJSBridge(bridge => {
-                bridge.init(function(message, responseCallback) {
-                    var data = {
-                        'Javascript Responds': 'Ready!'
-                    };
-                    console.log('Receive bridge init message from native: ' + message);
-                    responseCallback(data);
-                });
+            this._initInShow(registerConfig);
+        }
+    }
 
-                // Native依赖这几个参数进行身份校验
-                bridge.callHandler('register', registerConfig, payload => {
-                    payload = JSON.parse(payload);
-                    this.registerResult = payload;
-                    this.registerCallback && this.registerCallback(payload);
-                    this.registerCallback = null;
-
-                    if (this.config.skillID) {
-                        this.requireShipping();
-                    }
-                });
-
-                bridge.registerHandler('onHandleIntent',  (payload, callback) => {
-                    payload = JSON.parse(payload);
-                    if (payload.intent.name === 'RenderAdvertisement') {
-                        // _isCommonAdClosed是个开关。因为广告物料的返回是异步的，且有时间间隔
-                        // 如果刚好在网络请求期间用户点击了关闭，然后物料返回
-                        // 了，这时就又会渲染广告，造成关不掉的现象
-                        if (!this.config.adDisable && !this._isCommonAdSwitchOff) {
-                            if (payload.customData) {
-                                this._renderAd(JSON.parse(payload.customData).jsonData);
-                            }
-                        }
-                    } else if (payload.intent.name === 'AI_DUER_SHOW_GESTURE_RECOGNIZED' && this._registerGestureCb) {
-                        if (payload.intent.slots[0]) {
-                            this._registerGestureCb(null, payload.intent.slots[0].value);
-                        } else {
-                            this._registerGestureCb('Recognize gesture failed', null);
-                        }
-                    } else if (payload.intent.name === 'com.baidu.duer.cameraStateChanged' && this._getCameraStateCb) {
-                        this._getCameraStateCb(null, payload.customData);
-                    } else {
-                        this.onHandleIntentCb && this.onHandleIntentCb(payload);
-                    }
-                    callback('js 回调');
-                });
-
-                bridge.registerHandler('onClickLink', (payload, callback) => {
-                    payload = JSON.parse(payload);
-                    if (payload.url === 'http://sdk.bot.dueros.ai?action=unknown_utterance') {
-                        this._handleUnknowUtteranceCb && this._handleUnknowUtteranceCb(null, JSON.parse(payload.params));
-                    } else {
-                        this._onClickLinkCb && this._onClickLinkCb(payload);
-                    }
-                    // 告知app是否处理成功
-                    callback(true);
-                });
+    /**
+     * 在SHOW设备中初始化相关
+     * @private
+     */
+    _initInShow(registerConfig) {
+        this._getJSBridge(bridge => {
+            bridge.init(function(message, responseCallback) {
+                var data = {
+                    'Javascript Responds': 'Ready!'
+                };
+                console.log('Receive bridge init message from native: ' + message);
+                responseCallback(data);
             });
-            this._showVersion = this._parseShowVersion();
 
-            window.addEventListener('message', (event) => {
-                if (event.origin === this._adMsgTarget) {
-                    let data = event.data;
-                    console.log('receive msg from iframe: ', data);
-                    if (data.type === 'ad_load_material') {
-                        if (!this._isCommonAdDisplaying) {
-                            this.config.adDisplayCallback();
-                        } else {
-                            this.config.adSwitchCallback();
-                        }
-                        this._isCommonAdDisplaying = true;
-                        this._execLinkClick(data.data.linkClickUrl.map(url => {
-                            return {
-                                url: url,
-                                initiator: {
-                                    type: 'AUTO_TRIGGER'
-                                }
-                            }
-                        }));
-                    } else if (data.type === 'ad_click') {
-                        this.config.adClickCallback();
-                        this._execLinkClick(data.data.linkClickUrl.map(url => {
-                            return {
-                                url
-                            }
-                        }));
-                        window.addEventListener('touchstart', this._screenTouched, true);
-                        this._pauseCommonAd();
-                    } else if (data.type === 'ad_close') {
-                        this.config.adCloseCallback();
-                        this._execLinkClick(data.data.linkClickUrl.map(url => {
-                            return {
-                                url
-                            }
-                        }));
-                        this._closeCommonAd();
+            // Native依赖这几个参数进行身份校验
+            bridge.callHandler('register', registerConfig, payload => {
+                payload = JSON.parse(payload);
+                this.registerResult = payload;
+                this.registerCallback && this.registerCallback(payload);
+                this.registerCallback = null;
 
-                        // 如果开发者选择广告策略 2
-                        // 则在某一时间之后再次打开
-                        if (this.config.adDisplayStrategy === 'twice') {
-                            // 如果广告打开次数还有剩余
-                            if (this._commonAdShowTimes > 0) {
-                                this._commonAdShowTimes--;
-
-                                // 控制竖屏广告展示在屏幕左侧还是右侧
-                                if (this._lastVerticalAdDisplayIsLeft) {
-                                    this._lastVerticalAdDisplayIsLeft = false;
-                                } else {
-                                    this._lastVerticalAdDisplayIsLeft = true;
-                                }
-                                clearTimeout(this._commonadReshowTimeout);
-                                this._commonadReshowTimeout = setTimeout(() => {
-                                    this._startCommonAdSwitch(true);
-                                }, this._commonAdReopenTimeout);
-                            }
-                        }
-                    }
+                if (this.config.skillID) {
+                    this.requireShipping();
                 }
             });
 
-            // 绑定屏幕触摸打点事件
-            this._logTouch();
+            bridge.registerHandler('onHandleIntent',  (payload, callback) => {
+                payload = JSON.parse(payload);
+                const slots = payload.intent.slots;
+                const intentName = payload.intent.name;
+                if (intentName === 'RenderAdvertisement') {
+                    // _isCommonAdClosed是个开关。因为广告物料的返回是异步的，且有时间间隔
+                    // 如果刚好在网络请求期间用户点击了关闭，然后物料返回
+                    // 了，这时就又会渲染广告，造成关不掉的现象
+                    if (!this.config.adDisable && !this._isCommonAdSwitchOff) {
+                        if (payload.customData) {
+                            this._renderAd(JSON.parse(payload.customData).jsonData);
+                        }
+                    }
+                // 手势识别
+                } else if (intentName === 'AI_DUER_SHOW_GESTURE_RECOGNIZED' && this._registerGestureCb) {
+                    if (slots[0]) {
+                        this._registerGestureCb(null, slots[0].value);
+                    } else {
+                        this._registerGestureCb('Recognize gesture failed', null);
+                    }
+                } else if (intentName === 'com.baidu.duer.cameraStateChanged' && this._getCameraStateCb) {
+                    this._getCameraStateCb(null, payload.customData);
+                } else if (intentName === 'H5gameHeartBeatReport') {
+                    if (slots && slots.length) {
+                        let needReportGameBeat = false;
+                        let gameReportInterval = 60;
+                        slots.forEach(slot => {
+                            if (slot.name === 'needHeartbeatReport') {
+                                if (Number(slot.value) === 1) {
+                                    needReportGameBeat = true;
+                                }
+                            } else if (slot.name === 'timeInterval') {
+                                gameReportInterval = Number(slot.value);
+                            }
+                        });
+                        if (needReportGameBeat) {
+                            this._fireGameProcessBeatReport(gameReportInterval);
+                        } else {
+                            this._cancelGameProcessBeatReport();
+                        }
+                    }
+                // 游戏试玩购买
+                } else if (intentName === 'H5gameTrialStatus') {
+                    if (payload.customData) {
+                        const productData = JSON.parse(payload.customData);
+                        this._renderTrialGameOrder(productData)
+                    }
+                // 试玩游戏购买成功
+                } else if (intentName === 'NotifyBuyStatus') {
+                    let purchaseResult = null;
+                    slots.forEach(slot => {
+                        if (slot.name === 'purchaseResult') {
+                            purchaseResult = slot.value;
+                        }
+                    });
+                    if (purchaseResult === 'SUCCESS') {
+                        this._closeTrialGameOrder();
+                    }
+                } else {
+                    this.onHandleIntentCb && this.onHandleIntentCb(payload);
+                }
+                callback('js 回调');
+            });
+
+            bridge.registerHandler('onClickLink', (payload, callback) => {
+                payload = JSON.parse(payload);
+                if (payload.url === 'http://sdk.bot.dueros.ai?action=unknown_utterance') {
+                    this._handleUnknowUtteranceCb && this._handleUnknowUtteranceCb(null, JSON.parse(payload.params));
+                } else {
+                    this._onClickLinkCb && this._onClickLinkCb(payload);
+                }
+                // 告知app是否处理成功
+                callback(true);
+            });
+
+            this.uploadLinkClicked({
+                url: `dueros://${this.config.skillID}/h5game/getneedheartbeatreport`,
+                initiator: {
+                    type: 'AUTO_TRIGGER'
+                }
+            });
+        });
+        this._showVersion = this._parseShowVersion();
+
+        window.addEventListener('message', (event) => {
+            if (event.origin === this._adMsgTarget) {
+                this._handleAdEvent(event);
+            } else {
+                this._handleGameTryPay(event);
+            }
+        });
+
+        // 绑定屏幕触摸打点事件
+        this._logTouch();
+    }
+
+    /**
+     * 在小度App中初始化
+     * @private
+     */
+    _initInXiaoduApp(registerConfig) {
+        window.addEventListener('message', event => {
+            let data = event.data;
+            if (data.type === 'wrapper_location_protocal') {
+                // 如果检测到父页面是https协议的，则升级为https
+                if (data.data.indexOf('https') > -1) {
+                    this._gameWrapperMsgTarget = this._gameWrapperHttpsMsgTarget;
+                }
+                // 确认链接是否是https之后开始注册
+                window.parent.postMessage({
+                    type: 'register',
+                    data: this.config
+                }, this._gameWrapperMsgTarget);
+            }
+
+            if (event.origin === this._gameWrapperMsgTarget) {
+                console.log('receive h5game-wrapper\'s message ', data);
+                if (data.type === 'authorized_success' || data.type === 'authorized_fail') {
+                    this._linkAccountResultCb(data);
+                } else if (data.type === 'bot_info') {
+                    this.registerResult = data.data;
+                    this.registerCallback && this.registerCallback(this.registerResult);
+                    this.registerCallback = null;
+                } else if (data.type === 'ship') {
+                    this._getShipPayResult && this._getShipPayResult(data.err, data.data);
+                }
+            }
+        });
+    }
+
+    /**
+     * 处理SHOW端H5游戏广告相关的事件处理
+     * @param event
+     * @private
+     */
+    _handleAdEvent(event) {
+        let data = event.data;
+        console.log('receive msg from iframe: ', data);
+        if (data.type === 'ad_load_material') {
+            if (!this._isCommonAdDisplaying) {
+                this.config.adDisplayCallback();
+            } else {
+                this.config.adSwitchCallback();
+            }
+            this._isCommonAdDisplaying = true;
+            this._execLinkClick(data.data.linkClickUrl.map(url => {
+                return {
+                    url: url,
+                    initiator: {
+                        type: 'AUTO_TRIGGER'
+                    }
+                }
+            }));
+        } else if (data.type === 'ad_click') {
+            this.config.adClickCallback();
+            this._execLinkClick(data.data.linkClickUrl.map(url => {
+                return {
+                    url
+                }
+            }));
+            window.addEventListener('touchstart', this._screenTouched, true);
+            this._pauseCommonAd();
+        } else if (data.type === 'ad_close') {
+            this.config.adCloseCallback();
+            this._execLinkClick(data.data.linkClickUrl.map(url => {
+                return {
+                    url
+                }
+            }));
+            this._closeCommonAd();
+
+            // 如果开发者选择广告策略 2
+            // 则在某一时间之后再次打开
+            if (this.config.adDisplayStrategy === 'twice') {
+                // 如果广告打开次数还有剩余
+                if (this._commonAdShowTimes > 0) {
+                    this._commonAdShowTimes--;
+
+                    // 控制竖屏广告展示在屏幕左侧还是右侧
+                    this._lastVerticalAdDisplayIsLeft = !this._lastVerticalAdDisplayIsLeft;
+                    clearTimeout(this._commonadReshowTimeout);
+                    this._commonadReshowTimeout = setTimeout(() => {
+                        this._startCommonAdSwitch(true);
+                    }, this._commonAdReopenTimeout);
+                }
+            }
+        }
+    }
+
+
+    _generateTrialGameUrl(data) {
+        return Object.keys(data).map(k => {
+            return `${k}=${encodeURIComponent(data[k])}`;
+        }).join('&');
+    }
+
+    /**
+     * 展示试玩H5游戏购买相关内容
+     * @param data
+     * @private
+     */
+    _renderTrialGameOrder(data) {
+        if (!this._trialGameOrderIframe) {
+            // 生成URL search字符串
+            const trialGameParam = this._generateTrialGameUrl({
+                ...data,
+                botId: this.config.skillID
+            });
+
+            this._trialGameOrderIframe = document.createElement('iframe');
+            this._trialGameOrderIframe.src = `${this._trialGameOrderIframeUrl}?${trialGameParam}`;
+            this._trialGameOrderIframe.allowTransparency = 'true';
+            this._trialGameOrderIframe.scrolling = 'no';
+            this._trialGameOrderIframe.frameBorder = 0;
+            this._trialGameOrderIframe.style.cssText +=
+                `width: 100%;
+                height: 100%;
+                display: block; 
+                left: 0;
+                top: 0;
+                z-index: ${this.config.orderZIndex};
+                background: rgba(0,0,0,.3);
+                position: fixed;`;
+            document.body.appendChild(this._trialGameOrderIframe);
+        }
+    }
+
+    /**
+     * 试玩游戏购买成功后关闭订单页面
+     * @private
+     */
+    _closeTrialGameOrder() {
+        if (this._trialGameOrderIframe) {
+            document.body.removeChild(this._trialGameOrderIframe);
+        }
+    }
+
+    /**
+     * 处理H5游戏试玩付费相关逻辑
+     * @param event
+     * @private
+     */
+    _handleGameTryPay(event) {
+        const data = event.data;
+        if (data.type === 'cancel_pay') {
+            this.requestClose();
+        } else if (data.type === 'go_pay') {
+            this.uploadLinkClicked({
+                url: data.data.buyUrl,
+            });
         }
     }
 
@@ -433,6 +583,11 @@ class BotApp {
         }
     }
 
+    /**
+     * 请求发货信息。要调用本方法则必须在BotApp初始化时填写skillID，
+     * 并同时使用onHandleIntent()来获取发货信息。
+     * 本方法会在初始化阶段自动调用一次，开发者也可手动调用本方法。
+     */
     requireShipping() {
         if (this.config.skillID) {
             let link = `dueros://${this.config.skillID}/readyForShipping`;
@@ -517,6 +672,14 @@ class BotApp {
         }
     }
 
+    /**
+     * 本方法不同于requireCharge，需要事先在度秘的商品库里注册productId。
+     * callback函数会在返回游戏页面后调用，调用可能会有明显延迟。
+     * 仅用于小度App内部的购买调用
+     *
+     * @param {Object} data
+     * @param {Function} cb
+     */
     requireBuy(data, cb) {
         if (this.isInApp()) {
             if (!data || !data.productId || !data.sellerOrderId) {
@@ -950,6 +1113,52 @@ class BotApp {
             });
         }, true);
     }
+
+    /**
+     * 上报游戏心跳
+     * @private
+     */
+    _reportGameBeat() {
+        this.uploadLinkClicked({
+            url: `dueros://${this.config.skillID}/h5game/heartbeatreport`,
+            initiator: {
+                type: 'AUTO_TRIGGER'
+            }
+        });
+    }
+
+    /**
+     * 游戏进度心跳上报
+     * @param {number} interval 上报间隔，单位m
+     * @private
+     */
+    _fireGameProcessBeatReport(interval = 60) {
+        // 先立刻上报一次游戏心跳
+        this._reportGameBeat();
+        clearInterval(this._gameBeatReportTimer);
+        this._gameBeatReportTimer = setInterval(() => {
+            this._reportGameBeat();
+        }, interval * 1000)
+    }
+
+    _cancelGameProcessBeatReport() {
+        clearInterval(this._gameBeatReportTimer);
+    }
 }
 
 module.exports = BotApp;
+
+// 专门为游戏开发
+window.addEventListener('load', function () {
+    const params = getQuery();
+    const {random1, signature1, random2, signature2, skillID} = params;
+    /* eslint-disable no-new */
+    new BotApp({
+        random1,
+        signature1,
+        random2,
+        signature2,
+        skillID
+    })
+    /* eslint-enable no-new */
+});

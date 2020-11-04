@@ -383,11 +383,22 @@ describe('测试SHOW端BotApp功能', () => {
                 }]
             }
         };
+
+        const adPlaceId = '5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D';
+        const skillID = '699e74f5-b879-1926-1e11-51998f05ea68';
+
+        const adUploadLinkClickData = JSON.stringify({
+            url: `dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?adPlaceId=${adPlaceId}&botId=${skillID}`,
+            initiator: {
+                type: 'AUTO_TRIGGER'
+            }
+        });
+
         beforeAll(() => {
             window.WebViewJavascriptBridge = {
                 init: () => {},
                 callHandler: (name, data, cb) => {
-                    if (name === 'uploadLinkClicked') {
+                    if (name === 'uploadLinkClicked' && data === adUploadLinkClickData) {
                         mockCallUploadLinkClickedHandler(name, data);
                         mockCallUploadLinkClickedHandler.__doneCb();
 
@@ -438,14 +449,14 @@ describe('测试SHOW端BotApp功能', () => {
 
             data = {
                 ...appConfig,
-                skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
+                skillID: skillID
             };
 
             botApp = new BotApp(data);
 
             // 测试广告模块的功能
             botApp.initAd({
-                placeId: '5bnTSA3%2Bk%2FlCppVdt9bzxe%2B7gnZMFYgnMQLXt3dB%2FWFKf4lyam1he4m8ubUrZ0dj2d5T49v1ld1b9JHT%2B6ZhWIp9T6niQuPFPWCZ%2BpOIZhg%3D',
+                placeId: adPlaceId,
                 screenOrientation: 'portrait',
                 zIndex: 9999,
                 displayStrategy: 'twice',
@@ -500,12 +511,7 @@ describe('测试SHOW端BotApp功能', () => {
 
             // 这里先这么不合规的处理下
             mockCallUploadLinkClickedHandler.__doneCb = () => {
-                expect(mockCallUploadLinkClickedHandler).toHaveBeenCalledWith('uploadLinkClicked', JSON.stringify({
-                    url: `dueros://f34646bc-37b4-a9db-361f-48fe7ca8831d/getAdResources?adPlaceId=${botApp.config.adPlaceId}&botId=${botApp.config.skillID}`,
-                    initiator: {
-                        type: 'AUTO_TRIGGER'
-                    }
-                }));
+                expect(mockCallUploadLinkClickedHandler).toHaveBeenCalledWith('uploadLinkClicked', adUploadLinkClickData);
                 done();
             }
         });
