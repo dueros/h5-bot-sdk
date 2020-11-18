@@ -958,6 +958,27 @@ class BotApp {
     }
 
     /**
+     * 上报DCS Event
+     * @param {Function} cb
+     */
+    onBuyStatusChange(cb) {
+        this._validateCallback('getCameraState', cb);
+        // todo: 这里的版本号需要更高
+        if (this._compareShowVersion(this._parseShowVersion(), '1.40.0.0') >= 0) {
+            this._getJSBridge(bridge => {
+                bridge.registerHandler('onBuyStatusChange',  function (payload, callback) {
+                    // payload数据示例
+                    cb(JSON.parse(payload));
+                    // 告知app是否处理成功
+                    callback(true)
+                })
+            });
+        } else {
+            console.error(new LowVersionErrorMsg());
+        }
+    }
+
+    /**
      * 从意图槽位中解析广告物料并渲染广告
      * @param {string} data
      * @private
@@ -1150,21 +1171,21 @@ class BotApp {
     _cancelGameProcessBeatReport() {
         clearInterval(this._gameBeatReportTimer);
     }
+
+
 }
 
 module.exports = BotApp;
 
-// 专门为游戏开发
-window.addEventListener('load', function () {
-    const params = getQuery();
-    const {random1, signature1, random2, signature2, skillID} = params;
-    /* eslint-disable no-new */
-    new BotApp({
-        random1,
-        signature1,
-        random2,
-        signature2,
-        skillID
-    })
-    /* eslint-enable no-new */
-});
+// // 专门为游戏试玩开发
+// window.addEventListener('load', function () {
+//     const params = getQuery();
+//     const {random1, signature1, random2, signature2, skillID} = params;
+//     new BotApp({
+//         random1,
+//         signature1,
+//         random2,
+//         signature2,
+//         skillID
+//     })
+// });
