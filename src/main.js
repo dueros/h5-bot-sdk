@@ -797,15 +797,26 @@ class BotApp {
                 const data = JSON.parse(result).data;
                 if (data.status === 0) {
                     if (level === 1) {
-                        bridge.registerHandler('onHandleP1SpeechResult',  function (state) {
+                        // 由webview直接调用，不走jsBridge逻辑
+                        // 以提升执行效率
+                        window.zw3me3p9zqby80uo_onHandleP1SpeechResult = function (state) {
+                            cb(null, state);
+                        };
+                        /*bridge.registerHandler('onHandleP1SpeechResult',  function (state) {
                             const result = JSON.parse(state);
                             cb(null, result);
-                        });
+                        });*/
                     } else {
-                        bridge.registerHandler('onHandleP2SpeechResult',  function (state) {
+                        window.zw3me3p9zqby80uo_onHandleP2SpeechResult = function (state) {
+                            bridge.registerHandler('onHandleP2SpeechResult',  function (state) {
+                                let content = state.trim(); // 过滤空字符
+                                content.length && cb(null, state.trim());
+                            });
+                        };
+                        /*bridge.registerHandler('onHandleP2SpeechResult',  function (state) {
                             let content = state.trim(); // 过滤空字符
                             content.length && cb(null, state.trim());
-                        });
+                        });*/
                     }
                 } else {
                     cb(new ServiceError(data.msg), null);

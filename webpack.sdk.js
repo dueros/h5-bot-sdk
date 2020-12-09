@@ -22,7 +22,7 @@ module.exports = {
         new webpack.HashedModuleIdsPlugin(),
 
         // 在产出的开头注入版本信息
-        new webpack.BannerPlugin(PACKAGE.name + ' - ' + PACKAGE.version + '-beta01'),
+        new webpack.BannerPlugin(PACKAGE.name + ' - ' + PACKAGE.version + '-beta1'),
     ],
     module: {
         rules: [
