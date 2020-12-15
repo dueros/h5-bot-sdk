@@ -4,13 +4,20 @@
  */
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
-import {isSet, parseH5UrlOrigin, getQuery} from "./utils";
+import {isSet, parseH5UrlOrigin, getQuery, createIframe, encodeObjectDataToUrlData, parseVersionNumber, compareShowVersion} from "./utils";
 
 
 /**
  * @callback requestCallback 一种回调函数(随便定义的名字。。。)
  */
 
+
+const TrialGameAction = {
+    CANCEL_PAY: 'cancel_pay',
+    GO_PAY: 'go_pay',
+    GO_SCRIBE: 'go_scribe',
+    CLOSE_BANNER: 'close_banner'
+};
 
 /**
  * 与Native的交互做了封装
@@ -63,13 +70,15 @@ class BotApp {
         // 游戏进度心跳定时器
         this._gameBeatReportTimer = null;
 
-        // 游戏试玩支付iframe
-        this._trialGameOrderIframe = null;
+        // 游戏试玩支付相关iframe
+        this._trialGameOrderIframeDOM = null;
+
+        // 游戏订阅banner
+        this._trialGameBannerDOM = null;
 
         // 游戏试玩付费弹窗的iframe地址
         // URL参数需要额外传递
         this._trialGameOrderIframeUrl = 'https://xiaodu.baidu.com/saiya/sdk/iframe/trial-game-order.html';
-
         this._init();
     }
 
@@ -147,6 +156,15 @@ class BotApp {
                                 }
                             } else if (slot.name === 'timeInterval') {
                                 gameReportInterval = Number(slot.value);
+                            } else if (slot.name === 'displaySub') {
+                                debugger;
+                                if (Number(slot.value) === 1) {
+                                    console.log('H5gameHeartBeatReport customdata', payload.customData, JSON.parse(payload.customData));
+                                    const {desc, subUrl} = JSON.parse(payload.customData);
+                                    // 这里存起来订阅游戏的linkClick
+                                    this._trialGameSubscribeLink = subUrl;
+                                    this._renderTrialGameBanner({desc});
+                                }
                             }
                         });
                         if (needReportGameBeat) {
@@ -158,6 +176,7 @@ class BotApp {
                 // 游戏试玩购买
                 } else if (intentName === 'H5gameTrialStatus') {
                     if (payload.customData) {
+                        // payload.customData的参数形式：{"payPrice": "支付价格", "image": "展示图片", "video": "展示视频", "productId": "商品id", "sellerOrderId": "订单id", "buyUrl": "支付链接"}
                         const productData = JSON.parse(payload.customData);
                         this._renderTrialGameOrder(productData)
                     }
@@ -188,20 +207,21 @@ class BotApp {
                 // 告知app是否处理成功
                 callback(true);
             });
-
-            this.uploadLinkClicked({
-                url: `dueros://${this.config.skillID}/h5game/getneedheartbeatreport`,
-                initiator: {
-                    type: 'AUTO_TRIGGER'
-                }
-            });
+        });
+        console.log('start init heartbeat');
+        this.uploadLinkClicked({
+            url: `dueros://${this.config.skillID}/h5game/getneedheartbeatreport`,
+            initiator: {
+                type: 'AUTO_TRIGGER'
+            }
         });
         this._showVersion = this._parseShowVersion();
-
         window.addEventListener('message', (event) => {
+            // 如果是广告消息
             if (event.origin === this._adMsgTarget) {
                 this._handleAdEvent(event);
             } else {
+            //  不是广告消息，这儿默认当做游戏试玩相关逻辑处理
                 this._handleGameTryPay(event);
             }
         });
@@ -303,42 +323,79 @@ class BotApp {
         }
     }
 
-
-    _generateTrialGameUrl(data) {
-        return Object.keys(data).map(k => {
-            return `${k}=${encodeURIComponent(data[k])}`;
-        }).join('&');
-    }
-
     /**
      * 展示试玩H5游戏购买相关内容
      * @param data
      * @private
      */
     _renderTrialGameOrder(data) {
-        if (!this._trialGameOrderIframe) {
-            // 生成URL search字符串
-            const trialGameParam = this._generateTrialGameUrl({
+        // 避免重复创建
+        if (this._trialGameOrderIframeDOM) {
+            return;
+        }
+        console.log('game data', data);
+        let payType = Number(data.payType);
+        let trialGameParam = null;
+
+        // 生成URL search字符串
+        if (payType === 1) {
+            trialGameParam = encodeObjectDataToUrlData({
                 ...data,
                 botId: this.config.skillID
             });
-
-            this._trialGameOrderIframe = document.createElement('iframe');
-            this._trialGameOrderIframe.src = `${this._trialGameOrderIframeUrl}?${trialGameParam}`;
-            this._trialGameOrderIframe.allowTransparency = 'true';
-            this._trialGameOrderIframe.scrolling = 'no';
-            this._trialGameOrderIframe.frameBorder = 0;
-            this._trialGameOrderIframe.style.cssText +=
-                `width: 100%;
-                height: 100%;
-                display: block;
-                left: 0;
-                top: 0;
-                z-index: ${this.config.orderZIndex};
-                background: rgba(0,0,0,.3);
-                position: fixed;`;
-            document.body.appendChild(this._trialGameOrderIframe);
+        } else if (payType === 2) {
+            trialGameParam = encodeObjectDataToUrlData({
+                relatedProduct: JSON.stringify(data.relatedProduct),
+                botId: this.config.skillID
+            });
         }
+
+        let iframeBackGround = '';
+        let url = `${this._trialGameOrderIframeUrl}?${trialGameParam}`;
+        // 如果是单品付费
+        if (payType === 1) {
+            iframeBackGround = 'rgba(0, 0, 0, 0.3)';
+        } else {
+            iframeBackGround = 'transparent';
+            url += '#/subscribe';
+        }
+
+        this._trialGameOrderIframeDOM = createIframe({
+            left: 0,
+            top: 0,
+            width: '100%',
+            height: '100%',
+            scrolling: 'yes',
+            zIndex: this.config.orderZIndex,
+            background: iframeBackGround
+        });
+        this._trialGameOrderIframeDOM.src = url;
+        document.body.appendChild(this._trialGameOrderIframeDOM);
+    }
+    /**
+     * 渲染订阅的banner
+     * @param linkClick 订阅的linkClick
+     * @private
+     */
+    _renderTrialGameBanner({desc}) {
+        // 避免重复创建
+        if (this._trialGameBannerDOM) {
+            return;
+        }
+        let dataParams = encodeObjectDataToUrlData({
+            desc
+        });
+        let url = `${this._trialGameOrderIframeUrl}?${dataParams}#/banner`;
+        this._trialGameBannerDOM = createIframe({
+            left: '0',
+            bottom: '0',
+            width: '100%',
+            height: '80px',
+            zIndex: this.config.orderZIndex,
+            background: 'transparent'
+        });
+        this._trialGameBannerDOM.src = url;
+        document.body.appendChild(this._trialGameBannerDOM);
     }
 
     /**
@@ -346,8 +403,18 @@ class BotApp {
      * @private
      */
     _closeTrialGameOrder() {
-        if (this._trialGameOrderIframe) {
-            document.body.removeChild(this._trialGameOrderIframe);
+        if (this._trialGameOrderIframeDOM) {
+            document.body.removeChild(this._trialGameOrderIframeDOM);
+        }
+    }
+
+    /**
+     * 试玩游戏购买成功后关闭提示订阅的banner
+     * @private
+     */
+    _closeTrialGameBanner() {
+        if (this._trialGameBannerDOM) {
+            document.body.removeChild(this._trialGameBannerDOM);
         }
     }
 
@@ -358,12 +425,22 @@ class BotApp {
      */
     _handleGameTryPay(event) {
         const data = event.data;
-        if (data.type === 'cancel_pay') {
+        if (data.type === TrialGameAction.CANCEL_PAY) {
             this.requestClose();
-        } else if (data.type === 'go_pay') {
+        } else if (data.type === TrialGameAction.GO_PAY) {
             this.uploadLinkClicked({
                 url: data.data.buyUrl,
             });
+        } else if (data.type === TrialGameAction.CLOSE_BANNER) {
+            this._closeTrialGameBanner();
+        } else if (data.type === TrialGameAction.GO_SCRIBE) {
+            if (this._trialGameSubscribeLink) {
+                this.uploadLinkClicked({
+                    url: this._trialGameSubscribeLink,
+                });
+            } else {
+                console.error('订阅游戏失败，没有linkClick地址');
+            }
         }
     }
 
@@ -495,58 +572,6 @@ class BotApp {
     }
 
     /**
-     * 提取版本号
-     * @param str
-     * @returns {string|null}
-     * @private
-     */
-    _parseVersionNumber(str) {
-        let reg = null;
-        if (str.indexOf('ContainerVersion') > -1) {
-            reg = /ContainerVersion\/([\d\.]+)/i;
-        } else {
-            reg = /build\/([\d\.]+);/i;
-        }
-        let result = reg.exec(str);
-        if (result) {
-            return result[1];
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * SHOW端设备的版本号对比
-     * @param {string} a 版本号
-     * @param {string} b 版本号
-     * @returns {number} 如果返回0，则表示版本号相同，如果返回1，a版本号大于b版本号，如果返回-1则a版本号小于b
-     * @private
-     */
-    _compareShowVersion(a, b) {
-        let [a1, a2, a3, a4] = String(a).split('.');
-        let [b1, b2, b3, b4] = String(b).split('.');
-        if (a1 > b1) {
-            return 1;
-        } else if (a1 < b1) {
-            return -1;
-        } else if (a2 > b2) {
-            return 1;
-        } else if (a2 < b2) {
-            return -1;
-        } else if (a3 > b3) {
-            return 1;
-        } else if (a3 < b3) {
-            return -1;
-        } else if (a4 > b4) {
-            return 1;
-        } else if (a4 < b4) {
-            return -1;
-        } else {
-            return 0;
-        }
-    }
-
-    /**
      * 获取用户实名认证的年龄段信息
      * SHOW 1.35.0.0及其以后的版本可用
      *
@@ -558,7 +583,7 @@ class BotApp {
             return;
         } else {
             this._validateCallback('requireUserAgeInfo', cb);
-            if (this._compareShowVersion(this._parseShowVersion(), '1.35.0.0') >= 0) {
+            if (compareShowVersion(this._parseShowVersion(), '1.35.0.0') >= 0) {
                 if (this.config.skillID) {
                     this._getJSBridge(bridge => {
                         bridge.callHandler('requestUserAgeInfo', null, (payload) => {
@@ -846,7 +871,7 @@ class BotApp {
 
     onDialogStateChanged(cb) {
         this._validateCallback('onDialogStateChanged', cb);
-        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 bridge.registerHandler('onDialogStateChanged',  function (state, callback) {
                     let payload = JSON.parse(state);
@@ -861,7 +886,7 @@ class BotApp {
 
     onHandleUnknowUtterance(cb) {
         this._validateCallback('onHandleUnknowUtterance', cb);
-        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._handleUnknowUtteranceCb = cb;
         } else {
             cb(new LowVersionErrorMsg(), null);
@@ -870,7 +895,7 @@ class BotApp {
 
     canGoBack(cb) {
         this._validateCallback('canGoBack', cb);
-        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 bridge.callHandler('canGoBack', null, (payload) => {
                     payload = JSON.parse(payload);
@@ -892,7 +917,7 @@ class BotApp {
         if (!Array.isArray(data)) {
             throw new Error('data must be a `Array`');
         }
-        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 const stringData = JSON.stringify({
                     capacityName: 'AI_DUER_SHOW_GESTURE_REGISTER',
@@ -909,7 +934,7 @@ class BotApp {
     }
 
     interruptTTS() {
-        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 const stringData = JSON.stringify({
                     capacityName: 'AI_DUER_SHOW_INTERRPT_TTS',
@@ -928,7 +953,7 @@ class BotApp {
      */
     getCameraState(cb) {
         this._validateCallback('getCameraState', cb);
-        if (this._compareShowVersion(this._parseShowVersion(), '1.39.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.39.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 const stringData = JSON.stringify({
                     capacityName: 'AI_DUER_SHOW_GET_CAMERA_STATE',
@@ -947,7 +972,7 @@ class BotApp {
      * @param data
      */
     sendEvent(data) {
-        if (this._compareShowVersion(this._parseShowVersion(), '1.40.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.40.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 const stringData = JSON.stringify(data);
                 bridge.callHandler('sendEvent', stringData, () => {});
@@ -988,7 +1013,12 @@ class BotApp {
         let serverAdIframeAddr = decodeURIComponent(_data.props.htmlAddress);
         if (_data.status === 0) {
             if (!this._adIframe1) {
-                this._adIframe1 = document.createElement('iframe');
+                this._adIframe1 = createIframe({
+                    width: 0,
+                    height: 0,
+                    zIndex: this.config.adZIndex,
+                    background: 'transparent'
+                });
                 let adIframeQuery = encodeURIComponent(parseH5UrlOrigin(window.location.href));
                 if (this.config._duerosDebugadIframeUrl) {
                     this._adIframe1BaseUrl = this.config._duerosDebugadIframeUrl;
@@ -1006,11 +1036,7 @@ class BotApp {
                 }
 
                 this._adIframe1.src = adIframeUrl;
-                this._adIframe1.scrolling = 'no';
-                this._adIframe1.frameBorder = 0;
-                this._adIframe1.allowTransparency = 'true';
                 document.body.appendChild(this._adIframe1);
-                this._adIframe1.style.cssText += `display: block; z-index: ${this.config.adZIndex};position: fixed; background-color=transparent;`;
             } else if (!this.config._duerosDebugadIframeUrl && this._adIframe1BaseUrl !== serverAdIframeAddr) {
                 document.body.removeChild(this._adIframe1);
                 this._adIframe1Loaded = false;
@@ -1185,5 +1211,5 @@ window.addEventListener('load', function () {
         random2,
         signature2,
         skillID
-    })
+    });
 });
