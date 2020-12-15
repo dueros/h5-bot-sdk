@@ -345,13 +345,6 @@ class BotApp {
         }
     }
 
-
-    _generateTrialGameUrl(data) {
-        return Object.keys(data).map(k => {
-            return `${k}=${encodeURIComponent(data[k])}`;
-        }).join('&');
-    }
-
     /**
      * 展示试玩H5游戏购买相关内容
      * @param data
@@ -434,6 +427,43 @@ class BotApp {
         } else {
             console.warn('_tryPostMessageToTrialGameSubscribeBanner: 试玩游戏的订阅Banner不存在，消息发送失败');
         }
+
+        this._trialGameOrderIframeDOM = createIframe({
+            left: 0,
+            top: 0,
+            width: '100%',
+            height: '100%',
+            scrolling: 'yes',
+            zIndex: this.config.orderZIndex,
+            background: iframeBackGround
+        });
+        this._trialGameOrderIframeDOM.src = url;
+        document.body.appendChild(this._trialGameOrderIframeDOM);
+    }
+    /**
+     * 渲染订阅的banner
+     * @param linkClick 订阅的linkClick
+     * @private
+     */
+    _renderTrialGameBanner({desc}) {
+        // 避免重复创建
+        if (this._trialGameBannerDOM) {
+            return;
+        }
+        let dataParams = encodeObjectDataToUrlData({
+            desc
+        });
+        let url = `${this._trialGameOrderIframeUrl}?${dataParams}#/banner`;
+        this._trialGameBannerDOM = createIframe({
+            left: '0',
+            bottom: '0',
+            width: '100%',
+            height: '80px',
+            zIndex: this.config.orderZIndex,
+            background: 'transparent'
+        });
+        this._trialGameBannerDOM.src = url;
+        document.body.appendChild(this._trialGameBannerDOM);
     }
 
     /**
