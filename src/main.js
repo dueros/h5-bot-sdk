@@ -322,13 +322,6 @@ class BotApp {
         }
     }
 
-
-    _generateTrialGameUrl(data) {
-        return Object.keys(data).map(k => {
-            return `${k}=${encodeURIComponent(data[k])}`;
-        }).join('&');
-    }
-
     /**
      * 展示试玩H5游戏购买相关内容
      * @param data
