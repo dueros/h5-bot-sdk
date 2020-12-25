@@ -788,54 +788,90 @@ class BotApp {
         }
     }
 
+    // initSpeechTranscriber(level) {
+    //     this._getJSBridge(bridge => {
+    //         bridge.callHandler('initSpeechTranscriber',  JSON.stringify({level}));
+    //     });
+    // }
+
+    // startSpeechTranscriber() {
+    //     this._getJSBridge(bridge => {
+    //         bridge.callHandler('startSpeechTranscriber', null, function (result) {
+    //             const data = JSON.parse(result).data;
+    //             if (data.status !== 0) {
+    //                 throw new Error('startSpeechTranscriber: Start speechTranscriber failed');
+    //             }
+    //         });
+    //     });
+    // }
+
+    // stopSpeechTranscriber() {
+    //     this._getJSBridge(bridge => {
+    //         bridge.callHandler('stopSpeechTranscriber', null, function () {});
+    //     });
+    // }
+
     _handleLocalSpeechResult(level, cb) {
-        console.log('_handleLocalSpeechResult', level);
         level = Number(level);
+
         this._getJSBridge(bridge => {
             bridge.callHandler('initSpeechTranscriber',  JSON.stringify({level}));
             bridge.callHandler('startSpeechTranscriber', null, function (result) {
                 const data = JSON.parse(result).data;
-                if (data.status === 0) {
-                    if (level === 1) {
-                        // 由webview直接调用，不走jsBridge逻辑
-                        // 以提升执行效率
-                        window.zw3me3p9zqby80uo_onHandleP1SpeechResult = function (state) {
-                            cb(null, state);
-                        };
-                        /*bridge.registerHandler('onHandleP1SpeechResult',  function (state) {
-                            const result = JSON.parse(state);
-                            cb(null, result);
-                        });*/
-                    } else {
-                        window.zw3me3p9zqby80uo_onHandleP2SpeechResult = function (state) {
-                            bridge.registerHandler('onHandleP2SpeechResult',  function (state) {
-                                let content = state.trim(); // 过滤空字符
-                                content.length && cb(null, state.trim());
-                            });
-                        };
-                        /*bridge.registerHandler('onHandleP2SpeechResult',  function (state) {
-                            let content = state.trim(); // 过滤空字符
-                            content.length && cb(null, state.trim());
-                        });*/
-                    }
-                } else {
-                    cb(new ServiceError(data.msg), null);
+                if (data.status !== 0) {
+                    throw new Error('startSpeechTranscriber: Start speechTranscriber failed');
                 }
             });
         });
+        if (this._compareShowVersion(this._parseShowVersion(), '1.45.0.1') >= 0) {
+            console.log('handleSpeechResult mode: webview call');
+            if (level === 1) {
+                // 由webview直接调用，不走jsBridge逻辑以提升执行效率
+                window.zw3me3p9zqby80uo_onHandleP1SpeechResult = function (state) {
+                    cb(null, state);
+                };
+            } else {
+                window.zw3me3p9zqby80uo_onHandleP2SpeechResult = function (state) {
+                    let content = state && state.trim() || ''; // 过滤空字符
+                    content.length && cb(null, content);
+                };
+            }
+        } else if (this._compareShowVersion(this._parseShowVersion(), '1.45.0.0') === 0) {
+            console.log('handleSpeechResult mode: js-bridge call');
+            if (level === 1) {
+                this._getJSBridge(bridge => {
+                    bridge.registerHandler('onHandleP1SpeechResult',  function (state) {
+                        const result = JSON.parse(state);
+                        cb(null, result);
+                    });
+                });
+            } else {
+                this._getJSBridge(bridge => {
+                    bridge.registerHandler('onHandleP2SpeechResult',  function (state) {
+                        let content = state && state.trim() || ''; // 过滤空字符
+                        content.length && cb(null, content);
+                    });
+                });
+            }
+        }
+
     }
 
     onHandleP1SpeechResult(cb) {
         this._validateCallback('onHandleP1SpeechResult', cb);
         // todo: 版本判断
-        this._handleLocalSpeechResult(1, cb);
+        if (this._compareShowVersion(this._parseShowVersion(), '1.45.0.0') >= 0) {
+            this._handleLocalSpeechResult(1, cb);
+        } else {
+            console.error(new LowVersionErrorMsg('onHandleP1SpeechResult'));
+        }
     }
 
-    onHandleP2SpeechResult(cb) {
-        this._validateCallback('onHandleP2SpeechResult', cb);
-        // todo: 版本判断
-        this._handleLocalSpeechResult(2, cb);
-    }
+    // onHandleP2SpeechResult(cb) {
+    //     this._validateCallback('onHandleP2SpeechResult', cb);
+    //     // todo: 版本判断
+    //     this._handleLocalSpeechResult(2, cb);
+    // }
 
     /**
      * 从意图槽位中解析广告物料并渲染广告
