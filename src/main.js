@@ -4,7 +4,10 @@
  */
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
-import {isSet, parseH5UrlOrigin, getQuery, createIframe, encodeObjectDataToUrlData, parseVersionNumber, compareShowVersion} from "./utils";
+import {isSet, parseH5UrlOrigin, getQuery,
+    createIframe, encodeObjectDataToUrlData,
+    parseVersionNumber, compareShowVersion,
+    parseIntentSlots} from "./utils";
 
 
 /**
@@ -16,7 +19,8 @@ const TrialGameAction = {
     CANCEL_PAY: 'cancel_pay',
     GO_PAY: 'go_pay',
     GO_SCRIBE: 'go_scribe',
-    CLOSE_BANNER: 'close_banner'
+    CLOSE_BANNER: 'close_banner',
+    REFRESH_BANNER_TEXT: 'refresh_banner_text' // 刷新试玩游戏订阅付费banner的文案
 };
 
 /**
@@ -79,6 +83,10 @@ class BotApp {
         // 游戏试玩付费弹窗的iframe地址
         // URL参数需要额外传递
         this._trialGameOrderIframeUrl = 'https://xiaodu.baidu.com/saiya/sdk/iframe/trial-game-order.html';
+
+        // 试玩游戏相关Iframe的用于postMessage的origin
+        this._trialGameMsgTarget = parseH5UrlOrigin(this._trialGameOrderIframeUrl);
+
         this._init();
     }
 
@@ -149,24 +157,23 @@ class BotApp {
                     if (slots && slots.length) {
                         let needReportGameBeat = false;
                         let gameReportInterval = 60;
-                        slots.forEach(slot => {
-                            if (slot.name === 'needHeartbeatReport') {
-                                if (Number(slot.value) === 1) {
-                                    needReportGameBeat = true;
-                                }
-                            } else if (slot.name === 'timeInterval') {
-                                gameReportInterval = Number(slot.value);
-                            } else if (slot.name === 'displaySub') {
-                                debugger;
-                                if (Number(slot.value) === 1) {
-                                    console.log('H5gameHeartBeatReport customdata', payload.customData, JSON.parse(payload.customData));
-                                    const {desc, subUrl} = JSON.parse(payload.customData);
-                                    // 这里存起来订阅游戏的linkClick
-                                    this._trialGameSubscribeLink = subUrl;
-                                    this._renderTrialGameBanner({desc});
-                                }
+                        let slotsMap = parseIntentSlots(slots);
+                        if (slotsMap.has('needHeartbeatReport')) {
+                            if (Number(slotsMap.get('needHeartbeatReport')) === 1) {
+                                needReportGameBeat = true;
                             }
-                        });
+                        }
+                        if (slotsMap.has('timeInterval')) {
+                            gameReportInterval = Number(slotsMap.get('timeInterval'));
+                        }
+                        if (slotsMap.has('displaySub')) {
+                            if (Number(slotsMap.get('displaySub')) === 1) {
+                                const {desc, subUrl} = JSON.parse(payload.customData);
+                                // 这里存起来订阅游戏的linkClick
+                                this._trialGameSubscribeLink = subUrl;
+                                this._renderTrialGameSubscribeBanner({desc});
+                            }
+                        }
                         if (needReportGameBeat) {
                             this._fireGameProcessBeatReport(gameReportInterval);
                         } else {
@@ -175,21 +182,37 @@ class BotApp {
                     }
                 // 游戏试玩购买
                 } else if (intentName === 'H5gameTrialStatus') {
-                    if (payload.customData) {
-                        // payload.customData的参数形式：{"payPrice": "支付价格", "image": "展示图片", "video": "展示视频", "productId": "商品id", "sellerOrderId": "订单id", "buyUrl": "支付链接"}
-                        const productData = JSON.parse(payload.customData);
+                    const productData = payload.customData
+                        ? JSON.parse(payload.customData)
+                        : null;
+                    let slotsMap = parseIntentSlots(slots);
+                    if (slotsMap.has('needPay')
+                        && (Number(slotsMap.get('needPay')) === 1)
+                        && productData
+                    ) {
+                        // payload.customData的参数形式：{"payPrice": "支付价格",
+                        // "image": "展示图片", "video": "展示视频",
+                        // "productId": "商品id", "sellerOrderId":
+                        // "订单id", "buyUrl": "支付链接"}
                         this._renderTrialGameOrder(productData)
+                    }
+                    if (productData && productData.desc) {
+                        // 用于刷新订阅Banner的文案，一般用于动态更新试玩时间倒计时
+                        this._tryPostMessageToTrialGameSubscribeBanner({
+                            type: TrialGameAction.REFRESH_BANNER_TEXT,
+                            data: productData.desc
+                        });
                     }
                 // 试玩游戏购买成功
                 } else if (intentName === 'NotifyBuyStatus') {
                     let purchaseResult = null;
-                    slots.forEach(slot => {
-                        if (slot.name === 'purchaseResult') {
-                            purchaseResult = slot.value;
-                        }
-                    });
+                    let slotsMap = parseIntentSlots(slots);
+                    if (slotsMap.has('purchaseResult')) {
+                        purchaseResult = slotsMap.get('purchaseResult');
+                    }
                     if (purchaseResult === 'SUCCESS') {
                         this._closeTrialGameOrder();
+                        this._closeTrialGameBanner();
                     }
                 } else {
                     this.onHandleIntentCb && this.onHandleIntentCb(payload);
@@ -376,7 +399,7 @@ class BotApp {
      * @param linkClick 订阅的linkClick
      * @private
      */
-    _renderTrialGameBanner({desc}) {
+    _renderTrialGameSubscribeBanner({desc}) {
         // 避免重复创建
         if (this._trialGameBannerDOM) {
             return;
@@ -397,6 +420,15 @@ class BotApp {
         document.body.appendChild(this._trialGameBannerDOM);
     }
 
+    // 尝试向试玩游戏的订阅banner发送消息
+    _tryPostMessageToTrialGameSubscribeBanner(data) {
+        if (this._trialGameBannerDOM) {
+            this._trialGameBannerDOM.contentWindow.postMessage(data, this._trialGameMsgTarget)
+        } else {
+            console.warn('_tryPostMessageToTrialGameSubscribeBanner: 试玩游戏的订阅Banner不存在，消息发送失败');
+        }
+    }
+
     /**
      * 试玩游戏购买成功后关闭订单页面
      * @private
@@ -404,6 +436,7 @@ class BotApp {
     _closeTrialGameOrder() {
         if (this._trialGameOrderIframeDOM) {
             document.body.removeChild(this._trialGameOrderIframeDOM);
+            this._trialGameOrderIframeDOM = null;
         }
     }
 
@@ -414,6 +447,7 @@ class BotApp {
     _closeTrialGameBanner() {
         if (this._trialGameBannerDOM) {
             document.body.removeChild(this._trialGameBannerDOM);
+            this._trialGameBannerDOM = null;
         }
     }
 

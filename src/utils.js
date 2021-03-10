@@ -88,7 +88,7 @@ export function createIframe({left = 'auto', top = 'auto', right = 'auto',
     iframe.style.cssText +=
         `width: ${width};
         height: ${height};
-        display: block; 
+        display: block;
         left: ${left};
         top: ${top};
         right: ${right};
@@ -149,4 +149,21 @@ export function compareShowVersion(a, b) {
     } else {
         return 0;
     }
+}
+
+/**
+ * 解析意图槽位值为一个映射关系
+ * @param slots
+ * @returns {Map<any, any>}
+ */
+export function parseIntentSlots(slots) {
+    let mp = new Map();
+    if (Array.isArray(slots)) {
+        slots.forEach(slt => {
+            mp.set(slt.name, slt.value);
+        });
+    } else {
+        console.warn('parseIntentSlots: slots is not an Array type');
+    }
+    return mp;
 }
