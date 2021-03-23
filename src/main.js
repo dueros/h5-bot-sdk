@@ -7,7 +7,7 @@ import {LowVersionErrorMsg, ServiceError} from './errors';
 import {isSet, parseH5UrlOrigin, getQuery,
     createIframe, encodeObjectDataToUrlData,
     parseVersionNumber, compareShowVersion,
-    parseIntentSlots} from "./utils";
+    parseIntentSlots, postMessageToIframe} from "./utils";
 
 
 /**
@@ -20,7 +20,8 @@ const TrialGameAction = {
     GO_PAY: 'go_pay',
     GO_SCRIBE: 'go_scribe',
     CLOSE_BANNER: 'close_banner',
-    REFRESH_BANNER_TEXT: 'refresh_banner_text' // 刷新试玩游戏订阅付费banner的文案
+    REFRESH_BANNER_TEXT: 'refresh_banner_text', // 刷新试玩游戏订阅付费banner的文案
+    REFRESH_ORDER_PARAMS: 'refresh_order_params' // 更新订单阻断页相关字段
 };
 
 /**
@@ -182,6 +183,10 @@ class BotApp {
                     }
                 // 游戏试玩购买
                 } else if (intentName === 'H5gameTrialStatus') {
+                    // payload.customData的参数形式：{"payPrice": "支付价格",
+                    // "image": "展示图片", "video": "展示视频",
+                    // "productId": "商品id", "sellerOrderId":
+                    // "订单id", "buyUrl": "支付链接"}
                     const productData = payload.customData
                         ? JSON.parse(payload.customData)
                         : null;
@@ -190,11 +195,22 @@ class BotApp {
                         && (Number(slotsMap.get('needPay')) === 1)
                         && productData
                     ) {
-                        // payload.customData的参数形式：{"payPrice": "支付价格",
-                        // "image": "展示图片", "video": "展示视频",
-                        // "productId": "商品id", "sellerOrderId":
-                        // "订单id", "buyUrl": "支付链接"}
-                        this._renderTrialGameOrder(productData)
+                        // 当为0元购时，直接触发付款二维码
+                        // http://wiki.baidu.com/pages/viewpage.action?pageId=1264960061
+                        if (Number(productData.payType) === 3) {
+
+                            // 本属性仅用于0元购相关
+                            this._buyUrl = productData.relatedProduct[0].buyUrl;
+                            this._firePayDialog();
+
+                            // 在0元购模式下，由于没有阻断页，用户从二维码付款页面返回后
+                            // 还能继续玩游戏为了组织用户继续游戏当用户触摸屏幕时
+                            // 再次进入付款二维码页面从而组织用户继续游戏
+                            window.addEventListener('touchstart', this._firePayDialog, true);
+                        } else {
+                            // 展示付费阻断页
+                            this._renderTrialGameOrder(productData)
+                        }
                     }
                     if (productData && productData.desc) {
                         // 用于刷新订阅Banner的文案，一般用于动态更新试玩时间倒计时
@@ -213,6 +229,7 @@ class BotApp {
                     if (purchaseResult === 'SUCCESS') {
                         this._closeTrialGameOrder();
                         this._closeTrialGameBanner();
+                        window.removeEventListener('touchstart', this._firePayDialog, true);
                     }
                 } else {
                     this.onHandleIntentCb && this.onHandleIntentCb(payload);
@@ -250,6 +267,15 @@ class BotApp {
 
         // 绑定屏幕触摸打点事件
         this._logTouch();
+    }
+
+    _firePayDialog = () => {
+        this.uploadLinkClicked({
+            url: this._buyUrl,
+            initiator: {
+                type: 'AUTO_TRIGGER'
+            }
+        });
     }
 
     /**
@@ -357,29 +383,14 @@ class BotApp {
         }
         console.log('game data', data);
         let payType = Number(data.payType);
-        let trialGameParam = null;
-
-        // 生成URL search字符串
-        if (payType === 1) {
-            trialGameParam = encodeObjectDataToUrlData({
-                ...data,
-                botId: this.config.skillID
-            });
-        } else if (payType === 2) {
-            trialGameParam = encodeObjectDataToUrlData({
-                relatedProduct: JSON.stringify(data.relatedProduct),
-                botId: this.config.skillID
-            });
-        }
-
         let iframeBackGround = '';
-        let url = `${this._trialGameOrderIframeUrl}?${trialGameParam}`;
+        let url = this._trialGameOrderIframeUrl;
         // 如果是单品付费
         if (payType === 1) {
             iframeBackGround = 'rgba(0, 0, 0, 0.3)';
         } else {
             iframeBackGround = 'transparent';
-            url += '#/subscribe';
+            url += '#/subscribeV2';
         }
 
         this._trialGameOrderIframeDOM = createIframe({
@@ -393,6 +404,10 @@ class BotApp {
         });
         this._trialGameOrderIframeDOM.src = url;
         document.body.appendChild(this._trialGameOrderIframeDOM);
+        this._tryPostMessageToTrialGameOrder({
+            relatedProduct: data.relatedProduct,
+            botId: this.config.skillID
+        });
     }
     /**
      * 渲染订阅的banner
@@ -422,11 +437,12 @@ class BotApp {
 
     // 尝试向试玩游戏的订阅banner发送消息
     _tryPostMessageToTrialGameSubscribeBanner(data) {
-        if (this._trialGameBannerDOM) {
-            this._trialGameBannerDOM.contentWindow.postMessage(data, this._trialGameMsgTarget)
-        } else {
-            console.warn('_tryPostMessageToTrialGameSubscribeBanner: 试玩游戏的订阅Banner不存在，消息发送失败');
-        }
+        postMessageToIframe(this._trialGameBannerDOM, this._trialGameMsgTarget, data);
+    }
+
+    // 向游戏付费的阻断页发送消息
+    _tryPostMessageToTrialGameOrder(data) {
+        postMessageToIframe(this._trialGameOrderIframeDOM, this._trialGameMsgTarget, data);
     }
 
     /**

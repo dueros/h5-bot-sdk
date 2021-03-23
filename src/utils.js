@@ -167,3 +167,22 @@ export function parseIntentSlots(slots) {
     }
     return mp;
 }
+
+/**
+ * 向页面内的iframe窗口发送postMessage消息
+ * @param {HTMLDocument} iframeDOM 消息接受者的iframe ODM
+ * @param {string} msgTarget 消息接受者的origin
+ * @param {Any} data
+ */
+export function postMessageToIframe(iframeDOM, msgTarget, data) {
+    if (iframeDOM) {
+        // 防止iframe还未加载完毕的的情况
+        // 发送消息导致消息无法送到
+        iframeDOM.onload = () => {
+            iframeDOM.contentWindow.postMessage(data, msgTarget)
+        }
+        iframeDOM.contentWindow.postMessage(data, msgTarget)
+    } else {
+        console.error('postMessageToIframe: iframeDOM不存在');
+    }
+}
