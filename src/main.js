@@ -1246,19 +1246,46 @@ class BotApp {
     _cancelGameProcessBeatReport() {
         clearInterval(this._gameBeatReportTimer);
     }
+
+    /**
+     * 将base64的头部剔除，例如 'data:image/png;base64,iVBORw0KGgoAAAANSUhE'
+     * 剔除后变为：'iVBORw0KGgoAAAANSUhE'
+     * @param base64Str
+     * @returns {string}
+     * @private
+     */
+    _slicevBase64Header(base64Str) {
+        const keyword = 'base64,';
+        const startIndex = base64Str.indexOf(keyword) + keyword.length;
+        return base64Str.substr(startIndex);
+    }
+
+    /**
+     * 上传base64编码过的图片
+     * @param base64Image
+     * @param cb
+     */
+    uploadImage(base64Image, cb) {
+        this._getJSBridge(bridge => {
+            const substrBase64 = this._slicevBase64Header(base64Image);
+            bridge.callHandler('uploadImage', base64Image, (payload) => {
+                cb(JSON.parse(payload));
+            });
+        });
+    }
 }
 
 module.exports = BotApp;
 
-// 专门为游戏开发
-window.addEventListener('load', function () {
-    const params = getQuery();
-    const {random1, signature1, random2, signature2, skillID} = params;
-    new BotApp({
-        random1,
-        signature1,
-        random2,
-        signature2,
-        skillID
-    });
-});
+// // 专门为游戏开发
+// window.addEventListener('load', function () {
+//     const params = getQuery();
+//     const {random1, signature1, random2, signature2, skillID} = params;
+//     new BotApp({
+//         random1,
+//         signature1,
+//         random2,
+//         signature2,
+//         skillID
+//     });
+// });

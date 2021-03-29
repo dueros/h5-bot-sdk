@@ -39,6 +39,7 @@
 <button id="interrupt-tts">打断TTS</button>
 <button id="camera-state">获取摄像头状态</button>
 <button id="send-event">sendEvent</button>
+<button id="upload-image">上传图片</button>
 <div id="log"></div>
 <script>
     // var vConsole = new VConsole();// 初始化
@@ -61,6 +62,7 @@
     var $interruptTts = document.getElementById('interrupt-tts');
     var $getCameraState = document.getElementById('camera-state');
     var $sendEvent = document.getElementById('send-event');
+    var $uploadImage = document.getElementById('upload-image');
 
     var $log = document.getElementById('log');
 
@@ -358,6 +360,14 @@
             };
             log(data);
             botApp.sendEvent(data);
+        }
+
+        $uploadImage.onclick = function () {
+            log('开始上传图片');
+            const img = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAAA1BMVEX6+b1vh14ZAAAACklEQVQI12MAAgAABAABINItbwAAAABJRU5ErkJggg==`;
+            botApp.uploadImage(img, function (result) {
+                log('图片上传结果' + result);
+            });
         }
     });
 
