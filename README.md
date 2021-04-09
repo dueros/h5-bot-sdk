@@ -136,9 +136,13 @@ botApp.onLinkAccountSuccess(function (payload) {
     console.log(payload);
     // 结果如下：
     {
-        token: '13782f3d-05cd-802d-f0a9-92bb0ac572c8',
         app:{
-            accessToken: '21.15a2c2cd345816f2e51f9eae6e3d1f03.2592000.1566035530.2050908969-9943593'
+            "accessToken": "{{string}}",
+                "apiAccessToken":"{{string}}",
+                "syncLocalStorage":"{{boolean}}",
+                "userId": "{{string}}",
+                "deviceId": "{{string}}",
+                "deepUrl":"{{string}}"
         }
     }
 })
@@ -158,7 +162,12 @@ botApp.getRegisterResult(function (data) {
      console.log(data);
     // 打印结果如下：
     {
-        accessToken: '21.15a2c2cd345816f2e51f9eae6e3d1f03.2592000.1566035530.2050908969-9943593'
+        "accessToken": "{{string}}",
+        "apiAccessToken":"{{string}}",
+        "syncLocalStorage":"{{boolean}}",
+        "userId": "{{string}}",
+        "deviceId": "{{string}}",
+        "deepUrl":"{{string}}"
     }
 })
 ```
