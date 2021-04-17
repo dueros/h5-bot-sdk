@@ -27,8 +27,10 @@ class BotApp {
      * @param {string} config.signature2 // 必填，将(random2 + appkey)的字符串拼接后做MD5运算得出
      * @param {string} config.skillID // 必填，技能ID
      * @param {string} config.orderZIndex // 选填，H5试玩游戏的订单浮层的zIndex
+     * @param {Object} config._JsBridgeForUnitTest // 禁止使用，仅用于单元测试
      */
     constructor (config = {}) {
+        this._JsBridgeForUnitTest = config._JsBridgeForUnitTest;
         this.config = {
             adDisable: true,
             ...config,
@@ -329,7 +331,7 @@ class BotApp {
             this._trialGameOrderIframe.style.cssText +=
                 `width: 100%;
                 height: 100%;
-                display: block; 
+                display: block;
                 left: 0;
                 top: 0;
                 z-index: ${this.config.orderZIndex};
@@ -366,12 +368,16 @@ class BotApp {
     }
 
     _getJSBridge(cb) {
-        if (window.WebViewJavascriptBridge) {
-            cb(window.WebViewJavascriptBridge);
+        if (this._JsBridgeForUnitTest) {
+            return cb(this._JsBridgeForUnitTest);
         } else {
-            document.addEventListener('WebViewJavascriptBridgeReady', () => {
-                cb(WebViewJavascriptBridge);
-            }, false);
+            if (window.WebViewJavascriptBridge) {
+                cb(window.WebViewJavascriptBridge);
+            } else {
+                document.addEventListener('WebViewJavascriptBridgeReady', () => {
+                    cb(WebViewJavascriptBridge);
+                }, false);
+            }
         }
     }
 
@@ -474,11 +480,11 @@ class BotApp {
      * @returns {string}
      * @private
      */
-    _parseShowVersion() {
+    _parseShowVersion(userAgent) {
         if (this._showVersion) {
             return this._showVersion;
         }
-        let ua = navigator.userAgent;
+        let ua = userAgent ? userAgent : navigator.userAgent;
         let version = this._parseVersionNumber(ua);
         if (version) {
             this._showVersion = version;
