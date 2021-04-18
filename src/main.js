@@ -658,7 +658,7 @@ class BotApp {
                     throw new Error('Missing `skillID`, please configure `skillID` when initializes the `BotApp`');
                 }
             } else {
-                cb(new LowVersionErrorMsg(), null);
+                cb(new LowVersionErrorMsg('requireUserAgeInfo'), null);
             }
         }
     }
@@ -929,7 +929,7 @@ class BotApp {
                 });
             });
         } else {
-            cb(new LowVersionErrorMsg(), null);
+            cb(new LowVersionErrorMsg('onDialogStateChanged'), null);
         }
     }
 
@@ -938,7 +938,7 @@ class BotApp {
         if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._handleUnknowUtteranceCb = cb;
         } else {
-            cb(new LowVersionErrorMsg(), null);
+            cb(new LowVersionErrorMsg('onHandleUnknowUtterance'), null);
         }
     }
 
@@ -952,7 +952,7 @@ class BotApp {
                 });
             });
         } else {
-            cb(new LowVersionErrorMsg(), null);
+            cb(new LowVersionErrorMsg('canGoBack'), null);
         }
     }
 
@@ -978,7 +978,7 @@ class BotApp {
                 this._registerGestureCb = cb;
             });
         } else {
-            cb(new LowVersionErrorMsg(), null);
+            cb(new LowVersionErrorMsg('registerGesture'), null);
         }
     }
 
@@ -992,7 +992,7 @@ class BotApp {
                 bridge.callHandler('triggerDuerOSCapacity', stringData, () => {});
             });
         } else {
-            console.error(new LowVersionErrorMsg());
+            console.error(new LowVersionErrorMsg('interruptTTS'));
         }
     }
 
@@ -1012,7 +1012,7 @@ class BotApp {
                 this._getCameraStateCb = cb;
             });
         } else {
-            cb(new LowVersionErrorMsg(), null);
+            cb(new LowVersionErrorMsg('getCameraState'), null);
         }
     }
 
@@ -1027,9 +1027,94 @@ class BotApp {
                 bridge.callHandler('sendEvent', stringData, () => {});
             });
         } else {
-            console.error(new LowVersionErrorMsg());
+            console.error(new LowVersionErrorMsg('sendEvent'));
         }
     }
+
+    // initSpeechTranscriber(level) {
+    //     this._getJSBridge(bridge => {
+    //         bridge.callHandler('initSpeechTranscriber',  JSON.stringify({level}));
+    //     });
+    // }
+
+    // startSpeechTranscriber() {
+    //     this._getJSBridge(bridge => {
+    //         bridge.callHandler('startSpeechTranscriber', null, function (result) {
+    //             const data = JSON.parse(result).data;
+    //             if (data.status !== 0) {
+    //                 throw new Error('startSpeechTranscriber: Start speechTranscriber failed');
+    //             }
+    //         });
+    //     });
+    // }
+
+    // stopSpeechTranscriber() {
+    //     this._getJSBridge(bridge => {
+    //         bridge.callHandler('stopSpeechTranscriber', null, function () {});
+    //     });
+    // }
+
+    _handleLocalSpeechResult(level, cb) {
+        level = Number(level);
+
+        this._getJSBridge(bridge => {
+            bridge.callHandler('initSpeechTranscriber',  JSON.stringify({level}));
+            bridge.callHandler('startSpeechTranscriber', null, function (result) {
+                const data = JSON.parse(result).data;
+                if (data.status !== 0) {
+                    throw new Error('startSpeechTranscriber: Start speechTranscriber failed');
+                }
+            });
+        });
+        if (this._compareShowVersion(this._parseShowVersion(), '1.45.0.1') >= 0) {
+            console.log('handleSpeechResult mode: webview call');
+            if (level === 1) {
+                // 由webview直接调用，不走jsBridge逻辑以提升执行效率
+                window.zw3me3p9zqby80uo_onHandleP1SpeechResult = function (state) {
+                    cb(null, state);
+                };
+            } else {
+                window.zw3me3p9zqby80uo_onHandleP2SpeechResult = function (state) {
+                    let content = state && state.trim() || ''; // 过滤空字符
+                    content.length && cb(null, content);
+                };
+            }
+        } else if (this._compareShowVersion(this._parseShowVersion(), '1.45.0.0') === 0) {
+            console.log('handleSpeechResult mode: js-bridge call');
+            if (level === 1) {
+                this._getJSBridge(bridge => {
+                    bridge.registerHandler('onHandleP1SpeechResult',  function (state) {
+                        const result = JSON.parse(state);
+                        cb(null, result);
+                    });
+                });
+            } else {
+                this._getJSBridge(bridge => {
+                    bridge.registerHandler('onHandleP2SpeechResult',  function (state) {
+                        let content = state && state.trim() || ''; // 过滤空字符
+                        content.length && cb(null, content);
+                    });
+                });
+            }
+        }
+
+    }
+
+    onHandleP1SpeechResult(cb) {
+        this._validateCallback('onHandleP1SpeechResult', cb);
+        // todo: 版本判断
+        if (this._compareShowVersion(this._parseShowVersion(), '1.45.0.0') >= 0) {
+            this._handleLocalSpeechResult(1, cb);
+        } else {
+            console.error(new LowVersionErrorMsg('onHandleP1SpeechResult'));
+        }
+    }
+
+    // onHandleP2SpeechResult(cb) {
+    //     this._validateCallback('onHandleP2SpeechResult', cb);
+    //     // todo: 版本判断
+    //     this._handleLocalSpeechResult(2, cb);
+    // }
 
     /**
      * 上报DCS Event
