@@ -186,3 +186,16 @@ export function postMessageToIframe(iframeDOM, msgTarget, data) {
         console.error('postMessageToIframe: iframeDOM不存在');
     }
 }
+
+/**
+ * 将base64的头部剔除，例如 'data:image/png;base64,iVBORw0KGgoAAAANSUhE'
+ * 剔除后变为：'iVBORw0KGgoAAAANSUhE'
+ * @param base64Str
+ * @returns {string}
+ * @private
+ */
+export function sliceBase64Header(base64Str) {
+    const keyword = 'base64,';
+    const startIndex = base64Str.indexOf(keyword) + keyword.length;
+    return base64Str.substr(startIndex);
+}
