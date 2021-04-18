@@ -4,5 +4,5 @@
  */
 
 module.exports = {
-    verbose: false,
+    verbose: false
 }

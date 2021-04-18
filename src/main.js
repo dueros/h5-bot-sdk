@@ -4,13 +4,26 @@
  */
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
-import {isSet, parseH5UrlOrigin, getQuery} from "./utils";
+import {isSet, parseH5UrlOrigin, getQuery,
+    createIframe, encodeObjectDataToUrlData,
+    parseVersionNumber, compareShowVersion,
+    parseIntentSlots, postMessageToIframe,
+    sliceBase64Header} from "./utils";
 
 
 /**
  * @callback requestCallback 一种回调函数(随便定义的名字。。。)
  */
 
+
+const TrialGameAction = {
+    CANCEL_PAY: 'cancel_pay',
+    GO_PAY: 'go_pay',
+    GO_SCRIBE: 'go_scribe',
+    CLOSE_BANNER: 'close_banner',
+    REFRESH_BANNER_TEXT: 'refresh_banner_text', // 刷新试玩游戏订阅付费banner的文案
+    REFRESH_ORDER_PARAMS: 'refresh_order_params' // 更新订单阻断页相关字段
+};
 
 /**
  * 与Native的交互做了封装
@@ -27,8 +40,10 @@ class BotApp {
      * @param {string} config.signature2 // 必填，将(random2 + appkey)的字符串拼接后做MD5运算得出
      * @param {string} config.skillID // 必填，技能ID
      * @param {string} config.orderZIndex // 选填，H5试玩游戏的订单浮层的zIndex
+     * @param {Object} config._JsBridgeForUnitTest // 禁止使用，仅用于单元测试
      */
     constructor (config = {}) {
+        this._JsBridgeForUnitTest = config._JsBridgeForUnitTest;
         this.config = {
             adDisable: true,
             ...config,
@@ -61,12 +76,18 @@ class BotApp {
         // 游戏进度心跳定时器
         this._gameBeatReportTimer = null;
 
-        // 游戏试玩支付iframe
-        this._trialGameOrderIframe = null;
+        // 游戏试玩支付相关iframe
+        this._trialGameOrderIframeDOM = null;
+
+        // 游戏订阅banner
+        this._trialGameBannerDOM = null;
 
         // 游戏试玩付费弹窗的iframe地址
         // URL参数需要额外传递
         this._trialGameOrderIframeUrl = 'https://xiaodu.baidu.com/saiya/sdk/iframe/trial-game-order.html';
+
+        // 试玩游戏相关Iframe的用于postMessage的origin
+        this._trialGameMsgTarget = parseH5UrlOrigin(this._trialGameOrderIframeUrl);
 
         this._init();
     }
@@ -127,7 +148,7 @@ class BotApp {
                     }
                 // 手势识别
                 } else if (intentName === 'AI_DUER_SHOW_GESTURE_RECOGNIZED' && this._registerGestureCb) {
-                    if (slots[0]) {
+                    if (slots && slots[0]) {
                         this._registerGestureCb(null, slots[0].value);
                     } else {
                         this._registerGestureCb('Recognize gesture failed', null);
@@ -138,15 +159,23 @@ class BotApp {
                     if (slots && slots.length) {
                         let needReportGameBeat = false;
                         let gameReportInterval = 60;
-                        slots.forEach(slot => {
-                            if (slot.name === 'needHeartbeatReport') {
-                                if (Number(slot.value) === 1) {
-                                    needReportGameBeat = true;
-                                }
-                            } else if (slot.name === 'timeInterval') {
-                                gameReportInterval = Number(slot.value);
+                        let slotsMap = parseIntentSlots(slots);
+                        if (slotsMap.has('needHeartbeatReport')) {
+                            if (Number(slotsMap.get('needHeartbeatReport')) === 1) {
+                                needReportGameBeat = true;
                             }
-                        });
+                        }
+                        if (slotsMap.has('timeInterval')) {
+                            gameReportInterval = Number(slotsMap.get('timeInterval'));
+                        }
+                        if (slotsMap.has('displaySub')) {
+                            if (Number(slotsMap.get('displaySub')) === 1) {
+                                const {desc, subUrl} = JSON.parse(payload.customData);
+                                // 这里存起来订阅游戏的linkClick
+                                this._trialGameSubscribeLink = subUrl;
+                                this._renderTrialGameSubscribeBanner({desc});
+                            }
+                        }
                         if (needReportGameBeat) {
                             this._fireGameProcessBeatReport(gameReportInterval);
                         } else {
@@ -155,20 +184,53 @@ class BotApp {
                     }
                 // 游戏试玩购买
                 } else if (intentName === 'H5gameTrialStatus') {
-                    if (payload.customData) {
-                        const productData = JSON.parse(payload.customData);
-                        this._renderTrialGameOrder(productData)
+                    // payload.customData的参数形式：{"payPrice": "支付价格",
+                    // "image": "展示图片", "video": "展示视频",
+                    // "productId": "商品id", "sellerOrderId":
+                    // "订单id", "buyUrl": "支付链接"}
+                    const productData = payload.customData
+                        ? JSON.parse(payload.customData)
+                        : null;
+                    let slotsMap = parseIntentSlots(slots);
+                    if (slotsMap.has('needPay')
+                        && (Number(slotsMap.get('needPay')) === 1)
+                        && productData
+                    ) {
+                        // 当为0元购时，直接触发付款二维码
+                        // http://wiki.baidu.com/pages/viewpage.action?pageId=1264960061
+                        if (Number(productData.payType) === 3) {
+
+                            // 本属性仅用于0元购相关
+                            this._buyUrl = productData.relatedProduct[0].buyUrl;
+                            this._firePayDialog();
+
+                            // 在0元购模式下，由于没有阻断页，用户从二维码付款页面返回后
+                            // 还能继续玩游戏为了组织用户继续游戏当用户触摸屏幕时
+                            // 再次进入付款二维码页面从而组织用户继续游戏
+                            window.addEventListener('touchstart', this._firePayDialog, true);
+                        } else {
+                            // 展示付费阻断页
+                            this._renderTrialGameOrder(productData)
+                        }
+                    }
+                    if (productData && productData.desc) {
+                        // 用于刷新订阅Banner的文案，一般用于动态更新试玩时间倒计时
+                        this._tryPostMessageToTrialGameSubscribeBanner({
+                            type: TrialGameAction.REFRESH_BANNER_TEXT,
+                            data: productData.desc
+                        });
                     }
                 // 试玩游戏购买成功
                 } else if (intentName === 'NotifyBuyStatus') {
                     let purchaseResult = null;
-                    slots.forEach(slot => {
-                        if (slot.name === 'purchaseResult') {
-                            purchaseResult = slot.value;
-                        }
-                    });
+                    let slotsMap = parseIntentSlots(slots);
+                    if (slotsMap.has('purchaseResult')) {
+                        purchaseResult = slotsMap.get('purchaseResult');
+                    }
                     if (purchaseResult === 'SUCCESS') {
                         this._closeTrialGameOrder();
+                        this._closeTrialGameBanner();
+                        window.removeEventListener('touchstart', this._firePayDialog, true);
                     }
                 } else {
                     this.onHandleIntentCb && this.onHandleIntentCb(payload);
@@ -186,26 +248,35 @@ class BotApp {
                 // 告知app是否处理成功
                 callback(true);
             });
-
-            this.uploadLinkClicked({
-                url: `dueros://${this.config.skillID}/h5game/getneedheartbeatreport`,
-                initiator: {
-                    type: 'AUTO_TRIGGER'
-                }
-            });
+        });
+        this.uploadLinkClicked({
+            url: `dueros://${this.config.skillID}/h5game/getneedheartbeatreport`,
+            initiator: {
+                type: 'AUTO_TRIGGER'
+            }
         });
         this._showVersion = this._parseShowVersion();
-
         window.addEventListener('message', (event) => {
+            // 如果是广告消息
             if (event.origin === this._adMsgTarget) {
                 this._handleAdEvent(event);
             } else {
+            //  不是广告消息，这儿默认当做游戏试玩相关逻辑处理
                 this._handleGameTryPay(event);
             }
         });
 
         // 绑定屏幕触摸打点事件
         this._logTouch();
+    }
+
+    _firePayDialog = () => {
+        this.uploadLinkClicked({
+            url: this._buyUrl,
+            initiator: {
+                type: 'AUTO_TRIGGER'
+            }
+        });
     }
 
     /**
@@ -301,42 +372,78 @@ class BotApp {
         }
     }
 
-
-    _generateTrialGameUrl(data) {
-        return Object.keys(data).map(k => {
-            return `${k}=${encodeURIComponent(data[k])}`;
-        }).join('&');
-    }
-
     /**
      * 展示试玩H5游戏购买相关内容
      * @param data
      * @private
      */
     _renderTrialGameOrder(data) {
-        if (!this._trialGameOrderIframe) {
-            // 生成URL search字符串
-            const trialGameParam = this._generateTrialGameUrl({
-                ...data,
-                botId: this.config.skillID
-            });
-
-            this._trialGameOrderIframe = document.createElement('iframe');
-            this._trialGameOrderIframe.src = `${this._trialGameOrderIframeUrl}?${trialGameParam}`;
-            this._trialGameOrderIframe.allowTransparency = 'true';
-            this._trialGameOrderIframe.scrolling = 'no';
-            this._trialGameOrderIframe.frameBorder = 0;
-            this._trialGameOrderIframe.style.cssText +=
-                `width: 100%;
-                height: 100%;
-                display: block; 
-                left: 0;
-                top: 0;
-                z-index: ${this.config.orderZIndex};
-                background: rgba(0,0,0,.3);
-                position: fixed;`;
-            document.body.appendChild(this._trialGameOrderIframe);
+        // 避免重复创建
+        if (this._trialGameOrderIframeDOM) {
+            return;
         }
+        console.log('game data', data);
+        let payType = Number(data.payType);
+        let iframeBackGround = '';
+        let url = this._trialGameOrderIframeUrl;
+        // 如果是单品付费
+        if (payType === 1) {
+            iframeBackGround = 'rgba(0, 0, 0, 0.3)';
+        } else {
+            iframeBackGround = 'transparent';
+            url += '#/subscribeV2';
+        }
+
+        this._trialGameOrderIframeDOM = createIframe({
+            left: 0,
+            top: 0,
+            width: '100%',
+            height: '100%',
+            scrolling: 'yes',
+            zIndex: this.config.orderZIndex,
+            background: iframeBackGround
+        });
+        this._trialGameOrderIframeDOM.src = url;
+        document.body.appendChild(this._trialGameOrderIframeDOM);
+        this._tryPostMessageToTrialGameOrder({
+            relatedProduct: data.relatedProduct,
+            botId: this.config.skillID
+        });
+    }
+    /**
+     * 渲染订阅的banner
+     * @param linkClick 订阅的linkClick
+     * @private
+     */
+    _renderTrialGameSubscribeBanner({desc}) {
+        // 避免重复创建
+        if (this._trialGameBannerDOM) {
+            return;
+        }
+        let dataParams = encodeObjectDataToUrlData({
+            desc
+        });
+        let url = `${this._trialGameOrderIframeUrl}?${dataParams}#/banner`;
+        this._trialGameBannerDOM = createIframe({
+            left: '0',
+            bottom: '0',
+            width: '100%',
+            height: '80px',
+            zIndex: this.config.orderZIndex,
+            background: 'transparent'
+        });
+        this._trialGameBannerDOM.src = url;
+        document.body.appendChild(this._trialGameBannerDOM);
+    }
+
+    // 尝试向试玩游戏的订阅banner发送消息
+    _tryPostMessageToTrialGameSubscribeBanner(data) {
+        postMessageToIframe(this._trialGameBannerDOM, this._trialGameMsgTarget, data);
+    }
+
+    // 向游戏付费的阻断页发送消息
+    _tryPostMessageToTrialGameOrder(data) {
+        postMessageToIframe(this._trialGameOrderIframeDOM, this._trialGameMsgTarget, data);
     }
 
     /**
@@ -344,8 +451,20 @@ class BotApp {
      * @private
      */
     _closeTrialGameOrder() {
-        if (this._trialGameOrderIframe) {
-            document.body.removeChild(this._trialGameOrderIframe);
+        if (this._trialGameOrderIframeDOM) {
+            document.body.removeChild(this._trialGameOrderIframeDOM);
+            this._trialGameOrderIframeDOM = null;
+        }
+    }
+
+    /**
+     * 试玩游戏购买成功后关闭提示订阅的banner
+     * @private
+     */
+    _closeTrialGameBanner() {
+        if (this._trialGameBannerDOM) {
+            document.body.removeChild(this._trialGameBannerDOM);
+            this._trialGameBannerDOM = null;
         }
     }
 
@@ -356,22 +475,36 @@ class BotApp {
      */
     _handleGameTryPay(event) {
         const data = event.data;
-        if (data.type === 'cancel_pay') {
+        if (data.type === TrialGameAction.CANCEL_PAY) {
             this.requestClose();
-        } else if (data.type === 'go_pay') {
+        } else if (data.type === TrialGameAction.GO_PAY) {
             this.uploadLinkClicked({
                 url: data.data.buyUrl,
             });
+        } else if (data.type === TrialGameAction.CLOSE_BANNER) {
+            this._closeTrialGameBanner();
+        } else if (data.type === TrialGameAction.GO_SCRIBE) {
+            if (this._trialGameSubscribeLink) {
+                this.uploadLinkClicked({
+                    url: this._trialGameSubscribeLink,
+                });
+            } else {
+                console.error('订阅游戏失败，没有linkClick地址');
+            }
         }
     }
 
     _getJSBridge(cb) {
-        if (window.WebViewJavascriptBridge) {
-            cb(window.WebViewJavascriptBridge);
+        if (this._JsBridgeForUnitTest) {
+            return cb(this._JsBridgeForUnitTest);
         } else {
-            document.addEventListener('WebViewJavascriptBridgeReady', () => {
-                cb(WebViewJavascriptBridge);
-            }, false);
+            if (window.WebViewJavascriptBridge) {
+                cb(window.WebViewJavascriptBridge);
+            } else {
+                document.addEventListener('WebViewJavascriptBridgeReady', () => {
+                    cb(WebViewJavascriptBridge);
+                }, false);
+            }
         }
     }
 
@@ -474,69 +607,17 @@ class BotApp {
      * @returns {string}
      * @private
      */
-    _parseShowVersion() {
+    _parseShowVersion(userAgent) {
         if (this._showVersion) {
             return this._showVersion;
         }
-        let ua = navigator.userAgent;
-        let version = this._parseVersionNumber(ua);
+        let ua = userAgent ? userAgent : navigator.userAgent;
+        let version = parseVersionNumber(ua);
         if (version) {
             this._showVersion = version;
             return version;
         } else {
             throw new Error('Device version number parsing failed: ' + ua);
-        }
-    }
-
-    /**
-     * 提取版本号
-     * @param str
-     * @returns {string|null}
-     * @private
-     */
-    _parseVersionNumber(str) {
-        let reg = null;
-        if (str.indexOf('ContainerVersion') > -1) {
-            reg = /ContainerVersion\/([\d\.]+)/i;
-        } else {
-            reg = /build\/([\d\.]+);/i;
-        }
-        let result = reg.exec(str);
-        if (result) {
-            return result[1];
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * SHOW端设备的版本号对比
-     * @param {string} a 版本号
-     * @param {string} b 版本号
-     * @returns {number} 如果返回0，则表示版本号相同，如果返回1，a版本号大于b版本号，如果返回-1则a版本号小于b
-     * @private
-     */
-    _compareShowVersion(a, b) {
-        let [a1, a2, a3, a4] = String(a).split('.');
-        let [b1, b2, b3, b4] = String(b).split('.');
-        if (a1 > b1) {
-            return 1;
-        } else if (a1 < b1) {
-            return -1;
-        } else if (a2 > b2) {
-            return 1;
-        } else if (a2 < b2) {
-            return -1;
-        } else if (a3 > b3) {
-            return 1;
-        } else if (a3 < b3) {
-            return -1;
-        } else if (a4 > b4) {
-            return 1;
-        } else if (a4 < b4) {
-            return -1;
-        } else {
-            return 0;
         }
     }
 
@@ -552,7 +633,7 @@ class BotApp {
             return;
         } else {
             this._validateCallback('requireUserAgeInfo', cb);
-            if (this._compareShowVersion(this._parseShowVersion(), '1.35.0.0') >= 0) {
+            if (compareShowVersion(this._parseShowVersion(), '1.35.0.0') >= 0) {
                 if (this.config.skillID) {
                     this._getJSBridge(bridge => {
                         bridge.callHandler('requestUserAgeInfo', null, (payload) => {
@@ -578,7 +659,7 @@ class BotApp {
                     throw new Error('Missing `skillID`, please configure `skillID` when initializes the `BotApp`');
                 }
             } else {
-                cb(new LowVersionErrorMsg(), null);
+                cb(new LowVersionErrorMsg('requireUserAgeInfo'), null);
             }
         }
     }
@@ -840,7 +921,7 @@ class BotApp {
 
     onDialogStateChanged(cb) {
         this._validateCallback('onDialogStateChanged', cb);
-        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 bridge.registerHandler('onDialogStateChanged',  function (state, callback) {
                     let payload = JSON.parse(state);
@@ -849,22 +930,22 @@ class BotApp {
                 });
             });
         } else {
-            cb(new LowVersionErrorMsg(), null);
+            cb(new LowVersionErrorMsg('onDialogStateChanged'), null);
         }
     }
 
     onHandleUnknowUtterance(cb) {
         this._validateCallback('onHandleUnknowUtterance', cb);
-        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._handleUnknowUtteranceCb = cb;
         } else {
-            cb(new LowVersionErrorMsg(), null);
+            cb(new LowVersionErrorMsg('onHandleUnknowUtterance'), null);
         }
     }
 
     canGoBack(cb) {
         this._validateCallback('canGoBack', cb);
-        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 bridge.callHandler('canGoBack', null, (payload) => {
                     payload = JSON.parse(payload);
@@ -872,7 +953,7 @@ class BotApp {
                 });
             });
         } else {
-            cb(new LowVersionErrorMsg(), null);
+            cb(new LowVersionErrorMsg('canGoBack'), null);
         }
     }
 
@@ -886,7 +967,7 @@ class BotApp {
         if (!Array.isArray(data)) {
             throw new Error('data must be a `Array`');
         }
-        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 const stringData = JSON.stringify({
                     capacityName: 'AI_DUER_SHOW_GESTURE_REGISTER',
@@ -898,12 +979,12 @@ class BotApp {
                 this._registerGestureCb = cb;
             });
         } else {
-            cb(new LowVersionErrorMsg(), null);
+            cb(new LowVersionErrorMsg('registerGesture'), null);
         }
     }
 
     interruptTTS() {
-        if (this._compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 const stringData = JSON.stringify({
                     capacityName: 'AI_DUER_SHOW_INTERRPT_TTS',
@@ -912,7 +993,7 @@ class BotApp {
                 bridge.callHandler('triggerDuerOSCapacity', stringData, () => {});
             });
         } else {
-            console.error(new LowVersionErrorMsg());
+            console.error(new LowVersionErrorMsg('interruptTTS'));
         }
     }
 
@@ -922,7 +1003,7 @@ class BotApp {
      */
     getCameraState(cb) {
         this._validateCallback('getCameraState', cb);
-        if (this._compareShowVersion(this._parseShowVersion(), '1.39.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.39.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 const stringData = JSON.stringify({
                     capacityName: 'AI_DUER_SHOW_GET_CAMERA_STATE',
@@ -932,7 +1013,7 @@ class BotApp {
                 this._getCameraStateCb = cb;
             });
         } else {
-            cb(new LowVersionErrorMsg(), null);
+            cb(new LowVersionErrorMsg('getCameraState'), null);
         }
     }
 
@@ -941,10 +1022,114 @@ class BotApp {
      * @param data
      */
     sendEvent(data) {
-        if (this._compareShowVersion(this._parseShowVersion(), '1.40.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.40.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 const stringData = JSON.stringify(data);
                 bridge.callHandler('sendEvent', stringData, () => {});
+            });
+        } else {
+            console.error(new LowVersionErrorMsg('sendEvent'));
+        }
+    }
+
+    // initSpeechTranscriber(level) {
+    //     this._getJSBridge(bridge => {
+    //         bridge.callHandler('initSpeechTranscriber',  JSON.stringify({level}));
+    //     });
+    // }
+
+    // startSpeechTranscriber() {
+    //     this._getJSBridge(bridge => {
+    //         bridge.callHandler('startSpeechTranscriber', null, function (result) {
+    //             const data = JSON.parse(result).data;
+    //             if (data.status !== 0) {
+    //                 throw new Error('startSpeechTranscriber: Start speechTranscriber failed');
+    //             }
+    //         });
+    //     });
+    // }
+
+    // stopSpeechTranscriber() {
+    //     this._getJSBridge(bridge => {
+    //         bridge.callHandler('stopSpeechTranscriber', null, function () {});
+    //     });
+    // }
+
+    _handleLocalSpeechResult(level, cb) {
+        level = Number(level);
+
+        this._getJSBridge(bridge => {
+            bridge.callHandler('initSpeechTranscriber',  JSON.stringify({level}));
+            bridge.callHandler('startSpeechTranscriber', null, function (result) {
+                const data = JSON.parse(result).data;
+                if (data.status !== 0) {
+                    throw new Error('startSpeechTranscriber: Start speechTranscriber failed');
+                }
+            });
+        });
+        if (compareShowVersion(this._parseShowVersion(), '1.45.0.1') >= 0) {
+            console.log('handleSpeechResult mode: webview call');
+            if (level === 1) {
+                // 由webview直接调用，不走jsBridge逻辑以提升执行效率
+                window.zw3me3p9zqby80uo_onHandleP1SpeechResult = function (state) {
+                    cb(null, state);
+                };
+            } else {
+                window.zw3me3p9zqby80uo_onHandleP2SpeechResult = function (state) {
+                    let content = state && state.trim() || ''; // 过滤空字符
+                    content.length && cb(null, content);
+                };
+            }
+        } else if (compareShowVersion(this._parseShowVersion(), '1.45.0.0') === 0) {
+            console.log('handleSpeechResult mode: js-bridge call');
+            if (level === 1) {
+                this._getJSBridge(bridge => {
+                    bridge.registerHandler('onHandleP1SpeechResult',  function (state) {
+                        const result = JSON.parse(state);
+                        cb(null, result);
+                    });
+                });
+            } else {
+                this._getJSBridge(bridge => {
+                    bridge.registerHandler('onHandleP2SpeechResult',  function (state) {
+                        let content = state && state.trim() || ''; // 过滤空字符
+                        content.length && cb(null, content);
+                    });
+                });
+            }
+        }
+    }
+
+    onHandleP1SpeechResult(cb) {
+        this._validateCallback('onHandleP1SpeechResult', cb);
+        if (compareShowVersion(this._parseShowVersion(), '1.45.0.0') >= 0) {
+            this._handleLocalSpeechResult(1, cb);
+        } else {
+            console.error(new LowVersionErrorMsg('onHandleP1SpeechResult'));
+        }
+    }
+
+    // onHandleP2SpeechResult(cb) {
+    //     this._validateCallback('onHandleP2SpeechResult', cb);
+    //     // todo: 版本判断
+    //     this._handleLocalSpeechResult(2, cb);
+    // }
+
+    /**
+     * 上报DCS Event
+     * @param {Function} cb
+     */
+    onBuyStatusChange(cb) {
+        this._validateCallback('getCameraState', cb);
+        // todo: 这里的版本号需要更高
+        if (compareShowVersion(this._parseShowVersion(), '1.40.0.0') >= 0) {
+            this._getJSBridge(bridge => {
+                bridge.registerHandler('onBuyStatusChange',  function (payload, callback) {
+                    // payload数据示例
+                    cb(JSON.parse(payload));
+                    // 告知app是否处理成功
+                    callback(true)
+                })
             });
         } else {
             console.error(new LowVersionErrorMsg());
@@ -961,7 +1146,12 @@ class BotApp {
         let serverAdIframeAddr = decodeURIComponent(_data.props.htmlAddress);
         if (_data.status === 0) {
             if (!this._adIframe1) {
-                this._adIframe1 = document.createElement('iframe');
+                this._adIframe1 = createIframe({
+                    width: 0,
+                    height: 0,
+                    zIndex: this.config.adZIndex,
+                    background: 'transparent'
+                });
                 let adIframeQuery = encodeURIComponent(parseH5UrlOrigin(window.location.href));
                 if (this.config._duerosDebugadIframeUrl) {
                     this._adIframe1BaseUrl = this.config._duerosDebugadIframeUrl;
@@ -979,11 +1169,7 @@ class BotApp {
                 }
 
                 this._adIframe1.src = adIframeUrl;
-                this._adIframe1.scrolling = 'no';
-                this._adIframe1.frameBorder = 0;
-                this._adIframe1.allowTransparency = 'true';
                 document.body.appendChild(this._adIframe1);
-                this._adIframe1.style.cssText += `display: block; z-index: ${this.config.adZIndex};position: fixed; background-color=transparent;`;
             } else if (!this.config._duerosDebugadIframeUrl && this._adIframe1BaseUrl !== serverAdIframeAddr) {
                 document.body.removeChild(this._adIframe1);
                 this._adIframe1Loaded = false;
@@ -1144,21 +1330,34 @@ class BotApp {
     _cancelGameProcessBeatReport() {
         clearInterval(this._gameBeatReportTimer);
     }
+
+    /**
+     * 上传base64编码过的图片
+     * @param base64Image
+     * @param cb
+     */
+    uploadImage(base64Image, cb) {
+        // TODO("版本号判断")
+        this._getJSBridge(bridge => {
+            const substrBase64 = sliceBase64Header(base64Image);
+            bridge.callHandler('uploadImage', substrBase64, (payload) => {
+                cb(JSON.parse(payload));
+            });
+        });
+    }
 }
 
 module.exports = BotApp;
 
-// 专门为游戏开发
-window.addEventListener('load', function () {
-    const params = getQuery();
-    const {random1, signature1, random2, signature2, skillID} = params;
-    /* eslint-disable no-new */
-    new BotApp({
-        random1,
-        signature1,
-        random2,
-        signature2,
-        skillID
-    })
-    /* eslint-enable no-new */
-});
+// // 专门为游戏开发
+// window.addEventListener('load', function () {
+//     const params = getQuery();
+//     const {random1, signature1, random2, signature2, skillID} = params;
+//     new BotApp({
+//         random1,
+//         signature1,
+//         random2,
+//         signature2,
+//         skillID
+//     });
+// });
