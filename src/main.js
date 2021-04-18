@@ -7,7 +7,8 @@ import {LowVersionErrorMsg, ServiceError} from './errors';
 import {isSet, parseH5UrlOrigin, getQuery,
     createIframe, encodeObjectDataToUrlData,
     parseVersionNumber, compareShowVersion,
-    parseIntentSlots, postMessageToIframe} from "./utils";
+    parseIntentSlots, postMessageToIframe,
+    sliceBase64Header} from "./utils";
 
 
 /**
@@ -1066,7 +1067,7 @@ class BotApp {
                 }
             });
         });
-        if (this._compareShowVersion(this._parseShowVersion(), '1.45.0.1') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.45.0.1') >= 0) {
             console.log('handleSpeechResult mode: webview call');
             if (level === 1) {
                 // 由webview直接调用，不走jsBridge逻辑以提升执行效率
@@ -1079,7 +1080,7 @@ class BotApp {
                     content.length && cb(null, content);
                 };
             }
-        } else if (this._compareShowVersion(this._parseShowVersion(), '1.45.0.0') === 0) {
+        } else if (compareShowVersion(this._parseShowVersion(), '1.45.0.0') === 0) {
             console.log('handleSpeechResult mode: js-bridge call');
             if (level === 1) {
                 this._getJSBridge(bridge => {
@@ -1101,8 +1102,7 @@ class BotApp {
 
     onHandleP1SpeechResult(cb) {
         this._validateCallback('onHandleP1SpeechResult', cb);
-        // todo: 版本判断
-        if (this._compareShowVersion(this._parseShowVersion(), '1.45.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.45.0.0') >= 0) {
             this._handleLocalSpeechResult(1, cb);
         } else {
             console.error(new LowVersionErrorMsg('onHandleP1SpeechResult'));
@@ -1332,27 +1332,15 @@ class BotApp {
     }
 
     /**
-     * 将base64的头部剔除，例如 'data:image/png;base64,iVBORw0KGgoAAAANSUhE'
-     * 剔除后变为：'iVBORw0KGgoAAAANSUhE'
-     * @param base64Str
-     * @returns {string}
-     * @private
-     */
-    _slicevBase64Header(base64Str) {
-        const keyword = 'base64,';
-        const startIndex = base64Str.indexOf(keyword) + keyword.length;
-        return base64Str.substr(startIndex);
-    }
-
-    /**
      * 上传base64编码过的图片
      * @param base64Image
      * @param cb
      */
     uploadImage(base64Image, cb) {
+        // TODO("版本号判断")
         this._getJSBridge(bridge => {
-            const substrBase64 = this._slicevBase64Header(base64Image);
-            bridge.callHandler('uploadImage', base64Image, (payload) => {
+            const substrBase64 = sliceBase64Header(base64Image);
+            bridge.callHandler('uploadImage', substrBase64, (payload) => {
                 cb(JSON.parse(payload));
             });
         });

@@ -1,12 +1,12 @@
 {
   "name": "@baidu/h5-bot-sdk",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "description": "DuerOS H5 BOT JS SDK",
   "main": "lib/main.js",
   "scripts": {
     "test": "jest --coverage",
-    "buildSingleFile": "webpack --config webpack.sdk.js",
-    "buildModule": "babel ./src -d lib",
+    "buildSingleFile": "npm run test && webpack --config webpack.sdk.js",
+    "buildModule": "npm run test && babel ./src -d lib",
     "build": "npm run buildSingleFile && npm run buildModule"
   },
   "author": "dengxuening",

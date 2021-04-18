@@ -3,7 +3,9 @@
  * @author dengxuening<dengxuening@baidu.com>
  */
 
-import {getQuery, encodeObjectDataToUrlData, isSet, compareShowVersion, parseVersionNumber} from '../src/utils';
+import {getQuery, encodeObjectDataToUrlData,
+    isSet, compareShowVersion,
+    parseVersionNumber, sliceBase64Header} from '../src/utils';
 
 describe('测试工具函数 utils', () => {
     test('getQuery', () => {
@@ -44,4 +46,8 @@ describe('测试工具函数 utils', () => {
         expect(compareShowVersion('1.3.0.0', '2.90.0.0')).toBe(-1);
     });
 
+    test('slicevBase64Header', () => {
+        expect(sliceBase64Header('data:image/png;base64,iVBORw0KGgoAAAANSUhE'))
+            .toBe('iVBORw0KGgoAAAANSUhE');
+    })
 });
