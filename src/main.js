@@ -147,7 +147,7 @@ class BotApp {
                     }
                 // 手势识别
                 } else if (intentName === 'AI_DUER_SHOW_GESTURE_RECOGNIZED' && this._registerGestureCb) {
-                    if (slots[0]) {
+                    if (slots && slots[0]) {
                         this._registerGestureCb(null, slots[0].value);
                     } else {
                         this._registerGestureCb('Recognize gesture failed', null);
@@ -1097,7 +1097,6 @@ class BotApp {
                 });
             }
         }
-
     }
 
     onHandleP1SpeechResult(cb) {

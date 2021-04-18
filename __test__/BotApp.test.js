@@ -430,7 +430,7 @@ describe('测试SHOW端BotApp功能', () => {
             botApp.onHandleUnknowUtterance(callback);
         });
 
-        test('registerGesture', (done) => {
+        test('registerGesture: 注册成功', (done) => {
             const data = ['GESTURE_OK', 'GESTURE_PALM', 'GESTURE_LEFT', 'GESTURE_RIGHT'];
             const transData = JSON.stringify({
                 capacityName: 'AI_DUER_SHOW_GESTURE_REGISTER',
@@ -462,6 +462,51 @@ describe('测试SHOW端BotApp功能', () => {
                     name === 'onHandleIntent' && setTimeout(() => {
                         cb(response, () => {})
                         expect(callback).toHaveBeenCalledWith(null, 'OK');
+                        counter++;
+                        if (counter === 2) {
+                            done();
+                        }
+                    })
+                })
+            });
+            const botApp = botAppFactor(JSBridge);
+            const callback = jest.fn();
+            botApp.registerGesture(data, callback);
+            expect(JSBridge.callHandler).toHaveBeenCalledWith('triggerDuerOSCapacity', JSON.stringify({
+                "capacityName": "AI_DUER_SHOW_GESTURE_REGISTER",
+                "params": {"enabledGestures": data}
+            }), expect.any(Function));
+        });
+
+        test('registerGesture: 注册失败', (done) => {
+            const data = ['GESTURE_OK', 'GESTURE_PALM', 'GESTURE_LEFT', 'GESTURE_RIGHT'];
+            const transData = JSON.stringify({
+                capacityName: 'AI_DUER_SHOW_GESTURE_REGISTER',
+                params: {
+                    enabledGestures: data
+                }
+            });
+            const response = JSON.stringify({
+                intent: {
+                    name: 'AI_DUER_SHOW_GESTURE_RECOGNIZED',
+                    slots: null
+                }
+            });
+            let counter = 0; // 因为要执行两个异步函数
+            const JSBridge = JSBridgeFactor({
+                callHandler: jest.fn((name, payload, cb) => {
+                    name === 'triggerDuerOSCapacity' && setTimeout(() => {
+                        cb(transData);
+                        counter++;
+                        if (counter === 2) {
+                            done();
+                        }
+                    }, 0);
+                }),
+                registerHandler: jest.fn((name, cb) => {
+                    name === 'onHandleIntent' && setTimeout(() => {
+                        cb(response, () => {})
+                        expect(callback).toHaveBeenCalledWith(expect.any(String), null);
                         counter++;
                         if (counter === 2) {
                             done();
@@ -515,6 +560,62 @@ describe('测试SHOW端BotApp功能', () => {
             const callback = jest.fn();
             botApp.getCameraState(callback);
             expect(JSBridge.callHandler).toHaveBeenCalledWith('triggerDuerOSCapacity', transData, expect.any(Function));
+        });
+
+        test('游戏心跳上报: 开启上报，展示订阅banner', (done) => {
+            const response = JSON.stringify({
+                intent: {
+                    name: 'H5gameHeartBeatReport',
+                    slots: [
+                        {name: 'needHeartbeatReport', value: '1'},
+                        {name: 'timeInterval', value: 60000},
+                        {name: 'displaySub', value: '1'}
+                    ]
+                },
+                customData: JSON.stringify({name: "DuerOS"})
+            });
+            const JSBridge = JSBridgeFactor({
+                registerHandler: jest.fn((name, cb) => {
+                    name === 'onHandleIntent' && setTimeout(() => {
+                        cb(response, () => {});
+                        expect(botApp._fireGameProcessBeatReport).toHaveBeenCalledWith(60000);
+                        expect(botApp._renderTrialGameSubscribeBanner).toHaveBeenCalledWith(expect.any(Object));
+                        done();
+                    })
+                })
+            });
+            const botApp = botAppFactor(JSBridge);
+            botApp._fireGameProcessBeatReport = jest.fn();
+            botApp._renderTrialGameSubscribeBanner = jest.fn();
+            expect(JSBridge.registerHandler).toHaveBeenCalledWith('onHandleIntent', expect.any(Function));
+        });
+
+        test('游戏心跳上报: 关闭上报，不展示订阅banner', (done) => {
+            const response = JSON.stringify({
+                customData: 'ENABLED',
+                intent: {
+                    name: 'H5gameHeartBeatReport',
+                    slots: [
+                        {name: 'needHeartbeatReport', value: '0'},
+                        {name: 'timeInterval', value: 60000},
+                        {name: 'displaySub', value: '0'}
+                    ]
+                }
+            });
+            const JSBridge = JSBridgeFactor({
+                registerHandler: jest.fn((name, cb) => {
+                    name === 'onHandleIntent' && setTimeout(() => {
+                        cb(response, () => {});
+                        expect(botApp._renderTrialGameSubscribeBanner).not.toBeCalled();
+                        expect(botApp._cancelGameProcessBeatReport).toBeCalled();
+                        done();
+                    })
+                })
+            });
+            const botApp = botAppFactor(JSBridge);
+            botApp._renderTrialGameSubscribeBanner = jest.fn();
+            botApp._cancelGameProcessBeatReport = jest.fn();
+            expect(JSBridge.registerHandler).toHaveBeenCalledWith('onHandleIntent', expect.any(Function));
         });
 
         test('parseShowVersion', () => {
