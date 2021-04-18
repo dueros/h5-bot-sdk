@@ -336,30 +336,6 @@ describe('测试SHOW端BotApp功能', () => {
             expect(JSBridge.callHandler).toHaveBeenCalledWith('canGoBack', null, expect.any(Function));
         })
 
-        test('_parseShowVersion', () => {
-            const botApp = botAppFactor(JSBridgeFactor());
-            expect(botApp._parseShowVersion('Mozilla/5.0 (Linux; Android  NV6001 Build/1.40.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;')).toBe('1.40.0.0');
-        });
-
-        test('_parseVersionNumber', () => {
-            const botApp = botAppFactor(JSBridgeFactor());
-            expect(botApp._parseVersionNumber('Mozilla/5.0 (Linux; Android 8.1.0; NV6001 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Mobile Safari/537.36 ContainerVersion/1.40.0.0 (Android) DuerOS/Xiaodu;')).toBe('1.40.0.0');
-            expect(botApp._parseVersionNumber('Mozilla/5.0 (Linux; Android  NV6001 Build/1.36.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;')).toBe('1.36.0.0');
-        });
-
-        test('_compareShowVersion', () => {
-            const botApp = botAppFactor(JSBridgeFactor());
-            expect(botApp._compareShowVersion('1.36.0.0', '1.36.0.1')).toBe(-1);
-            expect(botApp._compareShowVersion('1.36.0.1', '1.36.0.0')).toBe(1);
-            expect(botApp._compareShowVersion('1.36.0.0', '1.36.0.0')).toBe(0);
-            expect(botApp._compareShowVersion('1.36.1.0', '1.36.0.0')).toBe(1);
-            expect(botApp._compareShowVersion('1.36.0.1', '1.36.1.0')).toBe(-1);
-            expect(botApp._compareShowVersion('1.37.0.0', '1.36.1.0')).toBe(1);
-            expect(botApp._compareShowVersion('1.36.0.1', '1.37.1.0')).toBe(-1);
-            expect(botApp._compareShowVersion('2.3.0.0', '1.90.0.0')).toBe(1);
-            expect(botApp._compareShowVersion('1.3.0.0', '2.90.0.0')).toBe(-1);
-        });
-
         test('interruptTTS', () => {
             const JSBridge = JSBridgeFactor();
             const botApp = botAppFactor(JSBridge);
@@ -539,6 +515,12 @@ describe('测试SHOW端BotApp功能', () => {
             const callback = jest.fn();
             botApp.getCameraState(callback);
             expect(JSBridge.callHandler).toHaveBeenCalledWith('triggerDuerOSCapacity', transData, expect.any(Function));
+        });
+
+        test('parseShowVersion', () => {
+            const JSBridge = JSBridgeFactor();
+            const botApp = botAppFactor(JSBridge);
+            expect(botApp._parseShowVersion('Mozilla/5.0 (Linux; Android  NV6001 Build/1.40.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;')).toBe('1.40.0.0');
         });
     });
 });

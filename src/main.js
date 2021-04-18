@@ -208,7 +208,6 @@ class BotApp {
                 callback(true);
             });
         });
-        console.log('start init heartbeat');
         this.uploadLinkClicked({
             url: `dueros://${this.config.skillID}/h5game/getneedheartbeatreport`,
             initiator: {
@@ -562,7 +561,7 @@ class BotApp {
             return this._showVersion;
         }
         let ua = userAgent ? userAgent : navigator.userAgent;
-        let version = this._parseVersionNumber(ua);
+        let version = parseVersionNumber(ua);
         if (version) {
             this._showVersion = version;
             return version;
@@ -989,7 +988,7 @@ class BotApp {
     onBuyStatusChange(cb) {
         this._validateCallback('getCameraState', cb);
         // todo: 这里的版本号需要更高
-        if (this._compareShowVersion(this._parseShowVersion(), '1.40.0.0') >= 0) {
+        if (compareShowVersion(this._parseShowVersion(), '1.40.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 bridge.registerHandler('onBuyStatusChange',  function (payload, callback) {
                     // payload数据示例

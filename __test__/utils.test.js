@@ -3,7 +3,7 @@
  * @author dengxuening<dengxuening@baidu.com>
  */
 
-import {getQuery, encodeObjectDataToUrlData, isSet} from '../src/utils';
+import {getQuery, encodeObjectDataToUrlData, isSet, compareShowVersion, parseVersionNumber} from '../src/utils';
 
 describe('测试工具函数 utils', () => {
     test('getQuery', () => {
@@ -26,4 +26,22 @@ describe('测试工具函数 utils', () => {
         expect(isSet(obj.age)).toBe(false);
         expect(isSet(obj.name)).toBe(true);
     });
+
+    test('parseVersionNumber', () => {
+        expect(parseVersionNumber('Mozilla/5.0 (Linux; Android 8.1.0; NV6001 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Mobile Safari/537.36 ContainerVersion/1.40.0.0 (Android) DuerOS/Xiaodu;')).toBe('1.40.0.0');
+        expect(parseVersionNumber('Mozilla/5.0 (Linux; Android  NV6001 Build/1.36.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;')).toBe('1.36.0.0');
+    });
+
+    test('compareShowVersion', () => {
+        expect(compareShowVersion('1.36.0.0', '1.36.0.1')).toBe(-1);
+        expect(compareShowVersion('1.36.0.1', '1.36.0.0')).toBe(1);
+        expect(compareShowVersion('1.36.0.0', '1.36.0.0')).toBe(0);
+        expect(compareShowVersion('1.36.1.0', '1.36.0.0')).toBe(1);
+        expect(compareShowVersion('1.36.0.1', '1.36.1.0')).toBe(-1);
+        expect(compareShowVersion('1.37.0.0', '1.36.1.0')).toBe(1);
+        expect(compareShowVersion('1.36.0.1', '1.37.1.0')).toBe(-1);
+        expect(compareShowVersion('2.3.0.0', '1.90.0.0')).toBe(1);
+        expect(compareShowVersion('1.3.0.0', '2.90.0.0')).toBe(-1);
+    });
+
 });
