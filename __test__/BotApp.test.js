@@ -4,6 +4,7 @@
  */
 
 import BotApp from '../src/main';
+import {LowVersionErrorMsg} from "../src/errors";
 
 Object.defineProperty(navigator, 'userAgent', {
     writable: true,
@@ -55,6 +56,14 @@ describe('测试SHOW端BotApp功能', () => {
     });
 
     describe('普通API调用', () => {
+
+        beforeEach(() => {
+            Object.defineProperty(navigator, 'userAgent', {
+                writable: true,
+                value: 'Mozilla/5.0 (Linux; Android 8.1.0; NV6001 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Mobile Safari/537.36 ContainerVersion/1.45.0.0 (Android) DuerOS/Xiaodu;'
+            });
+        });
+
         test('requireLinkAccount', () => {
             const JSBridge = JSBridgeFactor();
             const botApp = botAppFactor(JSBridge)
@@ -760,7 +769,7 @@ describe('测试SHOW端BotApp功能', () => {
         test('parseShowVersion', () => {
             const JSBridge = JSBridgeFactor();
             const botApp = botAppFactor(JSBridge);
-            expect(botApp._parseShowVersion('Mozilla/5.0 (Linux; Android  NV6001 Build/1.40.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;')).toBe('1.40.0.0');
+            expect(botApp._parseShowVersion.call(Object.create(null), 'Mozilla/5.0 (Linux; Android  NV6001 Build/1.40.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;')).toBe('1.40.0.0');
         });
 
         test('_execLinkClick', () => {
@@ -816,16 +825,23 @@ describe('测试SHOW端BotApp功能', () => {
             expect(typeof window.zw3me3p9zqby80uo_onHandleP1SpeechResult).toBe('function');
         });
 
-        test('onBuyStatusChange', (done) => {
+        test('onBuyStatusChange: 正常运行', (done) => {
+            Object.defineProperty(navigator, 'userAgent', {
+                writable: true,
+                value: 'Mozilla/5.0 (Linux; Android 8.1.0; NV6001 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Mobile Safari/537.36 ContainerVersion/1.45.0.0 (Android) DuerOS/Xiaodu;'
+            });
             const response = JSON.stringify({
-                "freq": 300,
-                "energy": 200
+                "productId": "{{STRING}}",
+                "baiduOrderReferenceId": "{{STRING}}",
+                "sellerOrderId":"{{STRING}}",
+                "purchaseResult":"{{ENUM}}",
+                "message":"SUCCESS" //  - SUCCESS 支付成功,- ERROR 支付发生错误
             });
             const JSBridge = JSBridgeFactor({
                 registerHandler: jest.fn((name, cb) => {
                     name === 'onBuyStatusChange' && setTimeout(() => {
                         cb(response, () => {});
-                        expect(callback).toHaveBeenCalledWith(JSON.parse(response));
+                        expect(callback).toHaveBeenCalledWith(null, JSON.parse(response));
                         done();
                     }, 0);
                 })
@@ -835,18 +851,61 @@ describe('测试SHOW端BotApp功能', () => {
             botApp.onBuyStatusChange(callback);
         });
 
-        test('uploadImage', () => {
+        test('onBuyStatusChange: 设备版本过低', () => {
+            Object.defineProperty(navigator, 'userAgent', {
+                writable: true,
+                value: 'Mozilla/5.0 (Linux; Android 8.1.0; NV6001 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Mobile Safari/537.36 ContainerVersion/1.44.0.0 (Android) DuerOS/Xiaodu;'
+            });
             const JSBridge = JSBridgeFactor();
             const botApp = botAppFactor(JSBridge);
-            botApp.uploadImage(
+            const callback = jest.fn();
+            botApp.onBuyStatusChange(callback);
+            expect(callback).toHaveBeenCalledWith(expect.any(LowVersionErrorMsg), null);
+        });
+
+        test('uploadBase64Image：正常运行', (done) => {
+            Object.defineProperty(navigator, 'userAgent', {
+                writable: true,
+                value: 'Mozilla/5.0 (Linux; Android 8.1.0; NV6001 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Mobile Safari/537.36 ContainerVersion/1.48.0.0 (Android) DuerOS/Xiaodu;'
+            });
+            const response = JSON.stringify({
+                status: 0
+            });
+            const JSBridge = JSBridgeFactor({
+                callHandler: jest.fn((name, data, cb) => {
+                    name === 'uploadImage' && setTimeout(() => {
+                        cb(null, response);
+                        done();
+                    });
+                })
+            });
+            const botApp = botAppFactor(JSBridge);
+            const callback = jest.fn();
+            botApp.uploadBase64Image(
                 'data:image/png;base64,iVBORw0KGgoAAAANSUhE',
-                jest.fn()
+                callback
             );
             expect(JSBridge.callHandler)
                 .toHaveBeenCalledWith(
                     'uploadImage',
                     'iVBORw0KGgoAAAANSUhE',
                     expect.any(Function))
+        });
+
+        test('uploadBase64Image: 设备版本过低', () => {
+            Object.defineProperty(navigator, 'userAgent', {
+                writable: true,
+                value: 'Mozilla/5.0 (Linux; Android 8.1.0; NV6001 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Mobile Safari/537.36 ContainerVersion/1.47.0.0 (Android) DuerOS/Xiaodu;'
+            });
+            const JSBridge = JSBridgeFactor();
+            const botApp = botAppFactor(JSBridge);
+            const callback = jest.fn();
+            botApp.uploadBase64Image(
+                'data:image/png;base64,iVBORw0KGgoAAAANSUhE',
+                callback
+            );
+            expect(callback)
+                .toHaveBeenCalledWith(expect.any(LowVersionErrorMsg), null);
         });
     });
 });

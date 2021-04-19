@@ -49,5 +49,9 @@ describe('测试工具函数 utils', () => {
     test('slicevBase64Header', () => {
         expect(sliceBase64Header('data:image/png;base64,iVBORw0KGgoAAAANSUhE'))
             .toBe('iVBORw0KGgoAAAANSUhE');
+        expect(sliceBase64Header('iVBORw0KGgoAAAANSUhE'))
+            .toBe('iVBORw0KGgoAAAANSUhE');
+        expect(sliceBase64Header('base64,iVBORw0KGgoAAAANSUhE'))
+            .toBe('iVBORw0KGgoAAAANSUhE');
     })
 });

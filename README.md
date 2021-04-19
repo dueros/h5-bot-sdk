@@ -882,6 +882,53 @@ callback参数
      botApp.sendEvent(data);
     ```
 
+## onBuyStatusChange(callback) *1.9+* `SHOW ONLY`
+
+第三方开发者可以用此回调做页面的刷新。支付模块和第三方会有个服务端的通知通路，第三方开发者以服务端的通知订单数据为准。
+<b>注意和onChargeStatusChange作区分，这个通知是Buy购买行为的通知。onChargeStatusChange是支付行为的通知</b>
+
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|接收购买结果的回调|Function|是|无|
+
+* 示例
+    ```javascript
+     botApp.sendEvent(function (err, data) {
+        if (!err) {
+            console.log(data);
+            // 打印结果如下：
+            {
+                "productId": "{{STRING}}",
+                "baiduOrderReferenceId": "{{STRING}}",
+                "sellerOrderId":"{{STRING}}",
+                "purchaseResult":"{{ENUM}}",
+                "message":"{{STRING}}" //  - SUCCESS 支付成功,- ERROR 支付发生错误
+            }
+        }
+    });
+    ```
+
+## uploadBase64Image(base64Image, callback) *1.9+* `SHOW ONLY`
+上传base64编码过的图片到云端。
+
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|base64Image|base64编码的图片|String|是|无|
+|callback|接收上传结果的回调|Function|是|无|
+
+* 示例
+    ```javascript
+    const base64Image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhE';
+     botApp.uploadBase64Image(base64Image, function (err, data) {
+        if (!err) {
+            console.log(data);
+            // 打印结果如下：
+            'SUCCESS' // 上传成功
+            'FAILED' // 上传失败
+        }
+    });
+    ```
+
 
 
 ## 附表

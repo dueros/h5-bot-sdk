@@ -1120,19 +1120,18 @@ class BotApp {
      * @param {Function} cb
      */
     onBuyStatusChange(cb) {
-        this._validateCallback('getCameraState', cb);
-        // todo: 这里的版本号需要更高
-        if (compareShowVersion(this._parseShowVersion(), '1.40.0.0') >= 0) {
+        this._validateCallback('onBuyStatusChange', cb);
+        if (compareShowVersion(this._parseShowVersion(), '1.45.0.0') >= 0) {
             this._getJSBridge(bridge => {
                 bridge.registerHandler('onBuyStatusChange',  function (payload, callback) {
                     // payload数据示例
-                    cb(JSON.parse(payload));
+                    cb(null, JSON.parse(payload));
                     // 告知app是否处理成功
                     callback(true)
                 })
             });
         } else {
-            console.error(new LowVersionErrorMsg());
+            cb(new LowVersionErrorMsg('onBuyStatusChange'), null);
         }
     }
 
@@ -1336,20 +1335,26 @@ class BotApp {
      * @param base64Image
      * @param cb
      */
-    uploadImage(base64Image, cb) {
-        // TODO("版本号判断")
-        this._getJSBridge(bridge => {
-            const substrBase64 = sliceBase64Header(base64Image);
-            bridge.callHandler('uploadImage', substrBase64, (payload) => {
-                cb(JSON.parse(payload));
+    uploadBase64Image(base64Image, cb) {
+        this._validateCallback('uploadImage', cb, 1);
+        if (compareShowVersion(this._parseShowVersion(), '1.48.0.0') >= 0) {
+            this._getJSBridge(bridge => {
+                const substrBase64 = sliceBase64Header(base64Image);
+                console.log('uploadImage', substrBase64);
+                bridge.callHandler('uploadImage', substrBase64, (payload) => {
+                    console.log('uploadImage resposne', payload);
+                    cb(null, JSON.parse(payload));
+                });
             });
-        });
+        } else {
+            cb(new LowVersionErrorMsg('uploadImage'), null);
+        }
     }
 }
 
 module.exports = BotApp;
 
-// // 专门为游戏开发
+// // 用于非侵入式h5游戏集成
 // window.addEventListener('load', function () {
 //     const params = getQuery();
 //     const {random1, signature1, random2, signature2, skillID} = params;

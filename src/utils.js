@@ -196,6 +196,11 @@ export function postMessageToIframe(iframeDOM, msgTarget, data) {
  */
 export function sliceBase64Header(base64Str) {
     const keyword = 'base64,';
-    const startIndex = base64Str.indexOf(keyword) + keyword.length;
-    return base64Str.substr(startIndex);
+    const base64KeyIndex = base64Str.indexOf(keyword);
+    if (base64KeyIndex > -1) {
+        const startIndex = base64KeyIndex + keyword.length;
+        return base64Str.substr(startIndex);
+    } else {
+        return base64Str;
+    }
 }

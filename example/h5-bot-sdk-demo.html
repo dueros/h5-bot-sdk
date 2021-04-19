@@ -7,7 +7,8 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>H5 BOT SDK DEMO</title>
     <!--<script src="//cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>-->
-    <script src="https://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.8.2.js"></script>
+<!--    <script src="https://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.8.2.js"></script>-->
+    <script src="/static/sdk/h5-bot-sdk.1.9.0.js"></script>
 
     <style>
         button {
@@ -42,6 +43,7 @@
 <button id="upload-image">上传图片</button>
 <button id="p1-speech">开启P1级别语音识别</button>
 <button id="p2-speech">开启P2级别语音识别</button>
+<!--<button id="speech-stop">停止语音识别</button>-->
 <div id="log"></div>
 <div id="p1-speech-result"></div>
 <script>
@@ -68,7 +70,8 @@
     var $uploadImage = document.getElementById('upload-image');
     var $p1Speech = document.getElementById('p1-speech');
     var $p2Speech = document.getElementById('p2-speech');
-    var $p1SpeechResult = document.getElementById('p1-speech-result')
+    var $p1SpeechResult = document.getElementById('p1-speech-result');
+    // var $speechStop = document.getElementById('speech-stop');
 
     var $log = document.getElementById('log');
 
@@ -374,7 +377,7 @@
         $uploadImage.onclick = function () {
             log('开始上传图片');
             const img = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAAA1BMVEX6+b1vh14ZAAAACklEQVQI12MAAgAABAABINItbwAAAABJRU5ErkJggg==`;
-            botApp.uploadImage(img, function (result) {
+            botApp.uploadBase64Image(img, function (result) {
                 log('图片上传结果' + result);
             });
         }
@@ -393,6 +396,11 @@
                 log(state);
             });
         }
+
+        // $speechStop.onclick = function () {
+        //     log('停止语音识别');
+        //     botApp.stopSpeechTranscriber();
+        // }
     });
 
 </script>
