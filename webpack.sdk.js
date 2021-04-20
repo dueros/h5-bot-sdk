@@ -14,6 +14,7 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: `h5-bot-sdk.${PACKAGE.version}.js`,
+        // filename: `h5-bot-sdk.${PACKAGE.version}.trial-h5-game.js`,
         library: 'BotApp', // 暴露到全局变量中的名字，具体配置参考：https://webpack.docschina.org/guides/author-libraries
         libraryTarget: 'var', // 模块暴露方式：全局变量
     },
@@ -23,7 +24,7 @@ module.exports = {
 
         // 在产出的开头注入版本信息
         new webpack.BannerPlugin(PACKAGE.name + ' - ' + PACKAGE.version + '.js'),
-        // new webpack.BannerPlugin(PACKAGE.name + ' - ' + PACKAGE.version + '.trial-h5-game-beta1.js'),
+        // new webpack.BannerPlugin(PACKAGE.name + ' - ' + PACKAGE.version + '.trial-h5-game.js'),
     ],
     module: {
         rules: [
