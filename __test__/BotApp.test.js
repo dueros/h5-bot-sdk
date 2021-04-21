@@ -772,17 +772,17 @@ describe('测试SHOW端BotApp功能', () => {
             expect(botApp._parseShowVersion.call(Object.create(null), 'Mozilla/5.0 (Linux; Android  NV6001 Build/1.40.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;')).toBe('1.40.0.0');
         });
 
-        test('_execLinkClick', () => {
+        test('execLinkClick', () => {
             const JSBridge = JSBridgeFactor();
             const botApp = botAppFactor(JSBridge);
             botApp.uploadLinkClicked = jest.fn();
-            botApp._execLinkClick(['url1', 'url2']);
+            botApp.execLinkClick(['url1', 'url2']);
             expect(botApp.uploadLinkClicked.mock.calls.length).toBe(2);
             expect(botApp.uploadLinkClicked).toHaveBeenCalledWith('url1');
             expect(botApp.uploadLinkClicked).toHaveBeenCalledWith('url2');
 
             botApp.uploadLinkClicked = jest.fn();
-            botApp._execLinkClick('url3');
+            botApp.execLinkClick('url3');
             expect(botApp.uploadLinkClicked.mock.calls.length).toBe(1);
             expect(botApp.uploadLinkClicked).toHaveBeenCalledWith('url3');
         });
