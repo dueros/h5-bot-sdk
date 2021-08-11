@@ -3,43 +3,13 @@
  * @author dengxuening<dengxuening@baidu.com>
  */
 
-import BotApp from '../src/main';
 import {LowVersionErrorMsg} from "../src/errors";
+import {JSBridgeFactor, botAppRegisterInfo, botAppFactor} from "./utils";
 
 Object.defineProperty(navigator, 'userAgent', {
     writable: true,
     value: 'Mozilla/5.0 (Linux; Android  NV6001 Build/1.40.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;'
 });
-
-// 全局使用，botApp注册用的配置信息
-const botAppRegisterInfo = JSON.stringify({
-    random1: '3691308f2a4c2f6983f2880d32e29c84',
-    signature1: 'd85f5cfffe5450fe7855fec1fcfe0b16',
-    random2: 'dc468c70fb574ebd07287b38d0d0676d',
-    signature2: '61dc2b99967e0b326e82e80b05571d22',
-    skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
-});
-
-function botAppFactor(JSBridge) {
-    return new BotApp({
-        ...JSON.parse(botAppRegisterInfo),
-        _JsBridgeForUnitTest: JSBridge
-    });
-}
-
-/**
- * 生成一个新的JSBridge对象
- * @returns {{registerHandler: jest.Mock, init: jest.Mock, callHandler: jest.Mock}}
- * @constructor
- */
-function JSBridgeFactor(handler) {
-    return {
-        init: jest.fn(),
-        callHandler: handler && handler.callHandler || jest.fn(),
-        registerHandler: handler && handler.registerHandler || jest.fn(),
-        _name: 'Unit test JSBridge'
-    }
-}
 
 describe('测试SHOW端BotApp功能', () => {
 
@@ -571,218 +541,23 @@ describe('测试SHOW端BotApp功能', () => {
             expect(JSBridge.callHandler).toHaveBeenCalledWith('triggerDuerOSCapacity', transData, expect.any(Function));
         });
 
-        test('游戏心跳上报: 开启上报，展示订阅banner', (done) => {
-            const response = JSON.stringify({
-                intent: {
-                    name: 'H5gameHeartBeatReport',
-                    slots: [
-                        {name: 'needHeartbeatReport', value: '1'},
-                        {name: 'timeInterval', value: 60000},
-                        {name: 'displaySub', value: '1'}
-                    ]
-                },
-                customData: JSON.stringify({name: "DuerOS"})
-            });
-            const JSBridge = JSBridgeFactor({
-                registerHandler: jest.fn((name, cb) => {
-                    name === 'onHandleIntent' && setTimeout(() => {
-                        cb(response, () => {});
-                        expect(botApp._fireGameProcessBeatReport).toHaveBeenCalledWith(60000);
-                        expect(botApp._renderTrialGameSubscribeBanner).toHaveBeenCalledWith(expect.any(Object));
-                        done();
-                    })
-                })
-            });
-            const botApp = botAppFactor(JSBridge);
-            botApp._fireGameProcessBeatReport = jest.fn();
-            botApp._renderTrialGameSubscribeBanner = jest.fn();
-            expect(JSBridge.registerHandler).toHaveBeenCalledWith('onHandleIntent', expect.any(Function));
-        });
-
-        test('游戏心跳上报: 关闭上报，不展示订阅banner', (done) => {
-            const response = JSON.stringify({
-                customData: 'ENABLED',
-                intent: {
-                    name: 'H5gameHeartBeatReport',
-                    slots: [
-                        {name: 'needHeartbeatReport', value: '0'},
-                        {name: 'timeInterval', value: 60000},
-                        {name: 'displaySub', value: '0'}
-                    ]
-                }
-            });
-            const JSBridge = JSBridgeFactor({
-                registerHandler: jest.fn((name, cb) => {
-                    name === 'onHandleIntent' && setTimeout(() => {
-                        cb(response, () => {});
-                        expect(botApp._renderTrialGameSubscribeBanner).not.toBeCalled();
-                        expect(botApp._cancelGameProcessBeatReport).toBeCalled();
-                        done();
-                    })
-                })
-            });
-            const botApp = botAppFactor(JSBridge);
-            botApp._renderTrialGameSubscribeBanner = jest.fn();
-            botApp._cancelGameProcessBeatReport = jest.fn();
-            expect(JSBridge.registerHandler).toHaveBeenCalledWith('onHandleIntent', expect.any(Function));
-        });
-
-        test('0元购游戏试玩付费，刷新banner', (done) => {
-            const response = JSON.stringify({
-                customData: JSON.stringify({
-                    "payPrice": "支付价格",
-                    "image": "展示图片",
-                    "video": "展示视频",
-                    "productId": "商品id",
-                    "sellerOrderId": "订单id",
-                    "buyUrl": "支付链接",
-                    "payType": "3",
-                    "desc": "还剩5分钟哦",
-                    relatedProduct: [
-                        {buyUrl: "url"}
-                    ]
-                }),
-                intent: {
-                    name: 'H5gameTrialStatus',
-                    slots: [
-                        {name: 'needPay', value: '1'}
-                    ]
-                }
-            });
-            const JSBridge = JSBridgeFactor({
-                registerHandler: jest.fn((name, cb) => {
-                    name === 'onHandleIntent' && setTimeout(() => {
-                        cb(response, () => {});
-                        expect(botApp._firePayDialog).toBeCalled();
-                        expect(botApp._tryPostMessageToTrialGameSubscribeBanner).toHaveBeenCalledWith({
-                            type: 'refresh_banner_text',
-                            data: "还剩5分钟哦"
-                        })
-                        done();
-                    })
-                })
-            });
-            const botApp = botAppFactor(JSBridge);
-            botApp._firePayDialog = jest.fn();
-            botApp._tryPostMessageToTrialGameSubscribeBanner = jest.fn();
-            expect(JSBridge.registerHandler).toHaveBeenCalledWith('onHandleIntent', expect.any(Function));
-        });
-
-        test('游戏试玩付费，', (done) => {
-            const response = JSON.stringify({
-                customData: JSON.stringify({
-                    "payPrice": "支付价格",
-                    "image": "展示图片",
-                    "video": "展示视频",
-                    "productId": "商品id",
-                    "sellerOrderId": "订单id",
-                    "buyUrl": "支付链接",
-                    "payType": "2",
-                    relatedProduct: [
-                        {buyUrl: "url"}
-                    ]
-                }),
-                intent: {
-                    name: 'H5gameTrialStatus',
-                    slots: [
-                        {name: 'needPay', value: '1'}
-                    ]
-                }
-            });
-            const JSBridge = JSBridgeFactor({
-                registerHandler: jest.fn((name, cb) => {
-                    name === 'onHandleIntent' && setTimeout(() => {
-                        cb(response, () => {});
-                        expect(botApp._renderTrialGameOrder).toBeCalled();
-                        done();
-                    })
-                })
-            });
-            const botApp = botAppFactor(JSBridge);
-            botApp._renderTrialGameOrder = jest.fn();
-            expect(JSBridge.registerHandler).toHaveBeenCalledWith('onHandleIntent', expect.any(Function));
-        });
-
-        test('游戏试玩已经付费，', (done) => {
-            const response = JSON.stringify({
-                customData: JSON.stringify({
-                    "payPrice": "支付价格",
-                    "image": "展示图片",
-                    "video": "展示视频",
-                    "productId": "商品id",
-                    "sellerOrderId": "订单id",
-                    "buyUrl": "支付链接",
-                    "payType": "2",
-                    relatedProduct: [
-                        {buyUrl: "url"}
-                    ]
-                }),
-                intent: {
-                    name: 'H5gameTrialStatus',
-                    slots: [
-                        {name: 'needPay', value: '0'}
-                    ]
-                }
-            });
-            const JSBridge = JSBridgeFactor({
-                registerHandler: jest.fn((name, cb) => {
-                    name === 'onHandleIntent' && setTimeout(() => {
-                        cb(response, () => {});
-                        expect(botApp._renderTrialGameOrder).not.toBeCalled();
-                        expect(botApp._firePayDialog).not.toBeCalled();
-                        done();
-                    })
-                })
-            });
-            const botApp = botAppFactor(JSBridge);
-            botApp._renderTrialGameOrder = jest.fn();
-            botApp._firePayDialog = jest.fn();
-            expect(JSBridge.registerHandler).toHaveBeenCalledWith('onHandleIntent', expect.any(Function));
-        });
-
-        test('游戏购买成功', (done) => {
-            const response = JSON.stringify({
-                customData: null,
-                intent: {
-                    name: 'NotifyBuyStatus',
-                    slots: [
-                        {name: 'purchaseResult', value: 'SUCCESS'}
-                    ]
-                }
-            });
-            const JSBridge = JSBridgeFactor({
-                registerHandler: jest.fn((name, cb) => {
-                    name === 'onHandleIntent' && setTimeout(() => {
-                        cb(response, () => {});
-                        expect(botApp._closeTrialGameOrder).toBeCalled();
-                        expect(botApp._closeTrialGameBanner).toBeCalled();
-                        done();
-                    })
-                })
-            });
-            const botApp = botAppFactor(JSBridge);
-            botApp._closeTrialGameOrder = jest.fn();
-            botApp._closeTrialGameBanner = jest.fn();
-            expect(JSBridge.registerHandler).toHaveBeenCalledWith('onHandleIntent', expect.any(Function));
-        });
-
         test('parseShowVersion', () => {
             const JSBridge = JSBridgeFactor();
             const botApp = botAppFactor(JSBridge);
             expect(botApp._parseShowVersion.call(Object.create(null), 'Mozilla/5.0 (Linux; Android  NV6001 Build/1.40.0.0; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Safari/537.36 DuerOS/Xiaodu;')).toBe('1.40.0.0');
         });
 
-        test('_execLinkClick', () => {
+        test('execLinkClick', () => {
             const JSBridge = JSBridgeFactor();
             const botApp = botAppFactor(JSBridge);
             botApp.uploadLinkClicked = jest.fn();
-            botApp._execLinkClick(['url1', 'url2']);
+            botApp.execLinkClick(['url1', 'url2']);
             expect(botApp.uploadLinkClicked.mock.calls.length).toBe(2);
             expect(botApp.uploadLinkClicked).toHaveBeenCalledWith('url1');
             expect(botApp.uploadLinkClicked).toHaveBeenCalledWith('url2');
 
             botApp.uploadLinkClicked = jest.fn();
-            botApp._execLinkClick('url3');
+            botApp.execLinkClick('url3');
             expect(botApp.uploadLinkClicked.mock.calls.length).toBe(1);
             expect(botApp.uploadLinkClicked).toHaveBeenCalledWith('url3');
         });

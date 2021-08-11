@@ -204,3 +204,18 @@ export function sliceBase64Header(base64Str) {
         return base64Str;
     }
 }
+
+export function throttleFactory(fn, interval) {
+    let pass = true;
+    let timer = null;
+    return function () {
+        if (pass) {
+            fn.apply(this, [...arguments]);
+            pass = false;
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                pass = true;
+            }, interval);
+        }
+    }
+}
