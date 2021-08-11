@@ -4,7 +4,7 @@
  */
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
-import {parseVersionNumber, compareShowVersion, sliceBase64Header} from "./utils";
+import {parseVersionNumber, compareShowVersion, sliceBase64Header, getQuery} from "./utils";
 import Ad from './Ad';
 import TrialGame from './TrialGame';
 
@@ -808,11 +808,11 @@ class BotApp {
 
 module.exports = BotApp;
 
-// // 用于非侵入式h5游戏集成
+// 用于非侵入式h5游戏集成
 // window.addEventListener('load', function () {
 //     const params = getQuery();
 //     const {random1, signature1, random2, signature2, skillID} = params;
-//     new BotApp({
+//     window.botAppInstance = new BotApp({
 //         random1,
 //         signature1,
 //         random2,

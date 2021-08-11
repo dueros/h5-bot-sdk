@@ -5,7 +5,9 @@
 
 import {getQuery, encodeObjectDataToUrlData,
     isSet, compareShowVersion,
-    parseVersionNumber, sliceBase64Header} from '../src/utils';
+    parseVersionNumber, sliceBase64Header,
+    throttleFactory
+} from '../src/utils';
 
 describe('测试工具函数 utils', () => {
     test('getQuery', () => {
@@ -53,5 +55,20 @@ describe('测试工具函数 utils', () => {
             .toBe('iVBORw0KGgoAAAANSUhE');
         expect(sliceBase64Header('base64,iVBORw0KGgoAAAANSUhE'))
             .toBe('iVBORw0KGgoAAAANSUhE');
+    });
+
+    test('throttleFactory', (done) => {
+        const timeout = 4000;
+        const interval = 1000;
+        const fn = jest.fn();
+        const throttleFn = throttleFactory(fn, interval);
+        let timer = setInterval(() => {
+           throttleFn();
+        }, 0);
+        setTimeout(() => {
+            clearTimeout(timer);
+            expect(fn.mock.calls.length).toBeLessThanOrEqual(Math.floor(timeout/ interval));
+            done();
+        }, timeout)
     })
 });

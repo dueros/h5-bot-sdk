@@ -3,7 +3,8 @@ import {
     encodeObjectDataToUrlData,
     parseH5UrlOrigin,
     parseIntentSlots,
-    postMessageToIframe
+    postMessageToIframe,
+    throttleFactory
 } from "./utils";
 
 /**
@@ -47,6 +48,12 @@ export default class TrialGame {
 
         // 试玩游戏的订阅链接
         this._trialGameSubscribeLink = null;
+
+        // 是否需要用户点击的时候上报指定LinkClick
+        this._needReportClickEvent = false;
+
+        // 用户点击屏幕上报的linkClick
+        this._gameScreenClickEvent = null;
     }
 
     handleIntent(payload) {
@@ -76,16 +83,16 @@ export default class TrialGame {
     handleIframePostMessage(event) {
         const data = event.data;
         if (data.type === TrialGameAction.CANCEL_PAY) {
-            this.requestClose();
+            this.botSDK.requestClose();
         } else if (data.type === TrialGameAction.GO_PAY) {
-            this.uploadLinkClicked({
+            this.botSDK.uploadLinkClicked({
                 url: data.data.buyUrl,
             });
         } else if (data.type === TrialGameAction.CLOSE_BANNER) {
             this._closeTrialGameBanner();
         } else if (data.type === TrialGameAction.GO_SCRIBE) {
             if (this._trialGameSubscribeLink) {
-                this.uploadLinkClicked({
+                this.botSDK.uploadLinkClicked({
                     url: this._trialGameSubscribeLink,
                 });
             } else {
@@ -117,6 +124,19 @@ export default class TrialGame {
                 // 这里存起来订阅游戏的linkClick
                 this._trialGameSubscribeLink = subUrl;
                 this._renderTrialGameSubscribeBanner({desc});
+            }
+        }
+        if (slotsMap.has('needReportClickEvent')) {
+            if (Number(slotsMap.has('needReportClickEvent')) === 1) {
+                this._needReportClickEvent = true;
+                this._gameScreenClickEvent = slotsMap.get('gameScreenClickEvent') || null;
+
+                // 防止重复绑定
+                window.removeEventListener('touchstart', this._fireScreenClicked, true);
+                window.addEventListener('touchstart', this._fireScreenClicked, true);
+            } else {
+                this._needReportClickEvent = false;
+                window.removeEventListener('touchstart', this._fireScreenClicked, true);
             }
         }
         if (needReportGameBeat) {
@@ -194,6 +214,12 @@ export default class TrialGame {
             }
         });
     }
+
+    _fireScreenClicked = throttleFactory(() => {
+        this.botSDK.uploadLinkClicked({
+            url: this._gameScreenClickEvent
+        });
+    }, 1000);
 
     /**
      * 展示试玩H5游戏购买相关内容
@@ -296,7 +322,7 @@ export default class TrialGame {
      * @private
      */
     _reportGameBeat() {
-        this.uploadLinkClicked({
+        this.botSDK.uploadLinkClicked({
             url: `dueros://${this.config.skillID}/h5game/heartbeatreport`,
             initiator: {
                 type: 'AUTO_TRIGGER'
