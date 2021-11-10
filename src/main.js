@@ -28,11 +28,13 @@ class BotApp {
      * @param {string} config.skillID // 必填，技能ID
      * @param {string} config.orderZIndex // 选填，H5试玩游戏的订单浮层的zIndex
      * @param {Object} config._JsBridgeForUnitTest // 禁止使用，仅用于单元测试
+     * @param {boolean} config.needInitJSBridge // 选填，默认为true, 当jsBridge init冲突时可使用本参数，可控制是否调用bridge.init
      */
     constructor (config = {}) {
         this._JsBridgeForUnitTest = config._JsBridgeForUnitTest;
         this.config = {
             adDisable: true,
+            needInitJSBridge: true,
             ...config,
             orderZIndex: config.orderZIndex || 9999
         };
@@ -58,7 +60,7 @@ class BotApp {
         if (this.isInApp()) {
             this._initInXiaoduApp(registerConfig);
         } else {
-            this._initInShow(registerConfig);
+            this._initInShow(registerConfig, this.config.needInitJSBridge);
         }
     }
 
@@ -66,15 +68,17 @@ class BotApp {
      * 在SHOW设备中初始化相关
      * @private
      */
-    _initInShow(registerConfig) {
+    _initInShow(registerConfig, needInitJSBridge = true) {
         this._getJSBridge(bridge => {
-            bridge.init(function(message, responseCallback) {
-                var data = {
-                    'Javascript Responds': 'Ready!'
-                };
-                console.log('Receive bridge init message from native: ' + message);
-                responseCallback(data);
-            });
+            if (needInitJSBridge) {
+                bridge.init(function(message, responseCallback) {
+                    var data = {
+                        'Javascript Responds': 'Ready!'
+                    };
+                    console.log('Receive bridge init message from native: ' + message);
+                    responseCallback(data);
+                });
+            }
 
             // Native依赖这几个参数进行身份校验
             bridge.callHandler('register', registerConfig, payload => {
