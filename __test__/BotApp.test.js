@@ -682,6 +682,21 @@ describe('测试SHOW端BotApp功能', () => {
             expect(callback)
                 .toHaveBeenCalledWith(expect.any(LowVersionErrorMsg), null);
         });
+
+        test('exitRoom: 正常运行', () => {
+            Object.defineProperty(navigator, 'userAgent', {
+                writable: true,
+                value: 'Mozilla/5.0 (Linux; Android 8.1.0; NV6001 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.125 Mobile Safari/537.36 ContainerVersion/1.56.0.0 (Android) DuerOS/Xiaodu;'
+            });
+            const JSBridge = JSBridgeFactor();
+            const botApp = botAppFactor(JSBridge);
+            botApp.exitRoom();
+            expect(JSBridge.callHandler)
+                .toHaveBeenCalledWith(
+                    'exitRoom',
+                    null,
+                    expect.any(Function))
+        });
     });
 });
 

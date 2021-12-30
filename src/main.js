@@ -808,6 +808,19 @@ class BotApp {
             cb(new LowVersionErrorMsg('uploadImage'), null);
         }
     }
+
+    exitRoom() {
+        if (compareShowVersion(this._parseShowVersion(), '1.56.0.0') >= 0) {
+            this._getJSBridge(bridge => {
+                console.log('jsbridge: exit room ');
+                bridge.callHandler('exitRoom', null, (payload) => {
+                    console.log('exit room resposne', payload);
+                });
+            });
+        } else {
+            console.error(new LowVersionErrorMsg('exitRoom'));
+        }
+    }
 }
 
 module.exports = BotApp;

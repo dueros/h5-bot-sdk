@@ -8,7 +8,7 @@
     <title>H5 BOT SDK DEMO</title>
     <!--<script src="//cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>-->
 <!--    <script src="https://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.8.2.js"></script>-->
-    <script src="/static/sdk/h5-bot-sdk.1.9.0.js"></script>
+    <script src="/dist/h5-bot-sdk.1.10.0.js"></script>
 
     <style>
         button {
@@ -44,6 +44,7 @@
 <button id="p1-speech">开启P1级别语音识别</button>
 <button id="p2-speech">开启P2级别语音识别</button>
 <!--<button id="speech-stop">停止语音识别</button>-->
+<button id="exit-room">exitRoom</button>
 <div id="log"></div>
 <div id="p1-speech-result"></div>
 <script>
@@ -72,6 +73,8 @@
     var $p2Speech = document.getElementById('p2-speech');
     var $p1SpeechResult = document.getElementById('p1-speech-result');
     // var $speechStop = document.getElementById('speech-stop');
+
+    var $exitRoom = document.getElementById('exit-room');
 
     var $log = document.getElementById('log');
 
@@ -395,6 +398,10 @@
                 console.log(state);
                 log(state);
             });
+        }
+
+        $exitRoom.onclick = function () {
+            botApp.exitRoom();
         }
 
         // $speechStop.onclick = function () {
