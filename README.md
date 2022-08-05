@@ -31,6 +31,15 @@
 
 ## BotApp的引入
 
+### 接入益智乐园的H5游戏
+
+如果是接入益智乐园的H5游戏，**无需手动引入**，小度智能屏已经强制注入了sdk的实例，开发者可通过`window.botAppInstance`直接获取到 BotApp 实例，后续在该实例上直接调用相关 API 即可
+```javascript
+// 使用示例
+window.botAppInstance.listen();
+```
+
+### 普通接入（非益智乐园场景）
 * 通过script标签引入(支持https)
 
 ```html
@@ -41,7 +50,7 @@
 
 ## 开始使用
 ```javascript
-// 初始化botApp对象
+// 初始化botApp对象（益智乐园场景无需该步骤）
 const botApp = new BotApp({
     random1: '3691308f2a4c2f6983f2880d32e29c84', // 随机字符串，长度不限，由开发者自己生成
     signature1: 'd85f5cfffe5450fe7855fec1fcfe0b16', // 将(random1 + 签名Key)的字符串拼接后做MD5运算得出
@@ -56,7 +65,7 @@ const botApp = new BotApp({
 > md5 -s "string"
 > ```
 > 签名Key不能明文暴露，以免造成不必要的风险。
-> 签名Key在DBP平台(<https:/ros.baidu.com/dbp>)技能的基础信息页面
+> 签名Key在DBP平台(<https:/dueros.baidu.com/dbp>)技能的基础信息页面
 > 签名必须填写正确，否则技能会在与用户交互时被强制退出
 
 ## isInApp() *1.4+*
@@ -500,16 +509,16 @@ callback传入的参数
 
 正常情况下交互都是由服务端决定的，比如问“西藏天气怎么样”则小度反问“西藏哪个城市的？不同城市的天气差别还是挺大的。”，但存在一些场景服务端因为信息缺乏，不能完全确定交互过程，需要由设备端配合来驱动用户交互过程。例如，在抽奖游戏中，H5页面上展示了2个宝箱，用户说“我选左边的”，服务端无法可能无法确定“我选左边的”或者“我选右边的”分别对应哪个宝箱，因此需要调用本方法来定义。
 
-使用案例：抽奖游戏<br>
-H5：展示两个宝箱<br>
-H5：调用updateUiContext([(utterances="我选左边的", url="box_left"), (utterances="我选右边的", url="box_right")])<br>
-H5：调用`speak('你要打开哪一个宝箱')`<br>
+使用案例：选水果<br>
+H5：展示两个个水果在界面上：苹果、香蕉<br>
+H5：调用updateUiContext([(utterances="苹果", url="https://www.apple.com"), (utterances="香蕉", url="https://www.banana.com")])<br>
+H5：调用`speak('你要哪个水果呢')`<br>
 H5：调用`listen()`进入聆听态<br>
-用户：“我选左边的”<br>
+用户：“苹果”<br>
 服务端：下发ClickLink<br>
 H5：在onClickLink(callback)中接收ClickLink携带的结果<br>
-H5：判断ClickLink回调函数中传入的URL是box_left还是box_right<br>
-H5：进入处理逻辑<br>
+H5：判断ClickLink回调函数中传入的URL是`https://www.apple.com`还是`https://www.banana.com`<br>
+H5：进入后续自定义处理逻辑<br>
 
 > 本方法仅支持在小度有屏音箱上调用
 
@@ -939,445 +948,3 @@ callback参数
 |---|---|---|---|
 |LowVersionErrorMsg|1001|Device version too low|设备版本过低错误|
 |ServiceError|1002|Service error, {{msg}}|接口请求报错|
-
-
-### updateUIContext 系统内建类型
-
-<table style="border-collapse: collapse; min-width: 100%;">
-    <colgroup>
-        <col style="width: 130px;" />
-        <col style="width: 129px;" />
-        <col style="width: 77px;" />
-        <col style="width: 294px;" />
-        <col style="width: 264px;" /></colgroup>
-    <tbody>
-        <tr>
-            <td style="background-color: rgb(234, 234, 234); border: 1px solid rgb(187, 187, 187); width: 130px; padding: 8px;">
-                <div>type</div></td>
-            <td style="background-color: rgb(234, 234, 234); border: 1px solid rgb(187, 187, 187); width: 129px; padding: 8px;">
-                <div>request params</div></td>
-            <td style="background-color: rgb(234, 234, 234); border: 1px solid rgb(187, 187, 187); width: 77px; padding: 8px;">
-                <div>response slots</div>
-                <div>（除了默认的url之外）</div></td>
-            <td style="background-color: rgb(234, 234, 234); border: 1px solid rgb(187, 187, 187); width: 294px; padding: 8px;">example</td>
-            <td style="background-color: rgb(234, 234, 234); border: 1px solid rgb(187, 187, 187); width: 264px; padding: 8px;">
-                <div>vsl</div></td>
-        </tr>
-        <tr>
-            <td>
-                <div>input</div></td>
-            <td>
-                <div>name:</div>
-                <div>(optional) value:</div>
-                <div>(optional) type:</div>
-                <div>&nbsp;&nbsp;date</div>
-                <div>&nbsp;&nbsp;car_number</div>
-                <div>&nbsp;&nbsp;cityxpress_number</div>
-                <div>&nbsp; city<e>
-                <div>(optional) prefix(暂不支持)</div>
-                <div></div>
-            </td>
-            <td>content</td>
-            <td>
-                <div>“输入地址北京”</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;name:地址,</div>
-                <div>&nbsp;&nbsp;type:city</div>
-                <div>}</div>
-                <div></div>
-                <div>response params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;content:北京</div>
-                <div>}</div></td>
-            <td>
-                <div>input-text</div>
-                <div>@car-number</div>
-                <div>input-date</div>
-                <div>input-city</div>
-                <div>@express-number</div>
-             </td>
-        </tr>
-        <tr>
-            <td>
-                <div>button</div></td>
-            <td>
-                <div>name</div>
-                <div>(optional) index</div>
-                <div>(optional) index_x</div>
-                <div>(optional) index_y</div></td>
-            <td>
-                <div>-</div></td>
-            <td>
-                <div>“点击确认”、“选择确认”、“选择第一个”</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;name: 确认,</div>
-                <div>&nbsp;&nbsp;index: 1,</div>
-                <div>}</div></td>
-            </div>
-            <td></td>
-        </tr>
-        <tr>
-            <td>
-                <div>link</div></td>
-            <td>
-                <div>name</div>
-                <div>(optional) index</div>
-                <div>(optional) index_x</div>
-                <div>(optional) index_y</div>
-                <div>(optional) prefix(暂不支持)</div></td>
-            <td>
-                <div>-</div></td>
-            <td>
-                <div>“点击确认”、“选择确认”、“选择第一个”</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;name: 确认,</div>
-                <div>&nbsp;&nbsp;index: 1,</div>
-                <div>}</div></td>
-            <td>
-                <div>click</div></td>
-        </tr>
-        <tr>
-            <td>
-                <div>select</div></td>
-            <td>
-                <div>name</div>
-                <div>(optional) selected</div>
-                <div>(optional) index</div>
-                <div>(optional) index_x</div>
-                <div>(optional) index_y</div></td>
-            <td>
-                <div>-</div></td>
-            <td>
-                <div>“选择确认”、“选择第一个”</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;name: 确认,</div>
-                <div>&nbsp;&nbsp;index: 1,</div>
-                <div>}</div></td>
-            <td>
-                <div>select</div></td>
-        </tr>
-        <tr>
-            <td>
-                <div>video</div></td>
-            <td>
-                <div>name</div>
-                <div>(optional) index</div>
-                <div>(optional) index_x</div>
-                <div>(optional) index_y</div>
-                <div>(optional) actors(screen_e)</div>
-                <div>(optional) director</div>
-                <div>(optional) prefix(暂不支持)</div>
-                <div>//后续增加的字段要与structures/search-video-structure-private.md 保持一致</div>
-                </td>
-            <td>
-                <div>-</div></td>
-            <td>
-                <div>"播放琅琊榜"</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;name: 琅琊榜</div>
-                <div>}</div></td>
-            <td>
-                <div></div>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <div>music</div></td>
-            <td>
-                <div>name</div>
-                <div>(optional) index</div>
-                <div>(optional) index_x</div>
-                <div>(optional) index_y</div>
-                <div>(optional) singers</div>
-                <div>(optional) album</div>
-                <div>(optional) prefix(暂不支持)</div></td>
-            <td>
-                <div>-</div></td>
-            <td>
-                <div>"播放青花瓷"</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;name: 青花瓷</div>
-                <div>}</div></td>
-            <td>
-                <div></div>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <div>tab</div></td>
-            <td>
-                <div>name</div>
-                <div>(optional) selected</div>
-                <div>(optional) index</div>
-                <div>(optional) index_x</div>
-                <div>(optional) index_y</div>
-                <div>(optional) prefix(暂不支持)</div></td>
-            <td>
-                <div>-</div></td>
-            <td>
-                <div>“切换到电视剧”</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>name: 电视剧</div>
-                <div>}</div></td>
-            <td>
-                <div></div>
-            </td>
-        </tr>
-        <tr>
-            <td>scroll</td>
-            <td>
-                <div>(optional) name:</div>
-                <div>(optional) type:</div>
-                <div>vertical</div>
-                <div>horizontal</div>
-                <div>page</div></td>
-            <td>
-                <div>direction 方向，取值{left/right/up/down}</div>
-                <div></div>
-                <div>by 滚动的相对值，可以有正负</div>
-                <div></div>
-                <div>to 滚动的绝对值，-1代表滚到底</div></td>
-            <td>
-                <div>"把电影列表向下滚动"</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>name:电影列表</div>
-                <div>}</div>
-                <div></div>
-                <div>response params</div>
-                <div>{</div>
-                <div>direction:{left/right/up/down}</div>
-                <div>&nbsp;&nbsp;by: {{LONG}},</div>
-                <div>&nbsp;&nbsp;to: {{LONG}}, //to ==-1的时候，表示“滚到底”</div>
-                <div>&nbsp;&nbsp;//by和to的单位，暂时都是 屏幕/页，以后有需求再加别的unit</div>
-                <div>}</div></td>
-            <td>
-                <div>scroll-vertical</div>
-                <div>scroll-horizontal</div>
-                <div>scroll-page</div></td>
-        </tr>
-        <tr>
-            <td>pager</td>
-            <td>
-                <div>(optional) name:</div>
-                <div>(optional) cur_page:</div>
-                <div>(optional) min</div>
-                <div>(optional) max</div>
-                </td>
-            <td>
-                <div>by 页码的相对值，可以有正负</div>
-                <div>to 页码的绝对值，-1代表最后一页(如果没有max的话, 才会返回-1;否则应该返回max-1)</div>
-            </td>
-            <td>
-                <div>"把电影列表翻到最后一页"</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;name:电影列表</div>
-                <div>}</div>
-                <div></div>
-                <div>response params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;to: {{LONG}}, </div>
-                <div>}</div></td>
-            <td>
-                <div>pager</div>
-                </td>
-        </tr>
-         <tr>
-            <td>step</td>
-            <td>
-                <div>(optional) name:</div>
-                <div>(optional) cur_page:</div>
-                <div>(optional) min</div>
-                <div>(optional) max</div>
-                </td>
-            <td>
-                <div>by 页码的相对值，可以有正负</div>
-                <div>to 页码的绝对值，-1代表最后一页(如果没有max的话, 才会返回-1;否则应该返回max-1)</div>
-            </td>
-            <td>
-                <div>"下一步"</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>}</div>
-                <div></div>
-                <div>response params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;by: {{LONG}}, </div>
-                <div>}</div></td>
-            <td>
-                <div>step</div>
-                </td>
-        </tr>
-        <tr>
-            <td>call_phone</td>
-            <td>
-                <div>name</div>
-                <div>(optional) index</div>
-            </td>
-            <td>
-                <div>-</div>
-            </td>
-            <td>
-                <div>"电话第一个"</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>index:1</div>
-                <div>}</div>
-                <div>response params</div>
-                <div>{</div>
-                <div>call_phone_type:(normal/voice/video)</div>
-                <div>}</div></td>
-            <td>
-                <div></div>
-            </td>
-        </tr>
-        <tr>
-            <td>send_message</td>
-            <td>
-                <div>name</div>
-                <div>(optional) index</div>
-            </td>
-            <td>
-                <div>-</div>
-            </td>
-            <td>
-                <div>"发消息给第一个"</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>index:1</div>
-                <div>}</div></td>
-            <td>
-                <div></div>
-            </td>
-        </tr>
-        <tr>
-            <td>read_message</td>
-            <td>
-                <div>(optional) index</div>
-            </td>
-            <td>
-                <div>-</div>
-            </td>
-            <td>
-                <div>"阅读第一条留言"</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>index:1</div>
-                <div>}</div></td>
-            <td>
-                <div></div>
-            </td>
-        </tr>
-        <tr>
-            <td>view_photo</td>
-            <td>
-                <div>(optional) index</div>
-            </td>
-            <td>
-                <div>-</div>
-            </td>
-            <td>
-                <div>"查看第一张照片"</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>index:1</div>
-                <div>}</div></td>
-            <td>
-                <div></div>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <div>video_player</div>
-            </td>
-            <td>
-                <div>-</div>
-            </td>
-            <td>
-                <div>command: seek_by(快进快退n秒)/seek_to(从某时刻播放)/pause(暂停)/continue(继续播放)/next(下一个)/previous(上一个)/</div>
-                <div>percent: 进度的百分比,例如30</div>
-                <div>time: 秒数, 例如90</div>
-                <div>action: FORWARD/REWIND(快进快退场景下区分前进后退)</div>
-            </td>
-            <td>
-                <div>-</div>
-            </td>
-            <td>
-                <div>-</div>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <div>audio_player</div>
-            </td>
-            <td>
-                <div>-</div>
-            </td>
-            <td>
-                <div>command: continue(继续播放)/pause(暂停)/previous(上一个)/next(下一个)/seek_to(从某时刻播放)/seek_by(快进快退n秒)/favorite(收藏or取消收藏)/play_favorite(播放收藏)/play_history(播放历史)/play_mode(播放模式)/exit(退出)</div>
-                <div>time: 秒数, 例如90</div>
-                <div>percent: 百分比, 例如30</div>
-                <div>action: FORWARD/REWIND/LIKE/UNLIKE(快进快退场景下区分前进、后退, 收藏场景下区分收藏、取消收藏)</div>
-                <div>play_mode: 播放模式, RAND/SINGLE_CYCLE/LIST_CYCLE分别表示随机播放/单曲循环/顺序播放</div>
-            </td>
-            <td>
-                <div>-</div>
-            </td>
-            <td>
-                <div>-</div>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <div>smarthome_control</div>
-            </td>
-            <td>
-                <div>index</div>
-                <div>name</div>
-            </td>
-            <td>
-                <div>slots</div>
-            </td>
-            <td>
-                <div>“第一个调亮”、“把第一个设置为阅读模式”</div>
-                <div>request params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;name: 床头灯,</div>
-                <div>&nbsp;&nbsp;index: 1</div>
-                <div>}</div>
-                <div>response params</div>
-                <div>{</div>
-                <div>&nbsp;&nbsp;slots:{ANY}</div>
-                <div>}</div>
-            </td>
-            <td>
-                <div></div>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <div></div>
-            </td>
-            <td>
-                <div></div>
-            </td>
-            <td>
-                <div></div>
-            </td>
-            <td>
-                <div></div>
-            </td>
-            <td>
-                <div></div>
-            </td>
-        </tr>
-    </tbody>
-</table>

@@ -4,7 +4,7 @@
  */
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
-import {parseVersionNumber, compareShowVersion, sliceBase64Header, getQuery} from "./utils";
+import {parseVersionNumber, compareShowVersion, sliceBase64Header, throttleFactory} from "./utils";
 import Ad from './Ad';
 import TrialGame from './TrialGame';
 
@@ -772,7 +772,7 @@ class BotApp {
     }
 
     _logTouch() {
-        window.addEventListener('touchstart', (e) => {
+        const touchLogCallback = (e) => {
             const touchEv = e.touches[0];
             this.sendEvent({
                 namespace: 'ai.dueros.device_interface.bot_app_sdk',
@@ -785,7 +785,9 @@ class BotApp {
                     },
                 }
             });
-        }, true);
+        };
+        const throttleTouchLogCallback = throttleFactory(touchLogCallback, 1000);
+        window.addEventListener('touchstart', touchLogCallback, true);
     }
 
     /**

@@ -219,7 +219,7 @@ export default class TrialGame {
         this.botSDK.uploadLinkClicked({
             url: this._gameScreenClickEvent
         });
-    }, 1000);
+    }, 3000);
 
     /**
      * 展示试玩H5游戏购买相关内容
