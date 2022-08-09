@@ -4,7 +4,7 @@
  */
 
 import {LowVersionErrorMsg, ServiceError} from './errors';
-import {parseVersionNumber, compareShowVersion, sliceBase64Header, throttleFactory} from "./utils";
+import {parseVersionNumber, compareShowVersion, sliceBase64Header, throttleFactory, getQuery} from "./utils";
 import Ad from './Ad';
 import TrialGame from './TrialGame';
 
