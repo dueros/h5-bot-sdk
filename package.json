@@ -1,13 +1,16 @@
 {
   "name": "@baidu/h5-bot-sdk",
-  "version": "1.11.0",
+  "version": "1.100.0",
   "description": "DuerOS H5 BOT JS SDK",
-  "main": "lib/main.js",
+  "main": "./src/main.js",
   "scripts": {
     "test": "jest --coverage",
     "buildSingleFile": "npm run test && webpack --config webpack.sdk.js",
+    "buildSingleFileTril": "npm run test && webpack --config webpack.sdktril.js",
     "buildModule": "npm run test && babel ./src -d lib",
-    "build": "npm run buildSingleFile && npm run buildModule"
+    "build": "npm run buildSingleFile && npm run buildModule",
+    "buildTril": "npm run buildSingleFileTril && npm run buildModule",
+    "buildAll": "npm run buildSingleFile && npm run buildModule && npm run buildSingleFileTril"
   },
   "author": "dengxuening",
   "license": "Apache-2.0",
@@ -24,5 +27,7 @@
     "webpack-cli": "^3.3.6",
     "webpack-merge": "^4.2.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "test": "^3.2.1"
+  }
 }

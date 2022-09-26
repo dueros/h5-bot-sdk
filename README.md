@@ -33,13 +33,13 @@
 
 ### 接入益智乐园的H5游戏
 
-如果是接入益智乐园的H5游戏，**无需手动引入**，小度智能屏已经强制注入了sdk的实例，开发者可通过`window.botAppInstance`直接获取到 BotApp 实例，后续在该实例上直接调用相关 API 即可
+如果是接入益智乐园和游戏中心的H5游戏，**无需手动引入**，小度智能屏已经强制注入了sdk的实例，开发者可通过`window.botAppInstance`直接获取到 BotApp 实例，后续在该实例上直接调用相关 API 即可
 ```javascript
 // 使用示例
 window.botAppInstance.listen();
 ```
 
-### 普通接入（非益智乐园场景）
+### 普通接入（非益智乐园和游戏中心场景）
 * 通过script标签引入(支持https)
 
 ```html
@@ -50,7 +50,7 @@ window.botAppInstance.listen();
 
 ## 开始使用
 ```javascript
-// 初始化botApp对象（益智乐园场景无需该步骤）
+// 初始化botApp对象（益智乐园和游戏中心场景无需该步骤）
 const botApp = new BotApp({
     random1: '3691308f2a4c2f6983f2880d32e29c84', // 随机字符串，长度不限，由开发者自己生成
     signature1: 'd85f5cfffe5450fe7855fec1fcfe0b16', // 将(random1 + 签名Key)的字符串拼接后做MD5运算得出
@@ -937,6 +937,157 @@ callback参数
         }
     });
     ```
+
+## getUserInfo（callback）*1.10+* `SHOW ONLY`
+本方法获取用户信息。
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|接收使用者信息的回调|Function|是|无|
+
+* 示例
+    ```javascript
+    botApp.getUserInfo(function (data) {
+        console.log(data);
+        // 打印结果如下 ：
+
+        "userId": "2506829803",
+        "userName": "186*****505",
+        "avatar": "http://nemoapi.zaijia.com/profile/picture2?k=18946961-f237c568-5cf7-4d7b-995c-fc83b276ab21-1583379570809"
+
+    });
+    ```
+
+
+## submitRankScore（socre，callback）*1.10+* `SHOW ONLY`
+本方法用于提交关卡分数
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|score|接收使用者关卡的分数，score $\in[0,1000000)$ 单个分值不超过100w|String|是|无|
+|callback|接收提交关卡分数的回调|Function|是|无|
+
+
+### status参数 
+|返回状态码(status)|返回信息(msg)|
+|----|----|
+|0|success|
+|1001|failed:Nonstandard parameters|
+|1002|failed: Parameters out of range|
+|1003|failed: Internal Error|
+|1004|failed: Internal Error|
+|1005|failed: The queried data does not exist|
+|1006|failed: Internal Error|
+
+* 示例
+    ```javascript
+    botApp.submitRankScore(score，function (data) {
+        console.log(data);
+        // 打印结果如下 ：
+        "status": 0,   
+        "msg": "success",
+        "data": {
+            "score": 20,   // 提交之后当前用户分值
+            "rank": 100    // 提交之后当前用户排名， -1为未进入排行榜（排行榜只统计前500名）
+        }
+    });
+    ```
+
+## getRankList（list，callback）*1.10+* `SHOW ONLY`
+本方法用于获取排行榜排名列表
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|list|接收使用者页面请求，pageSize $\in(0,100]$ 单页显示最大数量100|Object|是|无|
+|callback|接收排行榜排名列表的回调|Function|是|无|
+
+
+### status状态码同方法submitRankScore
+* 示例
+    ```javascript
+    list = {
+      page : '0',
+      pageSize : '20',
+    
+   }
+    botApp.getRankList(list，function (data) {
+        console.log(data);
+        // 打印结果如下 ：
+    "status": 0,
+        "msg": "success",
+        "data": {
+            "currentPage": 0, // 当前页码，从0开始
+            "totalPage": 50, // 总页数
+            "hasNext": true, // 是否还有下一页
+            "ranklist": [{
+                    "userId": 1234567, // 用户id                
+                    "userName": '昵称', // 用户昵称
+                    "userAvatar": "", // 用户头像
+                    "rank": 1, // 当前的排名 -1为未进入排行榜（排行榜只统计前500名）
+                    "score": 100 // 当前用户的分数
+                },
+                ...
+            ]
+        }
+    });
+    ```
+## getMyRanking (callback) *1.10+* `SHOW ONLY`
+本方法用于获取当前用户的排名
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|callback|接收当前用户排名信息的回调|Function|是|无|
+
+### status状态码同方法submitRankScore
+* 示例
+    ```javascript
+
+    botApp.getMyRanking(function (data) {
+        console.log(data);
+        // 打印结果如下 ：
+         "status": 0,
+        "msg": "success",
+        "data": {
+            "userId": 1234567, // 用户编号
+            "userName": '用户昵称', // 用户昵称
+            "rank": 1, // 当前的排名 -1为未进入排行榜（排行榜只统计前500名）
+            "score": 100   //当前用户分值
+        }
+    });
+    ```
+
+## getSetProgress (levelNum,callback) *1.10+* `SHOW ONLY`
+本方法用于设置游戏关卡进度
+|参数|说明|类型|必填|默认值|
+|----|----|----|----|----|
+|levelNum|标记上传关卡值，levelNum $ \in $[0,10000] 最大关卡数10000|String|是|无|
+|callback|接收推荐游戏列表的回调|Function|是|无|
+
+
+### status状态码同方法submitRankScore
+* 示例
+    ```javascript
+ 
+    botApp.getSetProgress('3',function (data) {
+        console.log(data);
+        // 打印结果如下 ：
+        "status": 0,
+        "msg": "success",
+        "data": {
+            "recommendList": [
+                {
+                    "botId": "",   //技能id/游戏id
+                    "icon": "",    // 展示icon
+                    "showName": "",  // 游戏名称
+                    "linkUrl": ""    // 点击地址
+                },
+                ...
+            ]
+        }
+    });
+    ```
+
+
+
+
+
+
 
 
 
