@@ -4,5 +4,10 @@
  */
 
 module.exports = {
-    verbose: false
+    verbose : false,
+    "globals": {
+      "SOMETHING": true,
+      }
+ 
+
 }

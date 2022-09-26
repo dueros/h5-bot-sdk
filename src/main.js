@@ -3,10 +3,17 @@
  * @author dengxuening<dengxuening@baidu.com>
  */
 
-import {LowVersionErrorMsg, ServiceError} from './errors';
-import {parseVersionNumber, compareShowVersion, sliceBase64Header, throttleFactory, getQuery} from "./utils";
+import { LowVersionErrorMsg, ServiceError } from './errors';
+import {
+    parseVersionNumber,
+    compareShowVersion,
+    sliceBase64Header,
+    throttleFactory,
+    getQuery
+} from './utils';
 import Ad from './Ad';
 import TrialGame from './TrialGame';
+
 
 /**
  * @callback requestCallback 一种回调函数(随便定义的名字。。。)
@@ -17,7 +24,6 @@ import TrialGame from './TrialGame';
  * @class
  */
 class BotApp {
-
     /**
      * @constructor
      * @param {Object} config 必填，身份校验等相关信息
@@ -30,17 +36,18 @@ class BotApp {
      * @param {Object} config._JsBridgeForUnitTest // 禁止使用，仅用于单元测试
      * @param {boolean} config.needInitJSBridge // 选填，默认为true, 当jsBridge init冲突时可使用本参数，可控制是否调用bridge.init
      */
-    constructor (config = {}) {
+    constructor(config = {}) {
         this._JsBridgeForUnitTest = config._JsBridgeForUnitTest;
         this.config = {
             adDisable: true,
             needInitJSBridge: true,
             ...config,
-            orderZIndex: config.orderZIndex || 9999
+            orderZIndex: config.orderZIndex || 9999,
         };
 
         this.ad = new Ad(this);
         this.trialGame = new TrialGame(this);
+
 
         // 有些游戏是http协议的，有些游戏是https协议的
         this._gameWrapperMsgTarget = 'http://xiaodu.baidu.com';
@@ -54,7 +61,7 @@ class BotApp {
             random1: this.config.random1,
             signature1: this.config.signature1,
             random2: this.config.random2,
-            signature2: this.config.signature2
+            signature2: this.config.signature2,
         });
 
         if (this.isInApp()) {
@@ -69,19 +76,21 @@ class BotApp {
      * @private
      */
     _initInShow(registerConfig, needInitJSBridge = true) {
-        this._getJSBridge(bridge => {
+        this._getJSBridge((bridge) => {
             if (needInitJSBridge) {
-                bridge.init(function(message, responseCallback) {
+                bridge.init(function (message, responseCallback) {
                     var data = {
-                        'Javascript Responds': 'Ready!'
+                        'Javascript Responds': 'Ready!',
                     };
-                    console.log('Receive bridge init message from native: ' + message);
+                    console.log(
+                        'Receive bridge init message from native: ' + message
+                    );
                     responseCallback(data);
                 });
             }
 
             // Native依赖这几个参数进行身份校验
-            bridge.callHandler('register', registerConfig, payload => {
+            bridge.callHandler('register', registerConfig, (payload) => {
                 payload = JSON.parse(payload);
                 this.registerResult = payload;
                 this.registerCallback && this.registerCallback(payload);
@@ -92,7 +101,7 @@ class BotApp {
                 }
             });
 
-            bridge.registerHandler('onHandleIntent',  (payload, callback) => {
+            bridge.registerHandler('onHandleIntent', (payload, callback) => {
                 payload = JSON.parse(payload);
                 const slots = payload.intent.slots;
                 const intentName = payload.intent.name;
@@ -100,19 +109,35 @@ class BotApp {
                     if (payload.customData) {
                         this.ad.render(JSON.parse(payload.customData).jsonData);
                     }
-                // 手势识别
-                } else if (intentName === 'AI_DUER_SHOW_GESTURE_RECOGNIZED' && this._registerGestureCb) {
+                    // 手势识别
+                } else if (
+                    intentName === 'AI_DUER_SHOW_GESTURE_RECOGNIZED' &&
+                    this._registerGestureCb
+                ) {
                     if (slots && slots[0]) {
                         this._registerGestureCb(null, slots[0].value);
                     } else {
-                        this._registerGestureCb('Recognize gesture failed', null);
+                        this._registerGestureCb(
+                            'Recognize gesture failed',
+                            null
+                        );
                     }
-                } else if (intentName === 'com.baidu.duer.cameraStateChanged' && this._getCameraStateCb) {
+                } else if (
+                    intentName === 'com.baidu.duer.cameraStateChanged' &&
+                    this._getCameraStateCb
+                ) {
                     this._getCameraStateCb(null, payload.customData);
-                } else if (intentName === 'H5gameHeartBeatReport'
-                    || intentName === 'H5gameTrialStatus'
-                    || intentName === 'NotifyBuyStatus') {
-                    this.trialGame.handleIntent(payload)
+                } else if (
+                    intentName === 'H5gameHeartBeatReport' ||
+                    intentName === 'H5gameTrialStatus' ||
+                    intentName === 'NotifyBuyStatus'
+                ) {
+                    this.trialGame.handleIntent(payload);
+                } else if (
+                    intentName === 'dueros.avc.user_info' ||
+                    intentName === 'H5GameRanking'
+                ) {
+                    this._h5GameUserInfoRankingApi(payload);
                 } else {
                     this.onHandleIntentCb && this.onHandleIntentCb(payload);
                 }
@@ -121,8 +146,15 @@ class BotApp {
 
             bridge.registerHandler('onClickLink', (payload, callback) => {
                 payload = JSON.parse(payload);
-                if (payload.url === 'http://sdk.bot.dueros.ai?action=unknown_utterance') {
-                    this._handleUnknowUtteranceCb && this._handleUnknowUtteranceCb(null, JSON.parse(payload.params));
+                if (
+                    payload.url ===
+                    'http://sdk.bot.dueros.ai?action=unknown_utterance'
+                ) {
+                    this._handleUnknowUtteranceCb &&
+                        this._handleUnknowUtteranceCb(
+                            null,
+                            JSON.parse(payload.params)
+                        );
                 } else {
                     this._onClickLinkCb && this._onClickLinkCb(payload);
                 }
@@ -133,8 +165,8 @@ class BotApp {
         this.uploadLinkClicked({
             url: `dueros://${this.config.skillID}/h5game/getneedheartbeatreport`,
             initiator: {
-                type: 'AUTO_TRIGGER'
-            }
+                type: 'AUTO_TRIGGER',
+            },
         });
         this._showVersion = this._parseShowVersion();
 
@@ -143,7 +175,7 @@ class BotApp {
             // 处理广告消息
             this.ad.handlePostMessageEvent(event);
             // 处理游戏试玩相关消息
-            this.trialGame.handleIframePostMessage(event)
+            this.trialGame.handleIframePostMessage(event);
         });
 
         // 绑定屏幕触摸打点事件
@@ -155,30 +187,39 @@ class BotApp {
      * @private
      */
     _initInXiaoduApp(registerConfig) {
-        window.addEventListener('message', event => {
+        window.addEventListener('message', (event) => {
             let data = event.data;
             if (data.type === 'wrapper_location_protocal') {
                 // 如果检测到父页面是https协议的，则升级为https
                 if (data.data.indexOf('https') > -1) {
-                    this._gameWrapperMsgTarget = this._gameWrapperHttpsMsgTarget;
+                    this._gameWrapperMsgTarget =
+                        this._gameWrapperHttpsMsgTarget;
                 }
                 // 确认链接是否是https之后开始注册
-                window.parent.postMessage({
-                    type: 'register',
-                    data: this.config
-                }, this._gameWrapperMsgTarget);
+                window.parent.postMessage(
+                    {
+                        type: 'register',
+                        data: this.config,
+                    },
+                    this._gameWrapperMsgTarget
+                );
             }
 
             if (event.origin === this._gameWrapperMsgTarget) {
-                console.log('receive h5game-wrapper\'s message ', data);
-                if (data.type === 'authorized_success' || data.type === 'authorized_fail') {
+                console.log('receive h5game-wrapper', message, ', data');
+                if (
+                    data.type === 'authorized_success' ||
+                    data.type === 'authorized_fail'
+                ) {
                     this._linkAccountResultCb(data);
                 } else if (data.type === 'bot_info') {
                     this.registerResult = data.data;
-                    this.registerCallback && this.registerCallback(this.registerResult);
+                    this.registerCallback &&
+                        this.registerCallback(this.registerResult);
                     this.registerCallback = null;
                 } else if (data.type === 'ship') {
-                    this._getShipPayResult && this._getShipPayResult(data.err, data.data);
+                    this._getShipPayResult &&
+                        this._getShipPayResult(data.err, data.data);
                 }
             }
         });
@@ -191,16 +232,22 @@ class BotApp {
             if (window.WebViewJavascriptBridge) {
                 cb(window.WebViewJavascriptBridge);
             } else {
-                document.addEventListener('WebViewJavascriptBridgeReady', () => {
-                    cb(WebViewJavascriptBridge);
-                }, false);
+                document.addEventListener(
+                    'WebViewJavascriptBridgeReady',
+                    () => {
+                        cb(WebViewJavascriptBridge);
+                    },
+                    false
+                );
             }
         }
     }
 
     _validateCallback(fnName, arg, index = 0) {
         if (typeof arg !== 'function') {
-            throw new TypeError(`[${fnName}]'s arguments[${index}] must be a function, but get a ${typeof arg}`);
+            throw new TypeError(
+                `[${fnName}]'s arguments[${index}] must be a function, but get a ${typeof arg}`
+            );
         }
     }
 
@@ -265,34 +312,52 @@ class BotApp {
      */
     requireUserAgeInfo(cb) {
         if (this.isInApp()) {
-            console.warn('requireUserAgeInfo: Your H5 app is not running on the App, and the callback function will not be called');
+            console.warn(
+                'requireUserAgeInfo: Your H5 app is not running on the App, and the callback function will not be called'
+            );
             return;
         } else {
             this._validateCallback('requireUserAgeInfo', cb);
             if (compareShowVersion(this._parseShowVersion(), '1.35.0.0') >= 0) {
                 if (this.config.skillID) {
-                    this._getJSBridge(bridge => {
-                        bridge.callHandler('requestUserAgeInfo', null, (payload) => {
-                            payload = JSON.parse(payload);
-                            if (payload.status === 0) {
-                                if (Number(payload.data.is_auth) === 0) {
-                                    let link = `dueros://${this.config.skillID}/certification?action=realName`;
-                                    this.uploadLinkClicked({
-                                        url: link,
-                                        initiator: {
-                                            type: 'AUTO_TRIGGER'
-                                        }
-                                    });
+                    this._getJSBridge((bridge) => {
+                        bridge.callHandler(
+                            'requestUserAgeInfo',
+                            null,
+                            (payload) => {
+                                payload = JSON.parse(payload);
+                                if (payload.status === 0) {
+                                    if (Number(payload.data.is_auth) === 0) {
+                                        let link = `dueros://${this.config.skillID}/certification?action=realName`;
+                                        this.uploadLinkClicked({
+                                            url: link,
+                                            initiator: {
+                                                type: 'AUTO_TRIGGER',
+                                            },
+                                        });
+                                    }
+                                    cb && cb(null, payload.data);
+                                } else {
+                                    cb &&
+                                        cb(
+                                            new ServiceError(
+                                                `logid: ${payload.logid}, ${payload.msg}`
+                                            ),
+                                            payload.data
+                                        );
+                                    console.error(
+                                        'requireUserAgeInfo has an error: ',
+                                        payload.logid,
+                                        payload.msg
+                                    );
                                 }
-                                cb && cb(null, payload.data);
-                            } else {
-                                cb && cb(new ServiceError(`logid: ${payload.logid}, ${payload.msg}`), payload.data);
-                                console.error('requireUserAgeInfo has an error: ', payload.logid, payload.msg);
                             }
-                        });
+                        );
                     });
                 } else {
-                    throw new Error('Missing `skillID`, please configure `skillID` when initializes the `BotApp`');
+                    throw new Error(
+                        'Missing `skillID`, please configure `skillID` when initializes the `BotApp`'
+                    );
                 }
             } else {
                 cb(new LowVersionErrorMsg('requireUserAgeInfo'), null);
@@ -300,6 +365,41 @@ class BotApp {
         }
     }
 
+    sortGameRanking(rank, custom) {
+        rank ? rank(custom) : rank('Get H5 game info failed');
+    }
+
+    /*h5Game的方法*/
+    _h5GameUserInfoRankingApi(payload){
+        const slots = payload.intent.slots;
+        const intentName = payload.intent.name;
+        const customData = payload.customData ? JSON.parse(payload.customData) : null;
+        if (intentName === 'dueros.avc.user_info') {
+            let userInfo={};
+            slots.forEach(item =>{
+                userInfo[item.name]=item.value
+            })
+            this._getUserInfocb(userInfo);
+        }
+        if (intentName === 'H5GameRanking') {
+            switch (slots[0].value) {
+                case 'submitScore':
+                    this.sortGameRanking(this._submitRankScorecb, customData);
+                    break;
+                case 'getRankList':
+                    this.sortGameRanking(this._getRankingcb, customData);
+                    break;
+                case 'getMyRanking':
+                    this.sortGameRanking(this._getMyRankingcb, customData);
+                    break;
+                case 'setProgress':                   
+                    this.sortGameRanking(this._getSetProgresscb,customData);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
     /**
      * 请求发货信息。要调用本方法则必须在BotApp初始化时填写skillID，
      * 并同时使用onHandleIntent()来获取发货信息。
@@ -311,11 +411,13 @@ class BotApp {
             this.uploadLinkClicked({
                 url: link,
                 initiator: {
-                    type: 'AUTO_TRIGGER'
-                }
+                    type: 'AUTO_TRIGGER',
+                },
             });
         } else {
-            throw new Error('Missing `skillID`, please configure `skillID` when initializes the `BotApp`');
+            throw new Error(
+                'Missing `skillID`, please configure `skillID` when initializes the `BotApp`'
+            );
         }
     }
 
@@ -336,14 +438,19 @@ class BotApp {
         if (this.isInApp()) {
             this._validateCallback('requireLinkAccount', cb);
             this._linkAccountResultCb = cb;
-            window.parent.postMessage({
-                type: 'request_authorization'
-            }, this._gameWrapperMsgTarget);
+            window.parent.postMessage(
+                {
+                    type: 'request_authorization',
+                },
+                this._gameWrapperMsgTarget
+            );
         } else {
             if (cb) {
-                console.warn('requireLinkAccount: Your H5 app is not running on the App, and the callback function will not be called');
+                console.warn(
+                    'requireLinkAccount: Your H5 app is not running on the App, and the callback function will not be called'
+                );
             }
-            this._getJSBridge(bridge => {
+            this._getJSBridge((bridge) => {
                 bridge.callHandler('requireLinkAccount');
             });
         }
@@ -355,14 +462,16 @@ class BotApp {
      */
     onLinkAccountSuccess(cb) {
         this._validateCallback('onLinkAccountSuccess', cb);
-        this._getJSBridge(bridge => {
-            bridge.registerHandler('onLinkAccountSuccess',  function (payload, callback) {
-                cb(JSON.parse(payload));
-                callback(true);
-            });
-        })
+        this._getJSBridge((bridge) => {
+            bridge.registerHandler(
+                'onLinkAccountSuccess',
+                function (payload, callback) {
+                    cb(JSON.parse(payload));
+                    callback(true);
+                }
+            );
+        });
     }
-
 
     /**
      * 发起收款操作，调用此函数小度有屏音箱
@@ -373,17 +482,22 @@ class BotApp {
     requireCharge(data, cb) {
         if (this.isInApp()) {
             if (typeof cb !== 'function') {
-                throw new Error('requireCharge: Your web runs in App and and you must pass a function'
-                    + ' in the position of the second to handle the purchase result.');
+                throw new Error(
+                    'requireCharge: Your web runs in App and and you must pass a function' +
+                    ' in the position of the second to handle the purchase result.'
+                );
             }
             this._getShipPayResult = cb;
-            window.parent.postMessage({
-                type: 'charge',
-                data
-            }, this._gameWrapperMsgTarget);
+            window.parent.postMessage(
+                {
+                    type: 'charge',
+                    data,
+                },
+                this._gameWrapperMsgTarget
+            );
         } else {
             data = JSON.stringify(data);
-            this._getJSBridge(bridge => {
+            this._getJSBridge((bridge) => {
                 bridge.callHandler('requireCharge', data);
             });
         }
@@ -402,7 +516,8 @@ class BotApp {
             if (!data || !data.productId || !data.sellerOrderId) {
                 let e = new Error();
                 e.name = 'params error';
-                e.message = 'requireBuy: arguments[0] must be an `Object` with `productId` and `sellerOrderId`';
+                e.message =
+                    'requireBuy: arguments[0] must be an `Object` with `productId` and `sellerOrderId`';
                 throw e;
             }
             this._validateCallback('requireBuy', cb, 1);
@@ -411,13 +526,16 @@ class BotApp {
                 ...data,
                 product2: `${data.productId}|${data.sellerOrderId}|skillstoreapp`,
                 source: 'skillstoreapp',
-                from: 'skillstoreapp'
+                from: 'skillstoreapp',
             };
 
-            window.parent.postMessage({
-                type: 'buy',
-                data: postData
-            }, this._gameWrapperMsgTarget);
+            window.parent.postMessage(
+                {
+                    type: 'buy',
+                    data: postData,
+                },
+                this._gameWrapperMsgTarget
+            );
         } else {
             console.error('Method `requireBuy` can only be called in App');
         }
@@ -430,7 +548,9 @@ class BotApp {
      */
     uploadLinkClicked(data) {
         data = JSON.stringify(data);
-        this._getJSBridge(bridge => {
+
+
+        this._getJSBridge((bridge) => {
             bridge.callHandler('uploadLinkClicked', data);
         });
     }
@@ -441,11 +561,14 @@ class BotApp {
      */
     onChargeStatusChange(cb) {
         this._validateCallback('onChargeStatusChange', cb);
-        this._getJSBridge(bridge => {
-            bridge.registerHandler('onChargeStatusChange',  function (payload, callback) {
-                cb(JSON.parse(payload));
-                callback(true);
-            });
+        this._getJSBridge((bridge) => {
+            bridge.registerHandler(
+                'onChargeStatusChange',
+                function (payload, callback) {
+                    cb(JSON.parse(payload));
+                    callback(true);
+                }
+            );
         });
     }
 
@@ -468,7 +591,7 @@ class BotApp {
             this._validateCallback('updateUiContext', cb, 1);
         }
         data = JSON.stringify(data);
-        this._getJSBridge(bridge => {
+        this._getJSBridge((bridge) => {
             bridge.callHandler('updateUiContext', data, function (result) {
                 cb && cb(result);
             });
@@ -483,8 +606,8 @@ class BotApp {
         if (cb) {
             this._validateCallback('listen', cb);
         }
-        this._getJSBridge(bridge => {
-            bridge.callHandler('listen',  function (result) {
+        this._getJSBridge((bridge) => {
+            bridge.callHandler('listen', function (result) {
                 cb && cb(result);
             });
         });
@@ -499,7 +622,7 @@ class BotApp {
         if (cb) {
             this._validateCallback('speak', cb, 1);
         }
-        this._getJSBridge(bridge => {
+        this._getJSBridge((bridge) => {
             bridge.callHandler('speak', data, function () {
                 cb && cb();
             });
@@ -511,11 +634,14 @@ class BotApp {
      */
     requestClose() {
         if (this.isInApp()) {
-            window.parent.postMessage({
-                type: 'closeWebView'
-            }, this._gameWrapperMsgTarget);
+            window.parent.postMessage(
+                {
+                    type: 'closeWebView',
+                },
+                this._gameWrapperMsgTarget
+            );
         } else {
-            this._getJSBridge(bridge => {
+            this._getJSBridge((bridge) => {
                 bridge.callHandler('requestClose');
             });
         }
@@ -538,32 +664,38 @@ class BotApp {
      */
     onHandleScreenNavigatorEvent(cb) {
         this._validateCallback('onHandleScreenNavigatorEvent', cb);
-        this._getJSBridge(bridge => {
-            bridge.registerHandler('onHandleScreenNavigatorEvent',  function (payload, callback) {
-                // payload可能是一下几种值
-                // NAV_SCROLL_LEFT = 1;
-                // NAV_SCROLL_RIGHT = 2;
-                // NAV_SCROLL_UP = 3;
-                // NAV_SCROLL_DOWN = 4;
-                // NAV_NEXT_PAGE = 5;
-                // NAV_PREVIOUS_PAGE = 6;
-                // NAV_GO_BACK = 7;
-                // NAV_GO_HOMEPAGE = 8;
-                cb(JSON.parse(payload));
-                callback(true) // 告知处理是否成功
-            });
+        this._getJSBridge((bridge) => {
+            bridge.registerHandler(
+                'onHandleScreenNavigatorEvent',
+                function (payload, callback) {
+                    // payload可能是一下几种值
+                    // NAV_SCROLL_LEFT = 1;
+                    // NAV_SCROLL_RIGHT = 2;
+                    // NAV_SCROLL_UP = 3;
+                    // NAV_SCROLL_DOWN = 4;
+                    // NAV_NEXT_PAGE = 5;
+                    // NAV_PREVIOUS_PAGE = 6;
+                    // NAV_GO_BACK = 7;
+                    // NAV_GO_HOMEPAGE = 8;
+                    cb(JSON.parse(payload));
+                    callback(true); // 告知处理是否成功
+                }
+            );
         });
     }
 
     onDialogStateChanged(cb) {
         this._validateCallback('onDialogStateChanged', cb);
         if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
-            this._getJSBridge(bridge => {
-                bridge.registerHandler('onDialogStateChanged',  function (state, callback) {
-                    let payload = JSON.parse(state);
-                    cb(null, payload.data);
-                    callback(true); // 告知处理是否成功
-                });
+            this._getJSBridge((bridge) => {
+                bridge.registerHandler(
+                    'onDialogStateChanged',
+                    function (state, callback) {
+                        let payload = JSON.parse(state);
+                        cb(null, payload.data);
+                        callback(true); // 告知处理是否成功
+                    }
+                );
             });
         } else {
             cb(new LowVersionErrorMsg('onDialogStateChanged'), null);
@@ -582,7 +714,7 @@ class BotApp {
     canGoBack(cb) {
         this._validateCallback('canGoBack', cb);
         if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
-            this._getJSBridge(bridge => {
+            this._getJSBridge((bridge) => {
                 bridge.callHandler('canGoBack', null, (payload) => {
                     payload = JSON.parse(payload);
                     cb(null, payload.data);
@@ -595,8 +727,8 @@ class BotApp {
 
     /**
      * 注册手势识别
-     * @param {Array} data 注册需要支持的手势识别，例如 ["GESTURE_OK", "GESTURE_PALM", "GESTURE_LEFT", "GESTURE_RIGHT"]，具体见文档：http://agroup.baidu.com/dueros-bot-platform/md/article/1943708
-     * @param {requestCallback} cb 手势识别后的回调，例如 {"name": "recognizedGestureName", "value": "OK"}
+     * @param {Array} data 注册需要支持的手势识别，例如 ['GESTURE_OK', 'GESTURE_PALM', 'GESTURE_LEFT', 'GESTURE_RIGHT']，具体见文档：http://agroup.baidu.com/dueros-bot-platform/md/article/1943708
+     * @param {requestCallback} cb 手势识别后的回调，例如 {'name': 'recognizedGestureName', 'value': 'OK'}
      */
     registerGesture(data, cb) {
         this._validateCallback('registerGesture', cb, 1);
@@ -604,14 +736,18 @@ class BotApp {
             throw new Error('data must be a `Array`');
         }
         if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
-            this._getJSBridge(bridge => {
+            this._getJSBridge((bridge) => {
                 const stringData = JSON.stringify({
                     capacityName: 'AI_DUER_SHOW_GESTURE_REGISTER',
                     params: {
-                        enabledGestures: data
-                    }
+                        enabledGestures: data,
+                    },
                 });
-                bridge.callHandler('triggerDuerOSCapacity', stringData, () => {});
+                bridge.callHandler(
+                    'triggerDuerOSCapacity',
+                    stringData,
+                    () => { }
+                );
                 this._registerGestureCb = cb;
             });
         } else {
@@ -621,12 +757,16 @@ class BotApp {
 
     interruptTTS() {
         if (compareShowVersion(this._parseShowVersion(), '1.36.0.0') >= 0) {
-            this._getJSBridge(bridge => {
+            this._getJSBridge((bridge) => {
                 const stringData = JSON.stringify({
                     capacityName: 'AI_DUER_SHOW_INTERRPT_TTS',
-                    params: null
+                    params: null,
                 });
-                bridge.callHandler('triggerDuerOSCapacity', stringData, () => {});
+                bridge.callHandler(
+                    'triggerDuerOSCapacity',
+                    stringData,
+                    () => { }
+                );
             });
         } else {
             console.error(new LowVersionErrorMsg('interruptTTS'));
@@ -640,12 +780,16 @@ class BotApp {
     getCameraState(cb) {
         this._validateCallback('getCameraState', cb);
         if (compareShowVersion(this._parseShowVersion(), '1.39.0.0') >= 0) {
-            this._getJSBridge(bridge => {
+            this._getJSBridge((bridge) => {
                 const stringData = JSON.stringify({
                     capacityName: 'AI_DUER_SHOW_GET_CAMERA_STATE',
-                    params: null
+                    params: null,
                 });
-                bridge.callHandler('triggerDuerOSCapacity', stringData, () => {});
+                bridge.callHandler(
+                    'triggerDuerOSCapacity',
+                    stringData,
+                    () => { }
+                );
                 this._getCameraStateCb = cb;
             });
         } else {
@@ -659,78 +803,103 @@ class BotApp {
      */
     sendEvent(data) {
         if (compareShowVersion(this._parseShowVersion(), '1.40.0.0') >= 0) {
-            this._getJSBridge(bridge => {
+            this._getJSBridge((bridge) => {
                 const stringData = JSON.stringify(data);
-                bridge.callHandler('sendEvent', stringData, () => {});
+                bridge.callHandler('sendEvent', stringData, () => { });
             });
         } else {
             console.error(new LowVersionErrorMsg('sendEvent'));
         }
     }
+//
+// if(SOMETHINE){
+//     console.log(SOMETHINE,"ok");
+// }
+//     initSpeechTranscriber(level) {
+//         this._getJSBridge(bridge => {
+//             bridge.callHandler('initSpeechTranscriber',  JSON.stringify({level}));
+//         });
+//     }
 
-    // initSpeechTranscriber(level) {
-    //     this._getJSBridge(bridge => {
-    //         bridge.callHandler('initSpeechTranscriber',  JSON.stringify({level}));
-    //     });
-    // }
 
-    // startSpeechTranscriber() {
-    //     this._getJSBridge(bridge => {
-    //         bridge.callHandler('startSpeechTranscriber', null, function (result) {
-    //             const data = JSON.parse(result).data;
-    //             if (data.status !== 0) {
-    //                 throw new Error('startSpeechTranscriber: Start speechTranscriber failed');
-    //             }
-    //         });
-    //     });
-    // }
+//     startSpeechTranscriber() {
+//         this._getJSBridge(bridge => {
+//             bridge.callHandler('startSpeechTranscriber', null, function (result) {
+//                 const data = JSON.parse(result).data;
+//                 if (data.status !== 0) {
+//                     throw new Error('startSpeechTranscriber: Start speechTranscriber failed');
+//                 }
+//             });
+//         });
+//     }
 
-    // stopSpeechTranscriber() {
-    //     this._getJSBridge(bridge => {
-    //         bridge.callHandler('stopSpeechTranscriber', null, function () {});
-    //     });
-    // }
+//     stopSpeechTranscriber() {
+//         this._getJSBridge(bridge => {
+//             bridge.callHandler('stopSpeechTranscriber', null, function () {});
+//         });
+//     }
 
     _handleLocalSpeechResult(level, cb) {
         level = Number(level);
 
-        this._getJSBridge(bridge => {
-            bridge.callHandler('initSpeechTranscriber',  JSON.stringify({level}));
-            bridge.callHandler('startSpeechTranscriber', null, function (result) {
-                const data = JSON.parse(result).data;
-                if (data.status !== 0) {
-                    throw new Error('startSpeechTranscriber: Start speechTranscriber failed');
+        this._getJSBridge((bridge) => {
+            bridge.callHandler(
+                'initSpeechTranscriber',
+                JSON.stringify({ level })
+            );
+            bridge.callHandler(
+                'startSpeechTranscriber',
+                null,
+                function (result) {
+                    const data = JSON.parse(result).data;
+                    if (data.status !== 0) {
+                        throw new Error(
+                            'startSpeechTranscriber: Start speechTranscriber failed'
+                        );
+                    }
                 }
-            });
+            );
         });
         if (compareShowVersion(this._parseShowVersion(), '1.45.0.1') >= 0) {
             console.log('handleSpeechResult mode: webview call');
             if (level === 1) {
                 // 由webview直接调用，不走jsBridge逻辑以提升执行效率
-                window.zw3me3p9zqby80uo_onHandleP1SpeechResult = function (state) {
+                window.zw3me3p9zqby80uo_onHandleP1SpeechResult = function (
+                    state
+                ) {
                     cb(null, state);
                 };
             } else {
-                window.zw3me3p9zqby80uo_onHandleP2SpeechResult = function (state) {
-                    let content = state && state.trim() || ''; // 过滤空字符
+                window.zw3me3p9zqby80uo_onHandleP2SpeechResult = function (
+                    state
+                ) {
+                    let content = (state && state.trim()) || ''; // 过滤空字符
                     content.length && cb(null, content);
                 };
             }
-        } else if (compareShowVersion(this._parseShowVersion(), '1.45.0.0') === 0) {
+        } else if (
+            compareShowVersion(this._parseShowVersion(), '1.45.0.0') === 0
+        ) {
             console.log('handleSpeechResult mode: js-bridge call');
             if (level === 1) {
-                this._getJSBridge(bridge => {
-                    bridge.registerHandler('onHandleP1SpeechResult',  function (state) {
-                        const result = JSON.parse(state);
-                        cb(null, result);
-                    });
+                this._getJSBridge((bridge) => {
+                    bridge.registerHandler(
+                        'onHandleP1SpeechResult',
+                        function (state) {
+                            const result = JSON.parse(state);
+                            cb(null, result);
+                        }
+                    );
                 });
             } else {
-                this._getJSBridge(bridge => {
-                    bridge.registerHandler('onHandleP2SpeechResult',  function (state) {
-                        let content = state && state.trim() || ''; // 过滤空字符
-                        content.length && cb(null, content);
-                    });
+                this._getJSBridge((bridge) => {
+                    bridge.registerHandler(
+                        'onHandleP2SpeechResult',
+                        function (state) {
+                            let content = (state && state.trim()) || ''; // 过滤空字符
+                            content.length && cb(null, content);
+                        }
+                    );
                 });
             }
         }
@@ -744,13 +913,13 @@ class BotApp {
             console.error(new LowVersionErrorMsg('onHandleP1SpeechResult'));
         }
     }
-
+//
     // onHandleP2SpeechResult(cb) {
     //     this._validateCallback('onHandleP2SpeechResult', cb);
     //     // todo: 版本判断
     //     this._handleLocalSpeechResult(2, cb);
     // }
-
+//
     /**
      * 上报DCS Event
      * @param {Function} cb
@@ -758,13 +927,16 @@ class BotApp {
     onBuyStatusChange(cb) {
         this._validateCallback('onBuyStatusChange', cb);
         if (compareShowVersion(this._parseShowVersion(), '1.45.0.0') >= 0) {
-            this._getJSBridge(bridge => {
-                bridge.registerHandler('onBuyStatusChange',  function (payload, callback) {
-                    // payload数据示例
-                    cb(null, JSON.parse(payload));
-                    // 告知app是否处理成功
-                    callback(true)
-                })
+            this._getJSBridge((bridge) => {
+                bridge.registerHandler(
+                    'onBuyStatusChange',
+                    function (payload, callback) {
+                        // payload数据示例
+                        cb(null, JSON.parse(payload));
+                        // 告知app是否处理成功
+                        callback(true);
+                    }
+                );
             });
         } else {
             cb(new LowVersionErrorMsg('onBuyStatusChange'), null);
@@ -779,14 +951,17 @@ class BotApp {
                 name: 'TouchedDown',
                 needDialogRequestId: false,
                 payload: {
-                    position : {
+                    position: {
                         left: parseInt(touchEv.pageX, 10),
                         top: parseInt(touchEv.pageY, 10),
                     },
-                }
+                },
             });
         };
-        const throttleTouchLogCallback = throttleFactory(touchLogCallback, 1000);
+        const throttleTouchLogCallback = throttleFactory(
+            touchLogCallback,
+            1000
+        );
         window.addEventListener('touchstart', touchLogCallback, true);
     }
 
@@ -798,12 +973,12 @@ class BotApp {
     uploadBase64Image(base64Image, cb) {
         this._validateCallback('uploadImage', cb, 1);
         if (compareShowVersion(this._parseShowVersion(), '1.48.0.0') >= 0) {
-            this._getJSBridge(bridge => {
+            this._getJSBridge((bridge) => {
                 const substrBase64 = sliceBase64Header(base64Image);
                 console.log('uploadImage', substrBase64);
                 bridge.callHandler('uploadImage', substrBase64, (payload) => {
                     console.log('uploadImage resposne', payload);
-                    cb(null, JSON.parse(payload));
+                    cb(null, payload);
                 });
             });
         } else {
@@ -813,7 +988,7 @@ class BotApp {
 
     exitRoom() {
         if (compareShowVersion(this._parseShowVersion(), '1.56.0.0') >= 0) {
-            this._getJSBridge(bridge => {
+            this._getJSBridge((bridge) => {
                 console.log('jsbridge: exit room ');
                 bridge.callHandler('exitRoom', null, (payload) => {
                     console.log('exit room resposne', payload);
@@ -823,19 +998,97 @@ class BotApp {
             console.error(new LowVersionErrorMsg('exitRoom'));
         }
     }
+    /**
+     * 获取用户信息
+     * @param cb
+     */
+    getUserInfo(cb) {
+        this._getUserInfocb = cb;
+        this.uploadLinkClicked({
+            url: `dueros://${this.config.skillID}/dueros/user_info`,
+            initiator: {
+                type: 'AUTO_TRIGGER',
+            },
+        });
+    }
+
+    /**
+  * 排行版接口
+  * 提交分数
+  * @param socre
+  * @param cb
+  */
+    submitRankScore(socre, cb) {
+        this._submitRankScorecb = cb;
+        this.uploadLinkClicked({
+            url: `dueros://${this.config.skillID}/h5game/api?method=submitScore&score=${socre}`,
+            initiator: {
+                type: 'AUTO_TRIGGER',
+            },
+        });
+    }
+    /**
+  * 获取排行榜排名列表
+  * 提交页数和页码
+  * @param list
+  * @param cb
+  */
+    getRanking(list, cb) {
+        this._getRankingcb = cb;
+        this.uploadLinkClicked({
+            url: `dueros://${this.config.skillID}/h5game/api?method=getRankList&page=${list.page}&pageSize=${list.pageSize}`,
+            initiator: {
+                type: 'AUTO_TRIGGER',
+            },
+        });
+    }
+
+    /**
+  * 获取当前用户的排名
+  * @param cb
+  * @param list
+  */
+    getMyRanking(cb) {
+        this._getMyRankingcb = cb;
+        this.uploadLinkClicked({
+            url: `dueros://${this.config.skillID}/h5game/api?method=getMyRanking`,
+            initiator: {
+                type: 'AUTO_TRIGGER',
+            },
+        });
+    }
+
+
+    /**
+  * 获取游戏关卡进度
+  * 不需要提交
+  * @param cb
+  
+  */
+    getSetProgress(levelNum, cb) {
+        this._getSetProgresscb = cb;
+        this.uploadLinkClicked({
+            url: `dueros://${this.config.skillID}/h5game/api?method=setProgress&levelNum=${levelNum}`,
+            initiator: {
+                type: 'AUTO_TRIGGER',
+            },
+        });
+    }
 }
 
 module.exports = BotApp;
 
 // 用于非侵入式h5游戏集成
-// window.addEventListener('load', function () {
-//     const params = getQuery();
-//     const {random1, signature1, random2, signature2, skillID} = params;
-//     window.botAppInstance = new BotApp({
-//         random1,
-//         signature1,
-//         random2,
-//         signature2,
-//         skillID
-//     });
-// });
+if(SOMETHING){
+    window.addEventListener('load', function () {
+        const params = getQuery();
+        const {random1, signature1, random2, signature2, skillID} = params;
+        window.botAppInstance = new BotApp({
+            random1,
+            signature1,
+            random2,
+            signature2,
+            skillID
+        });
+    });
+}

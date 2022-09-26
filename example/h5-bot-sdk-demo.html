@@ -1,415 +1,477 @@
 <!doctype html>
-<html lang="zh_CN">
+<html lang='zh_CN'>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta charset='UTF-8'>
+    <meta name='viewport'
+        content='width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0'>
+    <meta http-equiv='X-UA-Compatible' content='ie=edge'>
     <title>H5 BOT SDK DEMO</title>
-    <!--<script src="//cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js"></script>-->
-<!--    <script src="https://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.8.2.js"></script>-->
-    <script src="/dist/h5-bot-sdk.1.10.0.js"></script>
+    <!-- <script src='//cdn.bootcss.com/vConsole/3.3.4/vconsole.min.js'></script> -->
+    <!-- <script src='https://duer.bdstatic.com/saiya/sdk/h5-bot-sdk.1.8.2.js'></script> -->
+    <script src='../dist/h5-bot-sdk.1.13.0.js'></script>
 
     <style>
         button {
             min-width: 120px;
             height: 40px;
         }
-        #log{
+
+        #log {
             word-wrap: break-word;
             word-break: break-all;
         }
     </style>
 </head>
+
 <body>
-<button id="applicate-account">账号绑定</button>
-<button id="applicate-pay">使用requireCharge购买</button>
-<!--<button id="applicate-buy">使用Buy购买</button>-->
-<button id="applicate-listen">激活聆听</button>
-<button id="applicate-speak">播报"我要早点下班"</button>
-<button id="applicate-register">获取register结果</button>
-<button id="applicate-uicontext">updateUIContext</button>
-<button id="request-close">退出页面</button>
-<button id="clear-log">清除页面日志</button>
-<button id="applicate-link">LinkClicked</button>
-<button id="applicate-ship">requireShipping</button>
-<button id="applicate-age">实名认证</button>
-<button id="applicate-cangoback">canGoBack</button>
-<!-- <button id="link-realname">展示实名认证二维码</button> -->
-<button id="register-gesture">注册ok/palm/left/right手势</button>
-<button id="interrupt-tts">打断TTS</button>
-<button id="camera-state">获取摄像头状态</button>
-<button id="send-event">sendEvent</button>
-<button id="upload-image">上传图片</button>
-<button id="p1-speech">开启P1级别语音识别</button>
-<button id="p2-speech">开启P2级别语音识别</button>
-<!--<button id="speech-stop">停止语音识别</button>-->
-<button id="exit-room">exitRoom</button>
-<div id="log"></div>
-<div id="p1-speech-result"></div>
-<script>
-    // var vConsole = new VConsole();// 初始化
-    var $btnAccount = document.getElementById('applicate-account');
-    var $btnPay = document.getElementById('applicate-pay');
-    var $btnListen = document.getElementById('applicate-listen');
-    var $btnSpeak = document.getElementById('applicate-speak');
-    var $btnGetRegisterResult = document.getElementById('applicate-register');
-    var $btnUpdateUIContext = document.getElementById('applicate-uicontext');
-    var $btnClearLog = document.getElementById('clear-log');
-    var $btnClose = document.getElementById('request-close');
-    var $btnLink = document.getElementById('applicate-link');
-    var $btnShip = document.getElementById('applicate-ship');
-    // var $btnBuy = document.getElementById('applicate-buy');
-    var $btnAge = document.getElementById('applicate-age');
-    // var $btnRealName = document.getElementById('link-realname');
-    var $btnCanGoBack = document.getElementById('applicate-cangoback');
-    // var $btnHistoryPush = document.getElementById('applicate-historypush');
-    var $btnGesture = document.getElementById('register-gesture');
-    var $interruptTts = document.getElementById('interrupt-tts');
-    var $getCameraState = document.getElementById('camera-state');
-    var $sendEvent = document.getElementById('send-event');
-    var $uploadImage = document.getElementById('upload-image');
-    var $p1Speech = document.getElementById('p1-speech');
-    var $p2Speech = document.getElementById('p2-speech');
-    var $p1SpeechResult = document.getElementById('p1-speech-result');
-    // var $speechStop = document.getElementById('speech-stop');
-
-    var $exitRoom = document.getElementById('exit-room');
-
-    var $log = document.getElementById('log');
-
-    function log(data) {
-        let type = typeof data;
-        if (typeof data === 'object') {
-            try {
-                data = JSON.stringify(data);
-            } catch (e) {
-                data = JSON.stringify(e);
-            }
-        }
-        var now = new Date();
-        var hour = now.getHours();
-        var minu = now.getMinutes();
-        var sec = now.getSeconds();
-        var milSec = now.getMilliseconds();
-        var dateStr = '<br>[' + hour + ':' + minu + ':' + sec + '.' + milSec +'] ';
-        // var dateStr = '<br>[' + formatTime(Date.now()) + ']';
-        $log.innerHTML += dateStr + type + ' ' + data;
-    }
-    window.addEventListener('load', function () {
-        var botApp = new BotApp({
-            // 原来的技能信息
-            random1: '3a939b0cee832fb0e634e1f6f28ee44e',
-            signature1: 'e6f8041f11824ec2fed7b11e27f6588a',
-            random2: '4a983fd442144eaec73c3ca35ae78aa0',
-            signature2: '1ea04b2c23877a9a221aace7384dc2d0',
-            skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
-        });
-
-        if (!botApp.isInApp()) {
-            botApp.onDialogStateChanged(function (err, data) {
-                log('收到 onDialogStateChanged 调用');
-                log(err);
-                log(data);
-            });
-            botApp.onHandleUnknowUtterance(function (err, data) {
-                log('收到 onHandleUnknowUtterance 调用');
-                log(err);
-                log(data);
-            });
-            // botApp.initAd({
-            //     screenOrientation: 'portrait',
-            //     displayStrategy: 'twice',
-            //     clickCallback: function (err, data) {
-            //         log('用户点击了广告');
-            //     },
-            //     displayCallback: function() {
-            //         log('广告展示成功');
-            //     },
-            //     closeCallback: function() {
-            //         log('用户关闭了广告');
-            //     },
-            //     switchCallback: function() {
-            //         log('广告切换成功');
-            //     },
-            //     firstDisplayTime: 10,
-            //     bannerPosition: {
-            //         right: '230px',
-            //         bottom: '130px'
-            //     },
-            //     placeId: 'xxxxx',
-            // });
-        }
+    <button id='applicate-account'>账号绑定111</button>
+    <button id='applicate-pay'>使用requireCharge购买</button>
+    <!--<button id='applicate-buy'>使用Buy购买</button>-->
+    <button id='applicate-listen'>激活聆听</button>
+    <button id='applicate-speak'>播报'我要早点下班'</button>
+    <button id='applicate-register'>获取register结果</button>
+    <button id='applicate-uicontext'>updateUIContext</button>
+    <button id='request-close'>退出页面</button>
+    <button id='clear-log'>清除页面日志</button>
+    <button id='applicate-link'>LinkClicked</button>
+    <button id='applicate-ship'>requireShipping</button>
+    <button id='applicate-age'>实名认证</button>
+    <button id='applicate-cangoback'>canGoBack</button>
+    <!-- <button id='link-realname'>展示实名认证二维码</button> -->
+    <button id='register-gesture'>注册ok/palm/left/right手势</button>
+    <button id='interrupt-tts'>打断TTS</button>
+    <button id='camera-state'>获取摄像头状态</button>
+    <button id='send-event'>sendEvent</button>
+    <button id='upload-image'>上传图片</button>
+    <button id='p1-speech'>开启P1级别语音识别</button>
+    <button id='p2-speech'>开启P2级别语音识别</button>
+    <!--<button id='speech-stop'>停止语音识别</button>-->
+    <button id='exit-room'>exitRoom</button>
+    <div id='log'></div>
+    <div id='p1-speech-result'></div>
+    <button id='get-usermes'>获取用户信息</button>
+    <button id='sub-mit-score'>提交分数</button>
+    <button id='get-rank-list'>获取排行榜排名列表</button>
+    <button id='get-my-ranking'>获取当前用户排名</button>
+    <button id='set-progress'>设置游戏关卡进度</button>
 
 
-        botApp.onLinkAccountSuccess(function (data) {
-            log('收到 onLinkAccountSuccess 调用');
-            console.log(data);
-            log(data);
-        });
+    <script>
+        // var vConsole = new VConsole();// 初始化
+        var $btnAccount = document.getElementById('applicate-account');
+        var $btnPay = document.getElementById('applicate-pay');
+        var $btnListen = document.getElementById('applicate-listen');
+        var $btnSpeak = document.getElementById('applicate-speak');
+        var $btnGetRegisterResult = document.getElementById('applicate-register');
+        var $btnUpdateUIContext = document.getElementById('applicate-uicontext');
+        var $btnClearLog = document.getElementById('clear-log');
+        var $btnClose = document.getElementById('request-close');
+        var $btnLink = document.getElementById('applicate-link');
+        var $btnShip = document.getElementById('applicate-ship');
+        // var $btnBuy = document.getElementById('applicate-buy');
+        var $btnAge = document.getElementById('applicate-age');
+        // var $btnRealName = document.getElementById('link-realname');
+        var $btnCanGoBack = document.getElementById('applicate-cangoback');
+        // var $btnHistoryPush = document.getElementById('applicate-historypush');
+        var $btnGesture = document.getElementById('register-gesture');
+        var $interruptTts = document.getElementById('interrupt-tts');
+        var $getCameraState = document.getElementById('camera-state');
+        var $sendEvent = document.getElementById('send-event');
+        var $uploadImage = document.getElementById('upload-image');
+        var $p1Speech = document.getElementById('p1-speech');
+        var $p2Speech = document.getElementById('p2-speech');
+        var $p1SpeechResult = document.getElementById('p1-speech-result');
+        // var $speechStop = document.getElementById('speech-stop');
 
-        botApp.onChargeStatusChange(function (data) {
-            log('收到 onChargeStatusChange 调用');
-            log(data);
-        });
+        var $exitRoom = document.getElementById('exit-room');
 
-        botApp.onHandleIntent(function (data) {
-            log('收到 onHandleIntent 调用');
-            console.log(data);
-            log(data);
-        });
+        var $log = document.getElementById('log');
 
-        botApp.onClickLink(function (data) {
-            log('收到 onClickLink 调用');
-            console.log(data);
-            log(data);
-        });
+        // h5游戏相关
+        var $getUserMes = document.getElementById('get-usermes');
+        var $submitScore = document.getElementById('sub-mit-score');
+        var $getRankList = document.getElementById('get-rank-list');
+        var $getMyRanking = document.getElementById('get-my-ranking');
+        var $setProgress = document.getElementById('set-progress');
 
-        botApp.onHandleScreenNavigatorEvent(function (data) {
-            log('收到 onHandleScreenNavigatorEvent 调用');
-            console.log(data);
-            log(data);
-        });
 
-        botApp.onBuyStatusChange(function (data) {
-            log('收到 onBuyStatusChange 调用');
-            console.log(data);
-            log(data);
-        });
-
-        $btnAccount.onclick = function () {
-            log('发起账号授权');
-            botApp.requireLinkAccount(function (data) {
-                log('收到授权结果');
-                log(data);
-            });
-        };
-
-        $btnPay.onclick = function () {
-            var data = {
-                token: 'fjaksvmakfjiefj23fdsnfs',
-                chargeBaiduPay: {
-                    authorizeAttributes: {
-                        authorizationAmount: {
-                            amount: '0.01',
-                            currencyCode: 'CNY'
-                        },
-                        sellerAuthorizationNote: '双11大促'
-                    },
-                    sellerOrderAttributes: {
-                        sellerOrderId: 'hfuawffu2jkjk12e23',
-                        productName: 'Mac Book Pro 2019',
-                        productId: '191025095313376709',
-                        description: '笔记本电脑',
-                        sellerNote: '大促销'
-                    }
+        function log(data) {
+            let type = typeof data;
+            if (typeof data === 'object') {
+                try {
+                    data = JSON.stringify(data);
+                } catch (e) {
+                    data = JSON.stringify(e);
                 }
-            };
-            log('发起收款，参数如下');
-            log(data);
-            botApp.requireCharge(data, function (err, data) {
-                console.error(err);
+            }
+            var now = new Date();
+            var hour = now.getHours();
+            var minu = now.getMinutes();
+            var sec = now.getSeconds();
+            var milSec = now.getMilliseconds();
+            var dateStr = '<br>[' + hour + ':' + minu + ':' + sec + '.' + milSec + '] ';
+            // var dateStr = '<br>[' + formatTime(Date.now()) + ']';
+            $log.innerHTML += dateStr + type + ' ' + data;
+        }
+
+
+        window.addEventListener('load', function () {
+            var botApp = new BotApp({
+                // 原来的技能信息
+                random1: '3a939b0cee832fb0e634e1f6f28ee44e',
+                signature1: 'e6f8041f11824ec2fed7b11e27f6588a',
+                random2: '4a983fd442144eaec73c3ca35ae78aa0',
+                signature2: '1ea04b2c23877a9a221aace7384dc2d0',
+                skillID: '699e74f5-b879-1926-1e11-51998f05ea68'
+            });
+
+            if (!botApp.isInApp()) {
+                botApp.onDialogStateChanged(function (err, data) {
+                    log('收到 onDialogStateChanged 调用');
+                    log(err);
+                    log(data);
+                });
+                botApp.onHandleUnknowUtterance(function (err, data) {
+                    log('收到 onHandleUnknowUtterance 调用');
+                    log(err);
+                    log(data);
+                });
+                // botApp.initAd({
+                //     screenOrientation: 'portrait',
+                //     displayStrategy: 'twice',
+                //     clickCallback: function (err, data) {
+                //         log('用户点击了广告');
+                //     },
+                //     displayCallback: function() {
+                //         log('广告展示成功');
+                //     },
+                //     closeCallback: function() {
+                //         log('用户关闭了广告');
+                //     },
+                //     switchCallback: function() {
+                //         log('广告切换成功');
+                //     },
+                //     firstDisplayTime: 10,
+                //     bannerPosition: {
+                //         right: '230px',
+                //         bottom: '130px'
+                //     },
+                //     placeId: 'xxxxx',
+                // });
+            } botApp.onLinkAccountSuccess(function (data) {
+                log('收到 onLinkAccountSuccess 调用');
                 console.log(data);
                 log(data);
             });
-        }
 
-        $btnListen.onclick = function () {
-            log('开始激活聆听');
-            botApp.listen();
-
-        }
-
-        $btnSpeak.onclick = function () {
-            log('开始播报TTS');
-            botApp.speak('我要早点下班', function () {
-                log('TTS播报完毕');
-            });
-        }
-
-        $btnUpdateUIContext.onclick = function () {
-            log('开始定义UIContext，参数如下');
-            var data = {
-                enableGeneralUtterances: false,
-                hyperUtterances: [
-                    {
-                        url: 'https://www.apple.com',
-                        utterances: ['苹果'],
-                        type: 'link',
-                        params: {}
-                    },
-                    {
-                        url: 'https://www.banana.com',
-                        utterances: ['香蕉'],
-                        type: 'link',
-                        params: {}
-                    },
-                    {
-                        url: 'https://www.strawberry.com',
-                        utterances: ['草莓'],
-                        type: 'link',
-                        params: {}
-                    },
-                ]
-            };
-            log(data);
-            botApp.updateUiContext(data, function () {
-                log('发送updateUiContext完毕');
-            });
-        }
-
-        $btnGetRegisterResult.onclick = function () {
-            log('开始获取注册结果');
-            botApp.getRegisterResult(function (data) {
-                log('收到register结果');
+            botApp.onChargeStatusChange(function (data) {
+                log('收到 onChargeStatusChange 调用');
                 log(data);
             });
-        }
 
-        $btnClearLog.onclick = function () {
-            $log.innerHTML = '';
-        }
+            botApp.onHandleIntent(function (data) {
+                log('收到 onHandleIntent 调用');
+                console.log(data);
+                log(data);
+            });
 
-        $btnClose.onclick = function () {
-            log('请求退出');
-            botApp.requestClose();
-        }
+            botApp.onClickLink(function (data) {
+                log('收到 onClickLink 调用');
+                console.log(data);
+                log(data);
+            });
 
-        $btnLink.onclick = function () {
-            log('上报LinkClicked，参数如下');
-            var data = {
-                url: 'dueros://d7a12baa-47d5-437f-7af6-05bc9c4e5c28/?openbot=true&oss_channel=ls_m'
-            };
-            log(data);
-            botApp.uploadLinkClicked(data);
-        }
+            botApp.onHandleScreenNavigatorEvent(function (data) {
+                log('收到 onHandleScreenNavigatorEvent 调用');
+                console.log(data);
+                log(data);
+            });
 
-        $btnShip.onclick = function () {
-            log('上报requireShipping');
-            botApp.requireShipping();
-        }
+            botApp.onBuyStatusChange(function (data) {
+                log('收到 onBuyStatusChange 调用');
+                console.log(data);
+                log(data);
+            });
 
-        // $btnBuy.onclick = function () {
-        //     log('requireBuy，参数如下');
-        //     var data = {
-        //         productId: '191022141334493984',
-        //         sellerOrderId: '23r230203fsfd1l3nr32390'
-        //     };
-        //     log(data);
-        //     botApp.requireBuy(data, function (err, data) {
-        //         log('收到requireBuy回调');
-        //         log(data);
-        //     });
-        // }
-
-        $btnAge.onclick = function () {
-            log('请求实名认证结果');
-            botApp.requireUserAgeInfo(function (err, data) {
-                log('收到requireUserAgeInfo结果');
-                if (err) {
-                    log(err);
-                } else {
+            $btnAccount.onclick = function () {
+                log('发起账号授权');
+                botApp.requireLinkAccount(function (data) {
+                    log('收到授权结果');
                     log(data);
-                }
-            });
-        }
-
-        // $btnRealName.onclick = function () {
-        //     log('上报实名认证事件，参数如下');
-        //     var data = {
-        //         url: 'dueros://94e1a677-d1b3-4dd5-0f0c-b6dd0eeb1c6b/certification?action=realName'
-        //     };
-        //     log(data);
-        //     botApp.uploadLinkClicked(data);
-        // }
-
-        $btnCanGoBack.onclick = function () {
-            log('调用canGoBack，结果如下');
-            botApp.canGoBack(function (err, state) {
-                log(err);
-                log(state);
-            });
-        }
-
-        $btnGesture.onclick = function () {
-            log('调用手势注册，注册上下左右');
-            botApp.registerGesture(['GESTURE_OK', 'GESTURE_PALM', 'GESTURE_LEFT', 'GESTURE_RIGHT'], (err, gesture) => {
-                log('收到手势识别结果，如下：');
-                if (err) {
-                    log(err);
-                } else {
-                    log(gesture);
-                }
-            });
-        }
-
-        $interruptTts.onclick = function () {
-            log('开始尝试打断TTS');
-            botApp.interruptTTS();
-        }
-
-        $getCameraState.onclick = function () {
-            log('开始获取Camera状态');
-            botApp.getCameraState((err, state) => {
-                log('获取到Camera状态，结果日下');
-                if (err) {
-                    log(err);
-                } else {
-                    log(state);
-                }
-            });
-        }
-
-        $sendEvent.onclick = function () {
-            log('开始上报事件，参数如下');
-            const data = {
-                namespace: "ai.dueros.device_interface.bot_app_sdk",
-                name: "TouchedDown",
-                 needDialogRequestId: false,
-                 payload: {
-                     position : {
-                          left: '20px',
-                          top: '40px',
-                     }
-                 }
+                });
             };
-            log(data);
-            botApp.sendEvent(data);
-        }
 
-        $uploadImage.onclick = function () {
-            log('开始上传图片');
-            const img = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAAA1BMVEX6+b1vh14ZAAAACklEQVQI12MAAgAABAABINItbwAAAABJRU5ErkJggg==`;
-            botApp.uploadBase64Image(img, function (result) {
-                log('图片上传结果' + result);
-            });
-        }
-        $p1Speech.onclick = function () {
-            log('开始P1级别的语音识别');
-            botApp.onHandleP1SpeechResult(function (err, state) {
-                // log(state);
-                $p1SpeechResult.innerText = 'ennergy: ' + state.energy + ', freq: ' + state.freq;
-            });
-        }
+            $btnPay.onclick = function () {
+                var data = {
+                    token: 'fjaksvmakfjiefj23fdsnfs',
+                    chargeBaiduPay: {
+                        authorizeAttributes: {
+                            authorizationAmount: {
+                                amount: '0.01',
+                                currencyCode: 'CNY'
+                            },
+                            sellerAuthorizationNote: '双11大促'
+                        },
+                        sellerOrderAttributes: {
+                            sellerOrderId: 'hfuawffu2jkjk12e23',
+                            productName: 'Mac Book Pro 2019',
+                            productId: '191025095313376709',
+                            description: '笔记本电脑',
+                            sellerNote: '大促销'
+                        }
+                    }
+                };
+                log('发起收款，参数如下');
+                log(data);
+                botApp.requireCharge(data, function (err, data) {
+                    console.error(err);
+                    console.log(data);
+                    log(data);
+                });
+            }
 
-        $p2Speech.onclick = function () {
-            log('开始P2级别语音识别');
-            botApp.onHandleP2SpeechResult(function (err, state) {
-                console.log(state);
-                log(state);
-            });
-        }
+            $btnListen.onclick = function () {
+                log('开始激活聆听');
+                botApp.listen();
 
-        $exitRoom.onclick = function () {
-            botApp.exitRoom();
-        }
+            }
 
-        // $speechStop.onclick = function () {
-        //     log('停止语音识别');
-        //     botApp.stopSpeechTranscriber();
-        // }
-    });
+            $btnSpeak.onclick = function () {
+                log('开始播报TTS');
+                botApp.speak('我要早点下班', function () {
+                    log('TTS播报完毕');
+                });
+            }
 
-</script>
+            $btnUpdateUIContext.onclick = function () {
+                log('开始定义UIContext，参数如下');
+                var data = {
+                    enableGeneralUtterances: false,
+                    hyperUtterances: [
+                        {
+                            url: 'https://www.apple.com',
+                            utterances: ['苹果'],
+                            type: 'link',
+                            params: {}
+                        }, {
+                            url: 'https://www.banana.com',
+                            utterances: ['香蕉'],
+                            type: 'link',
+                            params: {}
+                        }, {
+                            url: 'https://www.strawberry.com',
+                            utterances: ['草莓'],
+                            type: 'link',
+                            params: {}
+                        },
+                    ]
+                };
+                log(data);
+                botApp.updateUiContext(data, function () {
+                    log('发送updateUiContext完毕');
+                });
+            }
+
+            $btnGetRegisterResult.onclick = function () {
+                log('开始获取注册结果');
+                botApp.getRegisterResult(function (data) {
+                    log('收到register结果');
+                    log(data);
+                });
+            }
+
+            $btnClearLog.onclick = function () {
+                $log.innerHTML = '';
+            }
+
+            $btnClose.onclick = function () {
+                log('请求退出');
+                botApp.requestClose();
+            }
+
+            $btnLink.onclick = function () {
+                log('上报LinkClicked，参数如下');
+                var data = {
+                    url: 'dueros://d7a12baa-47d5-437f-7af6-05bc9c4e5c28/?openbot=true&oss_channel=ls_m'
+                };
+                log(data);
+                botApp.uploadLinkClicked(data);
+            }
+
+            $btnShip.onclick = function () {
+                log('上报requireShipping');
+                botApp.requireShipping();
+            }
+
+            // $btnBuy.onclick = function () {
+            //     log('requireBuy，参数如下');
+            //     var data = {
+            //         productId: '191022141334493984',
+            //         sellerOrderId: '23r230203fsfd1l3nr32390'
+            //     };
+            //     log(data);
+            //     botApp.requireBuy(data, function (err, data) {
+            //         log('收到requireBuy回调');
+            //         log(data);
+            //     });
+            // }
+
+            $btnAge.onclick = function () {
+                log('请求实名认证结果');
+                botApp.requireUserAgeInfo(function (err, data) {
+                    log('收到requireUserAgeInfo结果');
+                    if (err) {
+                        log(err);
+                    } else {
+                        log(data);
+                    }
+                });
+            }
+
+            // $btnRealName.onclick = function () {
+            //     log('上报实名认证事件，参数如下');
+            //     var data = {
+            //         url: 'dueros://94e1a677-d1b3-4dd5-0f0c-b6dd0eeb1c6b/certification?action=realName'
+            //     };
+            //     log(data);
+            //     botApp.uploadLinkClicked(data);
+            // }
+
+            $btnCanGoBack.onclick = function () {
+                log('调用canGoBack，结果如下');
+                botApp.canGoBack(function (err, state) {
+                    log(err);
+                    log(state);
+                });
+            }
+
+            $btnGesture.onclick = function () {
+                log('调用手势注册，注册上下左右');
+                botApp.registerGesture([
+                    'GESTURE_OK', 'GESTURE_PALM', 'GESTURE_LEFT', 'GESTURE_RIGHT'
+                ], (err, gesture) => {
+                    log('收到手势识别结果，如下：');
+                    if (err) {
+                        log(err);
+                    } else {
+                        log(gesture);
+                    }
+                });
+            }
+
+            $interruptTts.onclick = function () {
+                log('开始尝试打断TTS');
+                botApp.interruptTTS();
+            }
+
+            $getCameraState.onclick = function () {
+                log('开始获取Camera状态');
+                botApp.getCameraState((err, state) => {
+                    log('获取到Camera状态，结果日下');
+                    if (err) {
+                        log(err);
+                    } else {
+                        log(state);
+                    }
+                });
+            }
+
+            $sendEvent.onclick = function () {
+                log('开始上报事件，参数如下');
+                const data = {
+                    namespace: 'ai.dueros.device_interface.bot_app_sdk',
+                    name: 'TouchedDown',
+                    needDialogRequestId: false,
+                    payload: {
+                        position: {
+                            left: '20px',
+                            top: '40px'
+                        }
+                    }
+                };
+                log(data);
+                botApp.sendEvent(data);
+            }
+
+            $uploadImage.onclick = function () {
+                log('开始上传图片');
+                const img = `data:image/gif;base64,R0lGODlhGANgBPcAAAAAAAAAMwAAZgAAmQAAzAAA/wArAAArMwArZgArmQArzAAr/wBVAABVMwBVZgBVmQBVzABV/wCAAACAMwCAZgCAmQCAzACA/wCqAACqMwCqZgCqmQCqzACq/wDVAADVMwDVZgDVmQDVzADV/wD/AAD/MwD/ZgD/mQD/zAD//zMAADMAMzMAZjMAmTMAzDMA/zMrADMrMzMrZjMrmTMrzDMr/zNVADNVMzNVZjNVmTNVzDNV/zOAADOAMzOAZjOAmTOAzDOA/zOqADOqMzOqZjOqmTOqzDOq/zPVADPVMzPVZjPVmTPVzDPV/zP/ADP/MzP/ZjP/mTP/zDP//2YAAGYAM2YAZmYAmWYAzGYA/2YrAGYrM2YrZmYrmWYrzGYr/2ZVAGZVM2ZVZmZVmWZVzGZV/2aAAGaAM2aAZmaAmWaAzGaA/2aqAGaqM2aqZmaqmWaqzGaq/2bVAGbVM2bVZmbVmWbVzGbV/2b/AGb/M2b/Zmb/mWb/zGb//5kAAJkAM5kAZpkAmZkAzJkA/5krAJkrM5krZpkrmZkrzJkr/5lVAJlVM5lVZplVmZlVzJlV/5mAAJmAM5mAZpmAmZmAzJmA/5mqAJmqM5mqZpmqmZmqzJmq/5nVAJnVM5nVZpnVmZnVzJnV/5n/AJn/M5n/Zpn/mZn/zJn//8wAAMwAM8wAZswAmcwAzMwA/8wrAMwrM8wrZswrmcwrzMwr/8xVAMxVM8xVZsxVmcxVzMxV/8yAAMyAM8yAZsyAmcyAzMyA/8yqAMyqM8yqZsyqmcyqzMyq/8zVAMzVM8zVZszVmczVzMzV/8z/AMz/M8z/Zsz/mcz/zMz///8AAP8AM/8AZv8Amf8AzP8A//8rAP8rM/8rZv8rmf8rzP8r//9VAP9VM/9VZv9Vmf9VzP9V//+AAP+AM/+AZv+Amf+AzP+A//+qAP+qM/+qZv+qmf+qzP+q///VAP/VM//VZv/Vmf/VzP/V////AP//M///Zv//mf//zP///wAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAAYA2AEAAj+APcJHEiwoMGDCBMqXMiwocOHECNKnEixosWLGDNq3Mixo8ePIEOKHEmypMmTKFOqXMmypcuXMGPKnEmzps2bOHPq3Mmzp8+fQIMKHUq0qNGjSJMqXcq0qdOnUKNKnUq1qtWrWLNq3cq1q9evYMOKHUu2rNmzaNOqXcu2rdu3cOPKnUu3rt27ePPq3cu3r9+/gAMLHky4sOHDiBMrXsy4sePHkCNLnky5suXLmDNr3sy5s+fPoEOLHk26tOnTqFOrXs26tevXsGPLnk27tu3buHPr3s27t+/fwIMLH068uPHjyJMrX868ufPn0KNLn069uvXr2LNr3869u/fv4MP+ix9Pvrz58+jTq1/Pvr379/Djy59Pv779+/jz69/Pv7///wAGKOCABBZo4IEIJqjgggw26OCDEEYo4YQUVmjhhRhmqOGGHHbo4YcghijiiCSWaOKJKKao4oostujiizDGKOOMNNZo44045qjjjjz26OOPQAYp5JBEFmnkkUgmqeSSTDbp5JNGZUKMlFROaWWVWF6pZZZcbulll2B+KWaYZI5pZplonqlmmmyu6WabcL4pZ5x0zmlnnXjeqWeefO7pZ5XrKSPGDYMWSuihhiaK6KKKNsroo45GCumkklZK6aWWZorpppp2yumnnoYK6qiilkrqqaamiuqqqrbK6qv+hioD5ay01mrrrbjmquuuvPbq66/ABivssMQWa+yxyCar7LLMNuvss9BGK+201FZr7bXYZqvtttx26+234IYr7rjklmvuueimq+667Lbr7rvwxivvvPTWa++9+Oar77789uvvvwAHLPDABBds8MEIJ6zwwgw37PDDEEcs8cQUV2zxxRhnrPHGHHfs8ccghyzyyCSXbPLJKKes8sost+zyyzDHLPPMNNds880456zzzjz37PPPQAct9NBEF2300UgnrfTSTDft9NNQRy311FRXbfXVWGet9dZcd+3112CHLfbYZJdt9tlop6322my37fbbcMct99x012333Xjnrff+3nz37fffgAcu+OCEF2744YgnrvjijDfu+OOQRy755JRXbvnlmGeu+eacd+7556CHLvropJdu+umop6766qy37vrrsMcu++y012777bjnrvvuvPfu++/ABy/88MQXb/zxyCev/PLMN+/889BHL/301Fdv/fXYZ6/99tx37/334Icv/vjkl2/++einr/767Lfv/vvwxy///PTXb//9+Oev//789+///wAMoAAHSMACGvCACEygAhfIwAY68IEQjKAEJ0jBClrwghjMoAY3iLApTSITHwwhCEfIQadkIgYASKEKV6jCG5RwKZNg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`;
+                botApp.uploadBase64Image(img, function (result) {
+                    log('图片上传结果' + result);
+                });
+            }
+            $p1Speech.onclick = function () {
+                log('开始P1级别的语音识别');
+                botApp.onHandleP1SpeechResult(function (err, state) { // log(state);
+                    $p1SpeechResult.innerText = 'ennergy: ' + state.energy + ', freq: ' + state.freq;
+                });
+            }
+
+            $p2Speech.onclick = function () {
+                log('开始P2级别语音识别');
+                botApp.onHandleP2SpeechResult(function (err, state) {
+                    console.log(state);
+                    log(state);
+                });
+            }
+
+            $exitRoom.onclick = function () {
+                botApp.exitRoom();
+            }
+
+            $getMyRanking.onclick = function () {
+                log('开始请求排名');
+                botApp.getMyRanking(function (data) {
+                    log(data)
+                });
+                log('请求排名结束')
+            }
+
+            $getUserMes.onclick = function () {
+                log('开始获取用户信息')
+                botApp.getUserInfo(function (data) {
+                    log(data)
+                });
+                log('获取用户信息结束')
+            }
+
+            $submitScore.onclick = function () {
+                log('开始提交分数')
+                botApp.submitRankScore('20', function (data) {
+                    log(data)
+                });
+                log('提交分数结束')
+            }
+
+            $getRankList.onclick = function () {
+                log('开始获取排行榜排名列表')
+                let list = {
+                    page: '0',
+                    pageSize: '20'
+                }
+                botApp.getRanking(list, function (data) {
+                    log(data)
+                });
+                log('获取排行榜排名列表结束')
+            }
+
+            $setProgress.onclick = function () {
+                log('开始获取游戏关卡进度')
+                botApp.getSetProgress('2', function (data) {
+                    log(data)
+                })
+                log('获取游戏关卡进度结束')
+
+            }
+
+
+            // $speechStop.onclick = function () {
+            //     log('停止语音识别');
+            //     botApp.stopSpeechTranscriber();
+            // }
+        });
+    </script>
 </body>
+
 </html>
