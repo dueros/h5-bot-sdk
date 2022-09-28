@@ -7,22 +7,24 @@ const webpack =require('webpack');
 const path = require('path');
 const PACKAGE = require('./package');
 
-module.exports = {
+
+module.exports = { 
     // mode: 'development',
     mode: 'production',
-    entry: './src/main.js',
+    entry: './src/main.js', 
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: `h5-bot-sdk.${PACKAGE.version}.js`,
+        filename: JSON.parse(process.env.BRANCH_ENV) ? `h5-bot-sdk.${PACKAGE.version}.trial-h5-game.js`:`h5-bot-sdk.${PACKAGE.version}.js`,
         // filename: `h5-bot-sdk.${PACKAGE.version}.trial-h5-game.js`,
         library: 'BotApp', // 暴露到全局变量中的名字，具体配置参考：https://webpack.docschina.org/guides/author-libraries
         libraryTarget: 'var', // 模块暴露方式：全局变量
     },
     plugins: [
-   
         new webpack.DefinePlugin({
-                SOMETHING: false
+            SOMETHING: process.env.BRANCH_ENV,
+                
             }),
+         
         // 是用于保持模块引用的 module id 不变
         new webpack.HashedModuleIdsPlugin(),
 
