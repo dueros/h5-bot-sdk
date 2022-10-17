@@ -4,12 +4,11 @@
   "description": "DuerOS H5 BOT JS SDK",
   "main": "./src/main.js",
   "scripts": {
+    
     "test": "jest --coverage",
-    "buildSingleFile": "npm run test && webpack --config webpack.sdk.js",
-    "buildSingleFileTril": "npm run test && webpack --config webpack.sdktril.js",
+    "buildSingleFile": "npm run test &&cross-env BRANCH_ENV=false webpack --config webpack.sdk.js",
+    "buildSingleFileTril": "npm run test &&cross-env BRANCH_ENV=true webpack --config webpack.sdk.js",
     "buildModule": "npm run test && babel ./src -d lib",
-    "build": "npm run buildSingleFile && npm run buildModule",
-    "buildTril": "npm run buildSingleFileTril && npm run buildModule",
     "buildAll": "npm run buildSingleFile && npm run buildModule && npm run buildSingleFileTril"
   },
   "author": "dengxuening",
@@ -22,6 +21,7 @@
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.7.0",
     "babel-preset-stage-2": "^6.24.1",
+    "cross-env": "^7.0.3",
     "jest": "^23.6.0",
     "webpack": "^4.37.0",
     "webpack-cli": "^3.3.6",

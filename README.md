@@ -938,7 +938,7 @@ callback参数
     });
     ```
 
-## getUserInfo（callback）*1.10+* `SHOW ONLY`
+## getUserInfo（callback）*1.13+* `SHOW ONLY`
 本方法获取用户信息。
 |参数|说明|类型|必填|默认值|
 |----|----|----|----|----|
@@ -958,7 +958,7 @@ callback参数
     ```
 
 
-## submitRankScore（socre，callback）*1.10+* `SHOW ONLY`
+## submitRankScore（socre, callback）*1.13+* `SHOW ONLY`
 本方法用于提交关卡分数
 |参数|说明|类型|必填|默认值|
 |----|----|----|----|----|
@@ -967,19 +967,19 @@ callback参数
 
 
 ### status参数 
-|返回状态码(status)|返回信息(msg)|
-|----|----|
-|0|success|
-|1001|failed:Nonstandard parameters|
-|1002|failed: Parameters out of range|
-|1003|failed: Internal Error|
-|1004|failed: Internal Error|
-|1005|failed: The queried data does not exist|
-|1006|failed: Internal Error|
+|返回状态码(status)|返回信息(msg)|说明|
+|----|----|----|
+|0|success|查询成功|
+|1001|failed:Nonstandard parameters|url中输入的参数不规范，参数名称错误或参数值格式不规范|
+|1002|failed: Parameters out of range|参数值超过范围|
+|1003|failed: Internal Error|服务端错误，多次返回请联系相关负责人|
+|1004|failed: Internal Error|服务端错误，多次返回请联系相关负责人|
+|1005|failed: The queried data does not exist|查询的数据不存在，例如当前技能没有排行榜或该用户没有提交过分数信息等|
+|1006|failed: Internal Error|服务端错误，多次返回请联系相关负责人|
 
 * 示例
     ```javascript
-    botApp.submitRankScore(score，function (data) {
+    botApp.submitRankScore(score, function (data) {
         console.log(data);
         // 打印结果如下 ：
         "status": 0,   
@@ -991,11 +991,11 @@ callback参数
     });
     ```
 
-## getRankList（list，callback）*1.10+* `SHOW ONLY`
+## getRankList（list, callback）*1.13+* `SHOW ONLY`
 本方法用于获取排行榜排名列表
 |参数|说明|类型|必填|默认值|
 |----|----|----|----|----|
-|list|接收使用者页面请求，pageSize 属于(0,100]单页显示最大数量100|Object|是|无|
+|list|接收使用者页面请求，pageSize属于[1,100]单页显示最大数量100, page属于[0,500)最大页数500页|Object|是|无|
 |callback|接收排行榜排名列表的回调|Function|是|无|
 
 
@@ -1007,28 +1007,28 @@ callback参数
       pageSize : '20',
     
    }
-    botApp.getRankList(list，function (data) {
+    botApp.getRankList(list, function (data) {
         console.log(data);
         // 打印结果如下 ：
-    "status": 0,
-        "msg": "success",
-        "data": {
-            "currentPage": 0, // 当前页码，从0开始
-            "totalPage": 50, // 总页数
-            "hasNext": true, // 是否还有下一页
-            "ranklist": [{
-                    "userId": 1234567, // 用户id                
-                    "userName": '昵称', // 用户昵称
-                    "userAvatar": "", // 用户头像
-                    "rank": 1, // 当前的排名 -1为未进入排行榜（排行榜只统计前500名）
-                    "score": 100 // 当前用户的分数
-                },
-                ...
-            ]
-        }
-    });
+        "status": 0,
+            "msg": "success",
+            "data": {
+                "currentPage": 0, // 当前页码，从0开始
+                "totalPage": 50, // 总页数
+                "hasNext": true, // 是否还有下一页
+                "ranklist": [{
+                        "userId": 1234567, // 用户id                
+                        "userName": '昵称', // 用户昵称
+                        "userAvatar": "", // 用户头像
+                        "rank": 1, // 当前的排名 -1为未进入排行榜（排行榜只统计前500名）
+                        "score": 100 // 当前用户的分数
+                    },
+                    ...
+                ]
+            }
+        });
     ```
-## getMyRanking (callback) *1.10+* `SHOW ONLY`
+## getMyRanking (callback) *1.13+* `SHOW ONLY`
 本方法用于获取当前用户的排名
 |参数|说明|类型|必填|默认值|
 |----|----|----|----|----|
@@ -1052,11 +1052,11 @@ callback参数
     });
     ```
 
-## getSetProgress (levelNum,callback) *1.10+* `SHOW ONLY`
+## getSetProgress (levelNum, callback) *1.13+* `SHOW ONLY`
 本方法用于设置游戏关卡进度
 |参数|说明|类型|必填|默认值|
 |----|----|----|----|----|
-|levelNum|标记上传关卡值，levelNum 属于[0,10000] 最大关卡数10000|String|是|无|
+|levelNum|标记上传关卡值，levelNum属于[0,10000] 最大关卡数10000|String|是|无|
 |callback|接收推荐游戏列表的回调|Function|是|无|
 
 
@@ -1064,7 +1064,7 @@ callback参数
 * 示例
     ```javascript
  
-    botApp.getSetProgress('3',function (data) {
+    botApp.getSetProgress('3', function (data) {
         console.log(data);
         // 打印结果如下 ：
         "status": 0,
@@ -1099,3 +1099,14 @@ callback参数
 |---|---|---|---|
 |LowVersionErrorMsg|1001|Device version too low|设备版本过低错误|
 |ServiceError|1002|Service error, {{msg}}|接口请求报错|
+
+
+## 打包方式
+
+|打包名称 | 描述
+|---|---|
+|npm run test|单测|
+|npm run buildSingleFile|单测并打包生成非trial类型的js文件|
+|npm run buildSingleFileTril|单测并打包生成trial类型的js文件|
+|npm run buildModule|单测并转义src的js放入lib中|
+|npm run buildAll|单测并打包生成trial类型和非trial类型的js文件|
