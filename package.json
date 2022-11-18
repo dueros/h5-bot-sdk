@@ -24,7 +24,7 @@
     "cross-env": "^7.0.3",
     "jest": "^23.6.0",
     "webpack": "^4.37.0",
-    "webpack-cli": "^3.3.6",
+    "webpack-cli": "^3.3.12",
     "webpack-merge": "^4.2.2"
   },
   "dependencies": {
